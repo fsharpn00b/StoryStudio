@@ -70,7 +70,7 @@ Development is ongoing as there are more features I want to add.
 
 # Screenshots
 
-![Menu](https://i.postimg.cc/0z30CPvz/1.jpg)
+[![1.jpg](https://i.postimg.cc/PqfVT5FQ/1.jpg)](https://postimg.cc/0z30CPvz)
 ![Saved game screen](https://i.postimg.cc/NKVkxBtb/2.jpg)
 ![Dialogue](https://i.postimg.cc/PLwz39fB/3.jpg)
 ![Dialogue](https://i.postimg.cc/sBh96qDC/4.jpg)
