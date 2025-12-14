@@ -61,7 +61,9 @@ Story Studio is a visual novel framework written in [F#](https://fsharp.org/) th
     npm start
     ```
 
-1. The previous command shows a URL such as `https://localhost:5173`. Open a browser to this URL.
+1. The previous command shows a URL such as `https://localhost:5173`. Open a browser to this URL:
+    `http://localhost:5173/0_pages/index.html`
+	If the port number is different than `5173`, adjust the URL accordingly.
 
 # Notes
 
