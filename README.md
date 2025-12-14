@@ -70,11 +70,11 @@ Development is ongoing as there are more features I want to add.
 
 # Screenshots
 
-[img]https://postimg.cc/0z30CPvz[/img]
-[img]https://postimg.cc/NKVkxBtb[/img]
-[img]https://postimg.cc/PLwz39fB[/img]
-[img]https://postimg.cc/sBh96qDC[/img]
-[img]https://postimg.cc/wtmcfZxk[/img]
+![Menu](https://postimg.cc/0z30CPvz)
+![Saved game screen](https://postimg.cc/NKVkxBtb)
+![Dialogue](https://postimg.cc/PLwz39fB)
+![Dialogue](https://postimg.cc/sBh96qDC)
+![Configuration screen](https://postimg.cc/wtmcfZxk)
 
 # Credits
 
