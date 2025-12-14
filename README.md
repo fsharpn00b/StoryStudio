@@ -40,7 +40,7 @@ Story Studio is a visual novel framework that uses [Fable](https://fable.io/).
 
     ```bash
     cd StoryStudio
-    ```bash
+    ```
 
 1. Restore the .NET solution.
 
@@ -70,11 +70,11 @@ Development is ongoing as there are more features I want to add.
 
 # Screenshots
 
-![Menu](https://postimg.cc/0z30CPvz)
-![Saved game screen](https://postimg.cc/NKVkxBtb)
-![Dialogue](https://postimg.cc/PLwz39fB)
-![Dialogue](https://postimg.cc/sBh96qDC)
-![Configuration screen](https://postimg.cc/wtmcfZxk)
+![Menu](https://i.postimg.cc/0z30CPvz.jpg)
+![Saved game screen](https://i.postimg.cc/NKVkxBtb.jpg)
+![Dialogue](https://i.postimg.cc/PLwz39fB.jpg)
+![Dialogue](https://i.postimg.cc/sBh96qDC.jpg)
+![Configuration screen](https://i.postimg.cc/wtmcfZxk.jpg)
 
 # Credits
 
