@@ -72,6 +72,9 @@ Development is ongoing as there are more features I want to add.
 
 [![Menu](https://i.postimg.cc/PqfVT5FQ/1.jpg)](https://postimg.cc/0z30CPvz)
 [![Saved game screen](https://i.postimg.cc/QMNYhdyL/2.jpg)](https://postimg.cc/NKVkxBtb)
+[![Dialogue](https://i.postimg.cc/d0WH1cbt/3.jpg)](https://postimg.cc/PLwz39fB)
+[![Dialogue](https://i.postimg.cc/pd0GTMwr/4.jpg)](https://postimg.cc/sBh96qDC)
+[![Configuration screen](https://i.postimg.cc/k5j14PkL/5.jpg)](https://postimg.cc/wtmcfZxk)
 
 # Credits
 
