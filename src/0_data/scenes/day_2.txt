@@ -1,0 +1,8 @@
+fadein night 2.0
+
+fadein l sad 25 2.0
+l Great, we're lost in the woods.
+
+fadeoutall 1.0
+// Go back to first day scene.
+jump day_1

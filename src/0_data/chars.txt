@@ -1,0 +1,22 @@
+[
+  {
+    "full_name": "Laura",
+    "short_name": "l",
+    "height": 80,
+    "moods": {
+      "happy": "/0_assets/chars/laura/small/happy.png",
+      "angry": "/0_assets/chars/laura/small/angry.png",
+      "sad": "/0_assets/chars/laura/small/sad.png"
+    }
+  },
+  {
+    "full_name": "Tom",
+    "short_name": "t",
+    "height": 80,
+    "moods": {
+      "happy": "/0_assets/chars/tom/small/happy.png",
+      "angry": "/0_assets/chars/tom/small/angry.png",
+      "sad": "/0_assets/chars/tom/small/sad.png"
+    }
+  }
+]

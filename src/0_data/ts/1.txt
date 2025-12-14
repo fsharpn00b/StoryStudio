@@ -1,0 +1,16 @@
+export {};
+
+type player_state = {
+  is_lost : boolean;
+};
+
+type state = {
+  player_state : player_state,
+};
+
+/* We need this because we are adding to the built-in window object. */
+declare global {
+  interface Window {
+    state: state
+  }
+}

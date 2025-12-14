@@ -1,0 +1,13 @@
+// Starting script is always named start.txt.
+
+js
+// Set up initial state.
+window.state = {
+  player_state : {
+    is_lost : false
+  }
+};
+endjs
+
+// Go to first day scene.
+jump day_1

@@ -1,0 +1,14 @@
+[
+  {
+    "name": "day",
+    "url": "/0_assets/bg/forest/day.jpg"
+  },
+  {
+    "name": "night",
+    "url": "/0_assets/bg/forest/night.jpg"
+  },
+  {
+    "name": "path",
+    "url": "/0_assets/bg/forest/path.jpg"
+  }
+]

@@ -1,0 +1,50 @@
+// Play music.
+play /0_assets/music/whispers-of-autumn-love-stocktune.mp3
+// Fade in daytime background over 2 seconds.
+fadein day 2.0
+// If/then example.
+if true === window.state.player_state.is_lost
+// Fade in the character Laura, with a sad expression, at horizontal position 25%, over 1 second.
+    fadein l sad 25 1.0
+else
+    fadein l happy 25 1.0
+endif
+// JS interpolation in dialogue.
+l Which way should we go? (Lost: {window.state.player_state.is_lost})
+
+// Create a menu whose result is stored in a variable named direction.
+menu direction Which way?
+// This menu option is dependent on JS expression.
+// If the player is already lost, they cannot go left.
+1 left $if false === window.state.player_state.is_lost
+2 right
+endmenu
+
+// Fade in the character Tom, with a happy expression, at horizontal position 75%, over 1 second.
+fadein t happy 75 1.0
+t Great idea!
+
+if 1 === direction
+// JS statement to change state.
+// If the player goes left, they get lost.
+    js window.state.player_state.is_lost = true;
+// Fade out all characters and background over 2 seconds.
+    fadeoutall 2.0
+// Go to day 2 scene.
+    jump day_2
+
+else
+    fadeoutall 1.0
+    fadein path 1.0
+
+    fadein l angry 25 1.0
+    l Did you get us lost again?
+
+    fadein t happy 75 1.0
+    t Nope!
+    t The end!
+
+endif
+
+/* Example of
+multi-line comment. */

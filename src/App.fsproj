@@ -1,0 +1,58 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- 20250921 Changed from net7.0. -->
+    <TargetFramework>net9.0</TargetFramework>
+    <!-- 20251013 -->
+    <NoWarn>3349</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Units_Of_Measure.fs" />
+    <Compile Include="Utilities.fs" />
+    <Compile Include="Log.fs" />
+    <Compile Include="Music.fs" />
+    <Compile Include="Fade_Types.fs" />
+    <Compile Include="Fade_Transition.fs" />
+    <Compile Include="Fade_Visibility.fs" />
+    <Compile Include="Background.fs" />
+    <Compile Include="Character_Types.fs" />
+    <Compile Include="Character_Rendering.fs" />
+    <Compile Include="Character.fs" />
+    <Compile Include="Characters.fs" />
+    <Compile Include="Dialogue_Box_Types.fs" />
+    <Compile Include="Dialogue_Box_Rendering.fs" />
+    <Compile Include="Dialogue_Box_Transition.fs" />
+    <Compile Include="Dialogue_Box_Typing.fs" />
+    <Compile Include="Dialogue_Box_State.fs" />
+    <Compile Include="Dialogue_Box.fs" />
+    <Compile Include="Menu.fs" />
+    <Compile Include="Command_Types.fs" />
+    <Compile Include="Save_Load_Types.fs" />
+    <Compile Include="Save_Load_Rendering.fs" />
+    <Compile Include="Save_Load_Storage.fs" />
+    <Compile Include="Save_Load.fs" />
+    <Compile Include="Configuration.fs" />
+    <Compile Include="Scripts.fs" />
+    <Compile Include="JavaScript_Parser.fs" />
+    <Compile Include="JavaScript_Interop.fs" />
+    <Compile Include="Parser_1_Match_Patterns.fs" />
+    <Compile Include="Parser_1_Match_Functions.fs" />
+    <Compile Include="Parser_2_Helpers.fs" />
+    <Compile Include="Parser_2.fs" />
+    <Compile Include="Runner_Types.fs" />
+    <Compile Include="Runner_Helpers.fs" />
+    <Compile Include="Runner_State.fs" />
+    <Compile Include="Runner_Queue.fs" />
+    <Compile Include="Runner_Transition.fs" />
+    <Compile Include="Runner.fs" />
+    <Compile Include="Runner_UI.fs" />
+    <Compile Include="Main.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Fable.Browser.Navigator" Version="2.5.0" />
+    <PackageReference Include="Fable.Promise" Version="3.2.0" />
+    <PackageReference Include="Feliz" Version="2.6.0" />
+    <PackageReference Include="Feliz.Router" Version="4.0.0" />
+    <PackageReference Include="Feliz.UseElmish" Version="2.5.0" />
+    <PackageReference Include="Thoth.Json" Version="10.4.1" />
+  </ItemGroup>
+</Project>
