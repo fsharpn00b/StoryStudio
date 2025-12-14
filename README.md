@@ -11,18 +11,19 @@ Story Studio is a visual novel framework written in [F#](https://fsharp.org/) th
 
 ## For authors
 
-- Simple scripting language.
+- Simple scripting language lets you:
 	- Fade backgrounds and characters in and out.
 	- Play music.
-	- You can specify dialogue with a single-letter abbrevation for the character name and without needing quotes.
-	- Conditionals (If, ElseIf, Else).
+	- Specify dialogue with a single-letter abbrevation for the character name and without needing quotes. For example:
+	    `c This is some dialogue.`
+	- Use conditionals (If, ElseIf, Else).
 	- Break your script into scenes and jump between them.
-	- Menus to give players choices.
+	- Give players choices with menus.
 
-- JavaScript support.
-	- You can use JavaScript in dialogue, conditionals, and menus (for instance, you can show certain menu options only if their corresponding JavaScript expressions are true).
-	- This lets you store game state such as character statistics and inventory.
-	- You can include TypeScript types and lint your code before you run it.
+- JavaScript support lets you:
+	- Use JavaScript in dialogue, conditionals, and menus (for instance, you can show certain menu options only if their corresponding JavaScript expressions are true).
+	- Store game state such as character statistics and inventory.
+	- Include TypeScript types and lint your code before you run it.
 
 # How to Run
 
