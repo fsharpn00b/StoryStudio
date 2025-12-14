@@ -80,8 +80,8 @@ Development is ongoing as there are more features I want to add.
 # Credits
 
 Story Studio includes a tiny visual novel to demonstrate its features. It based on the "Forest Hike" demo project included with Ren'py:
-https://www.freecodecamp.org/news/use-python-to-create-a-visual-novel/
-https://github.com/mogrady-personal/Forest-Hike
+- https://www.freecodecamp.org/news/use-python-to-create-a-visual-novel/
+- https://github.com/mogrady-personal/Forest-Hike
 
 Character sprites:
 https://fuelli.itch.io/free-to-use-character-sprites
