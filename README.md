@@ -1,6 +1,6 @@
 # Story Studio
 
-Story Studio is a visual novel framework that uses [Fable](https://fable.io/).
+Story Studio is a visual novel framework written in [F#](https://fsharp.org/) that uses [Fable](https://fable.io/).
 
 # Features
 
