@@ -28,7 +28,7 @@ Story Studio is a visual novel framework written in [F#](https://fsharp.org/) th
 
 1. Install [.NET 9.0 or later](https://dotnet.microsoft.com/en-us/download/dotnet/9.0).
 
-1. Install [npm](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm)
+1. Install [npm](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm).
 
 1. Clone the repo.
 
