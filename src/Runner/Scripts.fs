@@ -16,13 +16,13 @@ open Units_Of_Measure
 (* Consts *)
 
 [<Literal>]
-let scripts_path = "./0_data/scenes/*"
+let scripts_path = "../0_data/scenes/*"
 [<Literal>]
-let types_path = "./0_data/ts/*"
+let types_path = "../0_data/ts/*"
 [<Literal>]
-let backgrounds_path = "./0_data/bgs.txt?raw"
+let backgrounds_path = "../0_data/bgs.txt?raw"
 [<Literal>]
-let characters_path = "./0_data/chars.txt?raw"
+let characters_path = "../0_data/chars.txt?raw"
 
 let entry_script_name = "start.txt"
 let entry_scene_name = "start"
