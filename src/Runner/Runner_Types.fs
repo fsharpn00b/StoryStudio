@@ -114,7 +114,8 @@ type Command_Queue_State_Running_Data = {
     continue_after_finished : bool
 (* This determines whether, after we run the last command currently added to the queue, we add the current state to the history. We initially set it to the inverse of continue_after_finished. We do not simply use continue_after_finished because we might need to set that to false to halt running commands if the player opens the save/load game screen or rolls back/forward. *)
     add_to_history : bool
-// TODO1 Add an auto save flag. Set it before a jump, then unset it at the next idle point after we auto save.
+(* TODO0 Set this before a jump, then unset it at the next idle point after we auto save. *)
+//    autosave : bool
     menu_variables : Menu_Variables
 }
 
@@ -137,14 +138,16 @@ type I_Runner =
 *)
     abstract member show_configuration_screen : unit -> unit
     abstract member hide_configuration_screen : unit -> unit
-    abstract member is_configuration_screen_visible : unit -> bool
-    abstract member is_saved_game_screen_visible : unit -> bool
+    abstract member handle_escape_key : unit -> unit
     abstract member show_saved_game_screen : Saved_Game_Action -> unit
     abstract member hide_saved_game_screen : unit -> unit
     abstract member show_or_hide_ui : unit -> unit
     abstract member download_screenshot : unit -> unit
-    abstract member export_saved_games : unit -> unit
-    abstract member import_saved_games : unit -> unit
+    abstract member quicksave : unit -> unit
+    abstract member export_saved_games_from_storage_to_file : unit -> unit
+    abstract member import_saved_games_from_file_to_storage : unit -> unit
+    abstract member export_current_game_to_file : unit -> unit
+    abstract member import_current_game_from_file : unit -> unit
     abstract member undo : unit -> unit
     abstract member redo : unit -> unit
 (* These are for debugging. *)

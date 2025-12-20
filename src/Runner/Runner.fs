@@ -243,10 +243,14 @@ This is less urgent now that we've split up Runner.fs.
                 show_configuration_screen queue runner_components
             member _.hide_configuration_screen (): unit =
                 runner_components.current.configuration.current.hide ()
-            member _.is_configuration_screen_visible () : bool =
-                runner_components.current.configuration.current.is_visible ()
-            member _.is_saved_game_screen_visible () : bool =
-                runner_components.current.save_load.current.is_visible ()
+            member _.handle_escape_key () : unit =
+                do
+                    if not <| runner_components.current.configuration.current.is_visible () &&
+                        not <| runner_components.current.save_load.current.is_visible () then
+                        runner_components.current.configuration.current.show ()
+                    else
+                        runner_components.current.save_load.current.hide ()
+                        runner_components.current.configuration.current.hide ()
             member _.show_saved_game_screen (action : Saved_Game_Action) : unit =
                 show_saved_game_screen queue runner_components action
             member _.hide_saved_game_screen () : unit =
@@ -254,11 +258,17 @@ This is less urgent now that we've split up Runner.fs.
             member _.show_or_hide_ui () : unit =
                 show_or_hide_ui runner_components
             member _.download_screenshot () : unit =
-                download_screenshot ()
-            member _.export_saved_games () : unit = 
-                runner_components.current.save_load.current.export ()
-            member _.import_saved_games () : unit =
-                runner_components.current.save_load.current.import ()
+                download_screenshot_1 ()
+            member _.quicksave () : unit =
+                quicksave queue runner_components
+            member _.export_saved_games_from_storage_to_file () : unit = 
+                runner_components.current.save_load.current.export_saved_games_from_storage_to_file ()
+            member _.import_saved_games_from_file_to_storage () : unit =
+                runner_components.current.save_load.current.import_saved_games_from_file_to_storage ()
+            member _.export_current_game_to_file () : unit =
+                export_current_game_to_file queue runner_components
+            member _.import_current_game_from_file () : unit =
+                runner_components.current.save_load.current.import_current_game_from_file ()
             member _.undo () : unit =
 (* When the save/load or configuration screen is visible, we do not want to undo or redo. *)
                 if not <| runner_components.current.save_load.current.is_visible () &&

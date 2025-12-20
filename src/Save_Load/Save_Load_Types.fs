@@ -3,6 +3,8 @@ module Save_Load_Types
 // DateTime
 open System
 
+open Units_Of_Measure
+
 (* Types - public *)
 
 type Saved_Game_Action =
@@ -12,7 +14,15 @@ type Saved_Game_Action =
 
 (* Types - formerly private *)
 
-type Saved_Game = {
+type Saved_Game_Display_Data = {
+    name : string
+    screenshot : string
+}
+
+type Saved_Games_Display_Data = Map<int<saved_game_id>, Saved_Game_Display_Data>
+
+type Existing_Saved_Game = {
+    id : int<saved_game_id>
     name : string
     screenshot : string
     timestamp : DateTime
@@ -20,37 +30,41 @@ type Saved_Game = {
     game_state : string
 }
 
-type Saved_Games = Map<string, Saved_Game>
+type New_Saved_Game = {
+    name : string
+    screenshot : string
+    timestamp : DateTime
+    game_state : string
+}
 
 type Save_Load_Usage_Data = {
     usage : float
     quota : float
 }
 
-type Save_Load_State = {
-    action : Saved_Game_Action
-    current_game_state : string
-    screenshot : string
-    usage : Save_Load_Usage_Data
-    saved_games : Saved_Games
-    is_visible : bool
-}
-
 type Save_Load_Show_Data = {
     action : Saved_Game_Action
     current_game_state : string
     screenshot : string
+    saved_games : Saved_Games_Display_Data
     usage : Save_Load_Usage_Data
 }
 
+type Save_Load_State =
+    | Hidden
+    | Visible of Save_Load_Show_Data
+
 type Save_Load_Message =
-    | Set_Saved_Games_In_State of Saved_Games
     | Show of Save_Load_Show_Data
     | Hide
     | Switch of Saved_Game_Action
-    | Message_Save of Saved_Game
-    | Message_Load of string
-    | Message_Delete of string
+    | Message_Save_New_Game of New_Saved_Game
+    | Message_Save_Existing_Game of Existing_Saved_Game
+    | Message_Load_Game of string
+    | Message_Delete_Game of int<saved_game_id>
+    | Message_Delete_All_Games
+
+type Quicksave_Or_Autosave = Quicksave | Autosave
 
 (* Interfaces *)
 
@@ -59,23 +73,31 @@ type I_Save_Load =
     abstract member hide : unit -> unit
     abstract member switch : Saved_Game_Action -> unit
     abstract member is_visible : unit -> bool
-    abstract member export : unit -> unit
-    abstract member import : unit -> unit
+    abstract member quicksave : string -> unit
+    abstract member autosave : string -> unit
+    abstract member export_saved_games_from_storage_to_file : unit -> unit
+    abstract member import_saved_games_from_file_to_storage : unit -> unit
+    abstract member export_current_game_to_file : string -> unit
+    abstract member import_current_game_from_file : unit -> unit
     abstract member download_screenshot : unit -> unit
 
 (* Consts *)
 
 let database_name = "vnf_saved_games"
 let store_name = "vnf_saved_games"
-let database_row_id = "singleton"
-let date_time_format = "yyyyMMdd_HHmmss"
-let screenshot_element_id = "root"
+let quicksave_record_id = 1<saved_game_id>
+let autosave_record_id = quicksave_record_id + 1<saved_game_id>
+let highest_built_in_record_id = autosave_record_id
 
-let initial_state = {
-    action = Load_Game
-    current_game_state = String.Empty
-    screenshot = String.Empty
-    usage = { usage = 0.0; quota = 0.0 }
-    is_visible = false
-    saved_games = Map.empty
-}
+let date_time_format = "yyyyMMdd_HHmmss"
+
+let screenshot_element_id = "root"
+let screenshot_max_width = 160
+let screenshot_mime_type = "image/jpeg"
+let screenshot_encoder_options = 0.7
+
+[<Literal>]
+let export_current_game_key = "x"
+let warn_recommendation = $"To avoid data loss, recommend exporting current game by pressing '{export_current_game_key}' key."
+
+let initial_state = Hidden

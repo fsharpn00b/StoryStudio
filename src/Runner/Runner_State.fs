@@ -15,7 +15,6 @@ open Log
 open Runner_Helpers
 open Runner_Types
 open Save_Load_Types
-open Scripts
 open Utilities
 
 (* Debug *)
@@ -25,6 +24,8 @@ let debug_module_name = "Runner_State"
 let private debug : log_function = debug debug_module_name
 let private warn : warn_function = warn debug_module_name
 let private error : error_function = error debug_module_name
+
+// TODO1 Break this file up.
 
 (* Helper functions - state *)
 
@@ -341,10 +342,10 @@ let private load_game
     (history : IRefValue<Runner_History>)
     (queue : IRefValue<Command_Queue>)
     (runner_components : IRefValue<Runner_Components>)
-    (saved_game : string)
+    (saved_game_state : string)
     : unit =
 
-    match Decode.Auto.fromString<Runner_Saveable_State> saved_game with
+    match Decode.Auto.fromString<Runner_Saveable_State> saved_game_state with
     | Ok saved_state ->
         do
 (* Clear the history. *)
@@ -363,7 +364,7 @@ Each UI component's set_state () method dispatches Show or Hide messages with no
                     add_to_history history runner_components queue
                 ), int notify_transition_complete_delay_time) |> ignore
             | _ -> ()
-    | _ -> error "load_game" "Failed to deserialize saved game." ["saved_game", saved_game] |> invalidOp
+    | _ -> error "load_game" "Failed to deserialize saved game." ["saved_game_state", saved_game_state] |> invalidOp
 
 let get_load_game
     (runner_components : IRefValue<Runner_Components>)
@@ -374,7 +375,25 @@ let get_load_game
 We also need to delay the evaluation of this function until runner_components_1 is not None. The delayed result of this function is passed to the constructors of these components.
 We can close over command_state because it is a reference.
 *)
-    fun (saved_game : string) -> load_game history queue runner_components saved_game
+    fun (saved_game_state : string) -> load_game history queue runner_components saved_game_state
+
+let quicksave
+    (queue : IRefValue<Command_Queue>)
+    (runner_components : IRefValue<Runner_Components>)
+    : unit =
+
+    let runner_state = get_state runner_components queue
+    let json = Encode.Auto.toString (0, runner_state)
+    do runner_components.current.save_load.current.quicksave json
+
+let export_current_game_to_file
+    (queue : IRefValue<Command_Queue>)
+    (runner_components : IRefValue<Runner_Components>)
+    : unit =
+
+    let runner_state = get_state runner_components queue
+    let json = Encode.Auto.toString (0, runner_state)
+    do runner_components.current.save_load.current.export_current_game_to_file json
 
 let show_saved_game_screen
     (queue : IRefValue<Command_Queue>)
@@ -398,7 +417,7 @@ let show_saved_game_screen
             let json = Encode.Auto.toString (0, runner_state)
             do runner_components.current.save_load.current.show action json
         )
-        
+
 let hide_saved_game_screen
     (runner_components : IRefValue<Runner_Components>)
     : unit =

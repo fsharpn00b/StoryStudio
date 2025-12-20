@@ -3,28 +3,17 @@ module Save_Load
 // DateTime
 open System
 
-// navigator, Types
+// window
 open Browser
-(* TODO2 For some reason we do not need to import this for now. *)
-// document, window
-//open Browser.Dom
-// a, Element, HTMLCanvasElement
-open Browser.Types
-// localStorage
-//open Browser.WebStorage
+
 open Elmish
-// Import, jsNative
-open Fable.Core
-// ? operator
-open Fable.Core.JsInterop
 open Feliz
 open Feliz.UseElmish
-// Decode, Encode
-open Thoth.Json
 
 open Log
 open Save_Load_Rendering
 open Save_Load_Storage
+open Save_Load_Storage_Helpers
 open Save_Load_Types
 open Utilities
 
@@ -47,20 +36,23 @@ let show
     promise {
         let! canvas = get_canvas ()
         let! usage = get_usage ()
+        let! saved_games = get_saved_game_display_data_from_storage ()
         return {|
-            screenshot = downscale_screenshot canvas 160 "image/jpeg" 0.7
+            screenshot = downscale_screenshot canvas screenshot_max_width screenshot_mime_type screenshot_encoder_options
             usage = usage
+            saved_games = saved_games
         |}
     } |> Promise.iter (fun results ->
         dispatch <| Show {
             action = action
             current_game_state = current_game_state
             screenshot = results.screenshot
+            saved_games = results.saved_games
             usage = results.usage
         }
     )
 
-let download_screenshot () : unit =
+let download_screenshot_1 () : unit =
 
     promise {
         let! canvas = get_canvas ()
@@ -72,54 +64,78 @@ let download_screenshot () : unit =
 (* Main functions - state *)
 
 let private update
+(* load_game is Runner_State.load_game (), closed over runner_components, history, and queue. All it needs is the saved game state. *)
     (load_game : string -> unit)
     (message : Save_Load_Message)
-    (state : Save_Load_State)
+    (state_1 : Save_Load_State)
     : Save_Load_State * Cmd<Save_Load_Message> =
 
+(* TODO1 It would be good to distinguish between (1) messages sent by user commands (such as Show) and (2) messages sent by tasks completing (such as Message_Load_Game). Ideally, the functions that do the work (such as add_saved_game_to_storage_1 ()) should be called before we get here. For either 1 or 2, though, the purpose of these message handlers is to update the state and consequently the view.
+*)
     match message with
 
-    | Set_Saved_Games_In_State saved_games ->
-        { state with saved_games = saved_games }, Cmd.none
-
     | Show data ->
-        {
-            state with
-                action = data.action
-                current_game_state = data.current_game_state
-                screenshot = data.screenshot
-                usage = data.usage
-                is_visible = true
+        Visible {
+            action = data.action
+            current_game_state = data.current_game_state
+            screenshot = data.screenshot
+            saved_games = data.saved_games
+            usage = data.usage
         }, Cmd.none
 
-    | Hide -> { state with is_visible = false }, Cmd.none
+    | Hide -> Hidden, Cmd.none
 
     | Switch action ->
-        (if action = state.action then state else { state with action = action }), Cmd.none
+        match state_1 with
+        | Hidden -> error "update" "Unexpected state." ["state", state_1] |> invalidOp
+        | Visible state_2 ->
+            if action = state_2.action then state_1, Cmd.none
+            else Visible { state_2 with action = action }, Cmd.none
 
-    | Message_Load saved_game_name ->
-        do load_game saved_game_name
-(* Delay before we hide the save/load game screen, so the mouse click on the Load button does not cause us to call Runner_Queue.run (). *)
-        state, Cmd.ofEffect (fun dispatch ->
+    | Message_Load_Game game_state ->
+        do load_game game_state
+(* Delay before we hide the save/load game screen, so the mouse click to select the saved game does not also cause us to call Runner_Queue.run (). For now, return the state unchanged. *)
+        state_1, Cmd.ofEffect (fun dispatch ->
             do window.setTimeout ((fun () ->
                 dispatch <| Hide
             ), int hide_save_load_screen_delay_time) |> ignore
         )
 
-    | Message_Save saved_game ->
-        let saved_games = state.saved_games.Add (saved_game.name, saved_game)
-        set_saved_games_in_storage saved_games
-(* Delay before we hide the save/load game screen, so the mouse click on the Load button does not cause us to call Runner_Queue.run (). *)
-        { state with saved_games = saved_games }, Cmd.ofEffect (fun dispatch ->
+    | Message_Save_New_Game saved_game ->
+        do add_saved_game_to_storage_1 saved_game
+        state_1, Cmd.ofEffect (fun dispatch ->
             do window.setTimeout ((fun () ->
                 dispatch <| Hide
             ), int hide_save_load_screen_delay_time) |> ignore
         )
 
-    | Message_Delete saved_game_name ->
-        let saved_games = state.saved_games.Remove saved_game_name
-        set_saved_games_in_storage saved_games
-        { state with saved_games = saved_games }, Cmd.none
+    | Message_Save_Existing_Game saved_game ->
+        do overwrite_saved_game_in_storage_1 saved_game
+        state_1, Cmd.ofEffect (fun dispatch ->
+            do window.setTimeout ((fun () ->
+                dispatch <| Hide
+            ), int hide_save_load_screen_delay_time) |> ignore
+        )
+
+    | Message_Delete_Game saved_game_id ->
+        match state_1 with
+        | Hidden -> error "update/Message_Delete_Game" "Unexpected state." ["state", state_1] |> invalidOp
+        | Visible state_2 ->
+            do delete_saved_game_from_storage saved_game_id
+            Visible {
+                state_2 with
+                    saved_games = state_2.saved_games.Remove saved_game_id
+            }, Cmd.none
+
+    | Message_Delete_All_Games ->
+        match state_1 with
+        | Hidden -> error "update/Message_Delete_All_Games" "Unexpected state." ["state", state_1] |> invalidOp
+        | Visible state_2 ->
+            do delete_all_saved_games_from_storage ()
+            Visible {
+                state_2 with
+                    saved_games = Map.empty
+            }, Cmd.none
 
 (* Component *)
 
@@ -133,14 +149,6 @@ let Save_Load
     let state_ref = React.useRef state
     do state_ref.current <- state
 
-    React.useEffectOnce (fun () ->
-(* TODO1 For some reason, updating state_ref with the saved games does not work, even though view () uses state_ref rather than state. We must update state itself. To do that, we must dispatch a message.
-We need to investigate this because it could also affect other components that use state and state_ref. It seems state is reflected to state_ref, but not the reverse. That is understandable. But it makes no sense that changes to state_ref are ignored.
-We could work around this by having state_ref use a set () method that dispatches a message that updates state.
-*)
-        do get_saved_games_from_storage dispatch
-    )
-
     React.useImperativeHandle(props.expose, fun () ->
         {
             new I_Save_Load with
@@ -149,12 +157,16 @@ We could work around this by having state_ref use a set () method that dispatche
 The caller must send the current game state, and we must take a screenshot, in case the player switches from the load screen to the save screen without returning to the game.
 *)
                 member _.show (action : Saved_Game_Action) (current_game_state : string) = show dispatch action current_game_state
-                member _.export () = export_saved_games_to_file state_ref.current.saved_games
-                member _.import () = import_saved_games_from_file dispatch
-                member _.download_screenshot () : unit = download_screenshot ()
+                member _.export_saved_games_from_storage_to_file () = export_saved_games_from_storage_to_file ()
+                member _.import_saved_games_from_file_to_storage () = import_saved_games_from_file_to_storage ()
+                member _.export_current_game_to_file (current_game_state : string) = export_current_game_to_file current_game_state 
+                member _.import_current_game_from_file () = import_current_game_from_file dispatch
+                member _.download_screenshot () : unit = download_screenshot_1 ()
+                member _.quicksave (current_game_state : string) = add_quicksave_or_autosave_to_storage_1 current_game_state Quicksave
+                member _.autosave (current_game_state : string) = add_quicksave_or_autosave_to_storage_1 current_game_state Autosave
                 member _.hide () = dispatch <| Hide
                 member _.switch (action : Saved_Game_Action) = dispatch <| Switch action
-                member _.is_visible (): bool = state_ref.current.is_visible
+                member _.is_visible (): bool = match state_ref.current with | Visible _ -> true | Hidden -> false
         }
     )
 

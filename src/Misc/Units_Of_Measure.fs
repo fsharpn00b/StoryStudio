@@ -12,5 +12,7 @@ module Units_Of_Measure
 [<Measure>] type command_queue_order
 [<Measure>] type character_id
 
+[<Measure>] type saved_game_id
+
 type Fade_Transition_Time = float<seconds>
 type Dialogue_Box_Typing_Speed = int<milliseconds>

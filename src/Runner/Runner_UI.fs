@@ -78,19 +78,19 @@ let Runner_Test () : ReactElement =
         window.addEventListener ("keydown", fun (event_1 : Event) ->
             let event_2 = event_1 :?> KeyboardEvent
             match event_2.key with
+// TODO1 Replace these with consts or configuration values.
+// TODO1 Might need to disable inappropriate keys when saved game or configuration screen is visible. We do handle these cases in runner state? Verify.
             | "s" -> runner_2.current.show_saved_game_screen Save_Game
             | "l" -> runner_2.current.show_saved_game_screen Load_Game
             | "d" -> runner_2.current.show_saved_game_screen Delete_Game
-            | "Escape" ->
-                do
-                    if not <| runner_2.current.is_configuration_screen_visible () &&
-                        not <| runner_2.current.is_saved_game_screen_visible () then
-                        runner_2.current.show_configuration_screen ()
-                    else
-                        runner_2.current.hide_saved_game_screen ()
-                        runner_2.current.hide_configuration_screen ()
-            | "e" -> runner_2.current.export_saved_games ()
-            | "i" -> runner_2.current.import_saved_games ()
+            | "Escape" -> runner_2.current.handle_escape_key ()
+            | "q" -> runner_2.current.quicksave ()
+// TODO1 These import/export funcs should probably dismiss the configuration screen if it's visible.
+            | "e" -> runner_2.current.export_saved_games_from_storage_to_file ()
+            | "i" -> runner_2.current.import_saved_games_from_file_to_storage ()
+// TODO1 These import/export funcs should probably dismiss the configuration screen and/or saved game screen if they are visible.
+            | Save_Load_Types.export_current_game_key -> runner_2.current.export_current_game_to_file ()
+            | "f" -> runner_2.current.import_current_game_from_file ()
             | "c" -> runner_2.current.show_configuration_screen ()
             | "g" -> runner_2.current.download_screenshot ()
             | "u" -> runner_2.current.show_or_hide_ui ()

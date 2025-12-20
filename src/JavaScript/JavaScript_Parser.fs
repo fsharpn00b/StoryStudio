@@ -51,7 +51,6 @@ let private enclose_javascript_in_function (javascript : string) : string = @$"
 }}) ();
 "
 
-// TODO1 Problem - 
 let private combine_javascript_interpolations (javascript_interpolations : string list) : string =
     javascript_interpolations |> List.map (fun x -> $"console.log({x});{Environment.NewLine}") |> String.concat String.Empty
 

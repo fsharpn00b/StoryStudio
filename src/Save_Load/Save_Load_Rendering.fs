@@ -3,74 +3,62 @@ module Save_Load_Rendering
 // DateTime
 open System
 
-// navigator, Types
+// window
 open Browser
-(* TODO2 For some reason we do not need to import this for now. *)
-// document, window
-//open Browser.Dom
-// a, Element, HTMLCanvasElement
-open Browser.Types
-// localStorage
-//open Browser.WebStorage
-open Elmish
-// Import, jsNative
-open Fable.Core
-// ? operator
-open Fable.Core.JsInterop
+
 open Feliz
-open Feliz.UseElmish
-// Decode, Encode
-open Thoth.Json
 
-open Log
+open Save_Load_Storage
+open Save_Load_Storage_Helpers
 open Save_Load_Types
-open Utilities
-
-(* Helper functions - miscellaneous, public *)
-
-let get_current_timestamp () : string =
-    DateTime.UtcNow.ToString date_time_format
+open Units_Of_Measure
 
 (* Helper functions - rendering *)
 
 let private handle_save_new
-    (state : IRefValue<Save_Load_State>)
+    (state : Save_Load_Show_Data)
     (dispatch : Save_Load_Message -> unit)
     : unit =
 
     match window.prompt ("Enter save name:", get_current_timestamp ()) with
     | null -> ()
-    | save_name -> dispatch <| Message_Save {
-        name = save_name
-        screenshot = state.current.screenshot
-        timestamp = DateTime.UtcNow
-        game_state = state.current.current_game_state
-    }
+    | save_name ->
+        dispatch <| Message_Save_New_Game {
+            name = save_name
+            timestamp = DateTime.UtcNow
+            screenshot = state.screenshot
+            game_state = state.current_game_state
+        }
 
 let private handle_slot_click
-    (state : IRefValue<Save_Load_State>)
+    (saved_game_id : int<saved_game_id>)
+    (existing_saved_game_name : string)
+    (state : Save_Load_Show_Data)
     (dispatch : Save_Load_Message -> unit)
-    (existing_saved_game : Saved_Game)
     : unit =
 
-    match state.current.action with
+    match state.action with
 
     | Save_Game ->
-        if window.confirm $"Overwrite saved game '{existing_saved_game.name}'?" then
-            dispatch <| Message_Save {
-                name = existing_saved_game.name
-                screenshot = state.current.screenshot
+        if window.confirm $"Overwrite saved game '{existing_saved_game_name}'?" then
+(* We dispatch a message because we also need to update the view to hide the saved games screen. *)
+            dispatch <| Message_Save_Existing_Game {
+                id = saved_game_id
+                name = existing_saved_game_name
+                screenshot = state.screenshot
                 timestamp = DateTime.UtcNow
-                game_state = state.current.current_game_state
+                game_state = state.current_game_state
             }
 
     | Load_Game ->
-        if window.confirm $"Load save '{existing_saved_game.name}'? Current progress will be lost." then
-            dispatch <| Message_Load existing_saved_game.game_state
+        if window.confirm $"Load save '{existing_saved_game_name}'? Current progress will be lost." then
+(* We dispatch a message because we also need to update the view to remove the deleted saved game. *)
+            get_saved_game_from_storage saved_game_id |> Promise.iter (fun saved_game_state -> dispatch <| Message_Load_Game saved_game_state)
 
     | Delete_Game ->
-        if window.confirm $"Delete save '{existing_saved_game.name}'?" then
-            dispatch <| Message_Delete existing_saved_game.name
+        if window.confirm $"Delete save '{existing_saved_game_name}'? This CANNOT be undone!" then
+(* We dispatch a message because we also need to update the view to remove the deleted saved game. *)
+            dispatch <| Message_Delete_Game saved_game_id
 
 (* This is for debugging. *)
 let private view_saved_game_grid_test_overflow
@@ -92,17 +80,18 @@ let private view_saved_game_grid_test_overflow
         )
 
 let private view_saved_game_grid
-    (state : IRefValue<Save_Load_State>)
+    (state : Save_Load_Show_Data)
     (dispatch : Save_Load_Message -> unit)
     : ReactElement seq =
-    state.current.saved_games
+
+    state.saved_games
         |> Seq.map (fun kv ->
             Html.div [
                 prop.className "saved_game_slot"
-                prop.onClick (fun _ -> handle_slot_click state dispatch kv.Value)
+                prop.onClick (fun _ -> handle_slot_click kv.Key kv.Value.name state dispatch)
                 prop.children [
                     Html.img [ prop.src kv.Value.screenshot ]
-                    Html.div [ prop.text $"{kv.Key}{Environment.NewLine}" ]
+                    Html.div [ prop.text $"{kv.Value.name}{Environment.NewLine}" ]
                 ]
             ]
         )
@@ -110,10 +99,15 @@ let private view_saved_game_grid
 (* Main functions - public *)
 
 let view
-    (state : IRefValue<Save_Load_State>)
+    (state_1 : IRefValue<Save_Load_State>)
     (dispatch : Save_Load_Message -> unit)
     : ReactElement =
-    if state.current.is_visible then
+
+    match state_1.current with
+
+    | Hidden -> Html.none
+
+    | Visible state_2 ->
         Html.div [
             prop.className "save_load_screen"
             prop.children [
@@ -122,29 +116,35 @@ let view
                     prop.children [
                         Html.h3 [
                             let text =
-                                match state.current.action with
+                                match state_2.action with
                                 | Save_Game -> "Save Game"
                                 | Load_Game -> "Load Game"
                                 | Delete_Game -> "Delete Game" 
                             prop.text $"{text} (Escape to exit)"
                         ]
                         Html.div [
-                            prop.text $"Usage: %.2f{state.current.usage.usage} MB of %.2f{state.current.usage.quota} MB (%.2f{state.current.usage.usage / state.current.usage.quota * 100.0} %%)"
+                            prop.text $"Usage: %.2f{state_2.usage.usage} MB of %.2f{state_2.usage.quota} MB (%.2f{state_2.usage.usage / state_2.usage.quota * 100.0} %%)"
                         ]
                     ]
                 ]
                 Html.div [
                     prop.className "save_load_grid"
-                    prop.children (view_saved_game_grid state dispatch)
+                    prop.children (view_saved_game_grid state_2 dispatch)
                 ]
-                match state.current.action with
+                match state_2.action with
                 | Save_Game ->
                     Html.button [
                         prop.text "New Save"
-                        prop.onClick (fun _ -> handle_save_new state dispatch)
+                        prop.onClick (fun _ -> handle_save_new state_2 dispatch)
+                    ]
+                | Delete_Game ->
+                    Html.button [
+                        prop.text "Delete All"
+                        prop.onClick (fun _ ->
+                            if window.confirm "Delete all saved games? This CANNOT be undone!" then
+                                do dispatch <| Message_Delete_All_Games
+                        )
                     ]
                 | _ -> Html.none
             ]
         ]
-    else Html.none
-

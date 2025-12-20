@@ -27,8 +27,9 @@
     <Compile Include="Components/Menu/Menu.fs" />
     <Compile Include="Runner/Command_Types.fs" />
     <Compile Include="Save_Load/Save_Load_Types.fs" />
-    <Compile Include="Save_Load/Save_Load_Rendering.fs" />
+    <Compile Include="Save_Load/Save_Load_Storage_Helpers.fs" />
     <Compile Include="Save_Load/Save_Load_Storage.fs" />
+    <Compile Include="Save_Load/Save_Load_Rendering.fs" />
     <Compile Include="Save_Load/Save_Load.fs" />
     <Compile Include="Misc/Configuration.fs" />
     <Compile Include="Runner/Scripts.fs" />
