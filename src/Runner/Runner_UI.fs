@@ -84,6 +84,23 @@ let Runner_Test () : ReactElement =
             | "l" -> runner_2.current.show_saved_game_screen Load_Game
             | "d" -> runner_2.current.show_saved_game_screen Delete_Game
             | "Escape" -> runner_2.current.handle_escape_key ()
+(* TODO0 Does quicksave force transition completions? No. It needs to.
+- Same issue for export_current_game_to_file ().
+
+- We need to re-examine every place we call Runner_State.get_state ().
+1 add_to_history. We believe that's only called when we reach a pause point, but need to check that and document it.
+2 quicksave_or_autosave. Fix.
+3 export_current_game_to_file. Fix.
+4 show_saved_game_screen. We force transition completion here.
+(end)
+
+x Where do we force transition completion?
+1 undo/redo
+2 show saved game screen
+3 show configuration screen
+(end)
+As expected.
+*)
             | "q" -> runner_2.current.quicksave ()
 // TODO1 These import/export funcs should probably dismiss the configuration screen if it's visible.
             | "e" -> runner_2.current.export_saved_games_from_storage_to_file ()

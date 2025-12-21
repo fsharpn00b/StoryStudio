@@ -51,6 +51,8 @@ type Runner_Saveable_State_Running_Data = {
     next_command_id : int<command_id> option
 (* We clear the history when we load a saved game. This determines whether, when we load a saved game, we re-add the current state to the history. *)
     add_to_history : bool
+(* This determines whether, when we load a saved game, we then autosave the current state. *)
+    autosave : bool
     component_data : Runner_Saveable_State_Component_Data
     menu_variables : Menu_Variables
 }
@@ -90,7 +92,9 @@ type Command_Queue_Next_Command_Data = {
 
 type Command_Queue_State_Idle_Data = {
     next_command_data : Command_Queue_Next_Command_Data
+(* See notes in Command_Queue_State_Running_Data. *)
     add_to_history : bool
+    autosave : bool
 (* We do not need to carry the JavaScript state in the queue because that is stored in the browser's window object. We can get it with back_up_state ().
 We could also store the menu variables that way, but we use them more often (whenever we evaluate a JavaScript statement or condition) and we feel it makes the code clearer to store them in the queue.
 See also notes in Runner_Transition.get_notify_menu_selection ().
@@ -104,6 +108,8 @@ type Command_Queue_State_Loading_Data = {
     commands : Command_Queue_Command_Map
     next_command_data : Command_Queue_Next_Command_Data
     components_used_by_commands : Runner_Component_Names Set
+(* See notes in Command_Queue_State_Running_Data. *)
+    autosave : bool
     menu_variables : Menu_Variables
 }
 
@@ -112,10 +118,10 @@ type Command_Queue_State_Running_Data = {
     next_command_data : Command_Queue_Next_Command_Data
     components_used_by_commands : Runner_Component_Names Set
     continue_after_finished : bool
-(* This determines whether, after we run the last command currently added to the queue, we add the current state to the history. We initially set it to the inverse of continue_after_finished. We do not simply use continue_after_finished because we might need to set that to false to halt running commands if the player opens the save/load game screen or rolls back/forward. *)
+(* This determines whether, after we run the last command in the queue, we add the current state to the history. We initially set it to the inverse of continue_after_finished. We do not simply use continue_after_finished because we might need to set that to false to halt running commands if the player opens the save/load game screen or rolls back/forward. *)
     add_to_history : bool
-(* TODO0 Set this before a jump, then unset it at the next idle point after we auto save. *)
-//    autosave : bool
+(* This determines whether, after we run the last command in the queue, we autosave. *)
+    autosave : bool
     menu_variables : Menu_Variables
 }
 

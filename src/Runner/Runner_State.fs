@@ -185,6 +185,7 @@ We complete all running transitions before we show the save/load game screen. An
 If add_to_history is false, which means that when we halted running commands, we would otherwise have run the next command without waiting for input from the user, we should not add the current state to the history.
 *)
             add_to_history = data.add_to_history
+            autosave = data.autosave
             component_data = {
                 background = runner_components.current.background.current.get_state ()
                 dialogue = runner_components.current.dialogue_box.current.get_state ()
@@ -248,6 +249,7 @@ We might want to get the state at the most recent pausable point (which might be
                         next_command_id = data.next_command_id
                     }
                     add_to_history = data.add_to_history
+                    autosave = data.autosave
                     menu_variables = data.menu_variables
                 }
             | Runner_Saveable_State_Done _ -> Queue_Done
@@ -377,14 +379,15 @@ We can close over command_state because it is a reference.
 *)
     fun (saved_game_state : string) -> load_game history queue runner_components saved_game_state
 
-let quicksave
+let quicksave_or_autosave
     (queue : IRefValue<Command_Queue>)
     (runner_components : IRefValue<Runner_Components>)
+    (quicksave_or_autosave : Quicksave_Or_Autosave)
     : unit =
 
     let runner_state = get_state runner_components queue
     let json = Encode.Auto.toString (0, runner_state)
-    do runner_components.current.save_load.current.quicksave json
+    do runner_components.current.save_load.current.quicksave_or_autosave json quicksave_or_autosave
 
 let export_current_game_to_file
     (queue : IRefValue<Command_Queue>)

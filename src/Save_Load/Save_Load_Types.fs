@@ -73,8 +73,7 @@ type I_Save_Load =
     abstract member hide : unit -> unit
     abstract member switch : Saved_Game_Action -> unit
     abstract member is_visible : unit -> bool
-    abstract member quicksave : string -> unit
-    abstract member autosave : string -> unit
+    abstract member quicksave_or_autosave : string -> Quicksave_Or_Autosave -> unit
     abstract member export_saved_games_from_storage_to_file : unit -> unit
     abstract member import_saved_games_from_file_to_storage : unit -> unit
     abstract member export_current_game_to_file : string -> unit

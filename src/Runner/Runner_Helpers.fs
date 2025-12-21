@@ -38,18 +38,20 @@ let private command_to_behavior (command : Command) : Command_Behavior =
     | Character_Cross_Fade _
     | Fade_Out_All _
     | Dialogue_Box_Show
-    | Dialogue_Box_Hide -> Wait_For_Callback {| continue_afterward = true |}
+    | Dialogue_Box_Hide -> Wait_For_Callback { continue_afterward = true; add_to_history = false; autosave = false }
 (* Pause and wait for the user to continue.
 
 We set continue_after_running to false because, even if the dialogue box has its typing speed is 0 (meaning text is shown at once and in full), we let it signal that the transition is complete, to simplify the logic here.
 *)
-    | Dialogue _ -> Wait_For_Callback {| continue_afterward = false |}
+    | Dialogue _ -> Wait_For_Callback { continue_afterward = false; add_to_history = true; autosave = false }
     | Music_Play _
     | Music_Stop
 // TODO2 Possibly these should not be commands, or should at least be a separate subtype.
     | JavaScript_Inline _
-    | JavaScript_Block _
-    | Jump _ -> Continue_Immediately
+    | JavaScript_Block _ -> Continue_Immediately { autosave = false }
+    | Jump _ -> Continue_Immediately { autosave = true }
+// TODO1 Just give If, EndIf, and Menu Command_Behaviors. They are not Commands. Add a subtype to them to contain behavior.
+(* See also If in handle_if (), EndIf in get_command_data (), and Menu in handle_menu (). They do not have Command_Behaviors, but their behaviors are defined in those functions. *)
 
 let private command_to_component_ids (command : Command) : Runner_Component_Names Set =
     match command with
@@ -141,9 +143,9 @@ let private handle_command
         | JavaScript_Block command_2 ->
             Some <| fun _ -> eval_js_with_menu_variables command_2 menu_variables |> ignore
 
-        | Jump _ ->
-            None
+        | Jump _ -> None
 
+(* Jump is a special case that changes the next scene and command. *)
     let next_command_scene_id, next_command_id_2 =
         match command_1 with
         | Jump scene_id ->
@@ -191,7 +193,7 @@ let private handle_if
     {
         command = None
         debug_data = command.ToString ()
-        behavior = Continue_Immediately
+        behavior = Continue_Immediately { autosave = false }
         components_used = Set.empty
         next_command_scene_id = current_scene_id
         next_command_id = Some next_command_id_2
@@ -226,7 +228,7 @@ let private handle_menu
     {
         command = Some command
         debug_data = menu_data_1.ToString ()
-        behavior = Wait_For_Callback {| continue_afterward = false |}
+        behavior = Wait_For_Callback { continue_afterward = false; add_to_history = true; autosave = true }
         components_used = Set.singleton Menu
         next_command_scene_id = current_scene_id
         next_command_id = next_command_id
@@ -243,13 +245,15 @@ let get_command_data
 
     | Command_Post_Parse_Type.Command command_3 -> handle_command runner_components scene_id   command.next_command_id command_3 menu_variables
 
+(* TODO1 We could have a function Command_Post_Parse_Type -> Runner_Command_Data. Its job is to translate Command_Behavior to Runner_Command_Data, and in the case of If/EndIf/Menu, which are not Commands but still have behaviors, to centralize the definitions of those behaviors.
+*)
     | Command_Post_Parse_Type.If command_4 -> handle_if scene_id command.next_command_id command_4 menu_variables
 
     | Command_Post_Parse_Type.End_If ->
         {
             command = None
             debug_data = "End_If"
-            behavior = Continue_Immediately
+            behavior = Continue_Immediately { autosave = false }
             components_used = Set.empty
             next_command_scene_id = scene_id
             next_command_id = command.next_command_id

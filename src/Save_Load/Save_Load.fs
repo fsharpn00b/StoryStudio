@@ -162,8 +162,7 @@ The caller must send the current game state, and we must take a screenshot, in c
                 member _.export_current_game_to_file (current_game_state : string) = export_current_game_to_file current_game_state 
                 member _.import_current_game_from_file () = import_current_game_from_file dispatch
                 member _.download_screenshot () : unit = download_screenshot_1 ()
-                member _.quicksave (current_game_state : string) = add_quicksave_or_autosave_to_storage_1 current_game_state Quicksave
-                member _.autosave (current_game_state : string) = add_quicksave_or_autosave_to_storage_1 current_game_state Autosave
+                member _.quicksave_or_autosave (current_game_state : string) (quicksave_or_autosave : Quicksave_Or_Autosave) = add_quicksave_or_autosave_to_storage_1 current_game_state quicksave_or_autosave
                 member _.hide () = dispatch <| Hide
                 member _.switch (action : Saved_Game_Action) = dispatch <| Switch action
                 member _.is_visible (): bool = match state_ref.current with | Visible _ -> true | Hidden -> false

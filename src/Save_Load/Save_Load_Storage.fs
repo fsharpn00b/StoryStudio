@@ -81,7 +81,7 @@ let get_saved_game_from_storage
     : JS.Promise<string> =
 
 (* This Promise is really just adding another layer with the same intent as onsuccess/onerror. However, it seems it is more idiomatic to return a Promise up the call stack until we reach a function that has a dispatch () function, such as view () or one of its helpers, than to pass the dispatch () function down the call stack.
-The demarcation between (1) the action we perform in the database and (2) its result can be represented by onsuccess/onerror, Promise, or dispatch ().
+The boundary between (1) the action we perform in the database and (2) its result can be represented by onsuccess/onerror, Promise, or dispatch ().
 *)
     Promise.create (fun resolve reject ->
         let request_1 = open_db ()

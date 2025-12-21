@@ -47,6 +47,7 @@ let get_initial_queue () : Command_Queue =
 (end)
 *)
         add_to_history = false
+        autosave = false
         menu_variables = Map.empty
     }
 
@@ -62,8 +63,8 @@ let private add_command_to_queue
 (* This function is called only by add_commands_to_queue ().
 add_commands_to_queue () checks that queue state is Queue_Idle or Queue_Loading.
 We set continue_after_finished and add_to_history in add_commands_to_queue () after we have added all commands.
+We set autosave here because it can be set by commands with either type of behavior, and once it is set to true, we need to retain that value until we have added all commands.
 *)
-
     {
         commands = queue_data.commands.Add (queue_data.next_command_data.next_command_queue_item_id, {
             command_data = command_data
@@ -79,17 +80,85 @@ We set continue_after_finished and add_to_history in add_commands_to_queue () af
             if Set.empty <> Set.intersect queue_data.components_used_by_commands command_data.components_used then
                 do warn "add_command_to_queue" false "Overlap between components used by command and components used by commands already in queue." ["Components used by commands already in queue", queue_data.components_used_by_commands; "command", command_data.debug_data; "Components used by command", command_data.components_used]
             Set.union queue_data.components_used_by_commands command_data.components_used
+        autosave =
+            queue_data.autosave ||
+                match command_data.behavior with
+                | Continue_Immediately data -> data.autosave
+                | Wait_For_Callback data -> data.autosave
         menu_variables = queue_data.menu_variables
     }
 
-let rec private add_commands_to_queue
+let private handle_no_more_commands 
+    (queue : IRefValue<Command_Queue>)
+    (queue_data : Command_Queue_State_Loading_Data)
+    : unit =
+
+(* If we have already loaded commands, get ready to run them. *)
+    if queue_data.commands.Count > 0 then
+        do queue.current <- Queue_Running {
+            commands = queue_data.commands
+            next_command_data = queue_data.next_command_data
+            components_used_by_commands = queue_data.components_used_by_commands
+(* After we run the currently loaded commands, the game is over, so these values should all be false, even if they might normally be true. *)
+            continue_after_finished = false
+            add_to_history = false
+            autosave = false
+            menu_variables = queue_data.menu_variables
+        }
+(* If we have not already loaded any commands, we are done. *)
+    else do queue.current <- Queue_Done
+
+let rec private handle_next_command
+    (queue : IRefValue<Command_Queue>)
+    (scenes : Scene_Map)
+    (runner_components : IRefValue<Runner_Components>)
+    (queue_data : Command_Queue_State_Loading_Data)
+    (next_command_id : int<command_id>)
+    : unit =
+
+(* Get the scene for the next command. *)
+        match scenes.TryFind queue_data.next_command_data.next_command_scene_id with
+
+        | None -> error "add_commands_to_queue" "Next command scene ID not found." ["next_command_scene_id", queue_data.next_command_data.next_command_scene_id; "scenes", scenes] |> invalidOp
+
+        | Some scene ->
+
+(* Get the next command from its scene using the command ID. *)
+            match scene.TryFind next_command_id with
+
+            | None -> error "add_commands_to_queue" "Next command ID not found in current scene." ["scene", queue_data.next_command_data.next_command_scene_id; "next_command_id", next_command_id] |> invalidOp
+
+            | Some command ->
+                let command_data = get_command_data queue_data.next_command_data.next_command_scene_id runner_components command queue_data.menu_variables
+                let queue_data_2 = add_command_to_queue queue_data command_data
+                match command_data.behavior with
+
+(* We keep adding commands to the queue until we reach a command with behavior Wait_For_Callback. *)
+                | Continue_Immediately _ ->
+                    do queue.current <- Queue_Loading queue_data_2
+                    add_commands_to_queue queue scenes runner_components
+
+(* Once we reach a command with behavior Wait_For_Callback, we do not add any more commands to the queue for now, and we set continue_after_finished and add_to_history to reflect the last command. *)
+                | Wait_For_Callback wait ->
+                    do queue.current <-
+                        Queue_Running {
+                            commands = queue_data_2.commands
+                            next_command_data = queue_data_2.next_command_data
+                            components_used_by_commands = queue_data_2.components_used_by_commands
+                            continue_after_finished = wait.continue_afterward
+                            add_to_history = wait.add_to_history
+                            autosave = queue_data_2.autosave || wait.autosave
+                            menu_variables = queue_data_2.menu_variables
+                        }
+
+and private add_commands_to_queue
     (queue : IRefValue<Command_Queue>)
     (scenes : Scene_Map)
     (runner_components : IRefValue<Runner_Components>)
     : unit =
 
 (* Change the queue state to Queue_Loading to protect it from other functions. *)
-    let queue_data_1 =
+    let queue_data =
         match queue.current with
         
         | Queue_Idle data ->
@@ -97,6 +166,8 @@ let rec private add_commands_to_queue
                 commands = Map.empty
                 next_command_data = data.next_command_data
                 components_used_by_commands = Set.empty
+(* A queue state of Queue_Idle means this is the first call to add_commands_to_queue (), not a recursive one, so we need to clear the autosave flag. *)
+                autosave = false
                 menu_variables = data.menu_variables
             }
 
@@ -105,69 +176,18 @@ let rec private add_commands_to_queue
 
         | _ -> error "add_commands_to_queue" "Unexpected queue state." ["Queue state", queue.current] |> invalidOp
 
-    let queue_state = Queue_Loading queue_data_1
+    let queue_state = Queue_Loading queue_data
     do queue.current <- queue_state
 
     #if debug
-    do debug "add_commands_to_queue" String.Empty ["next_command_id", queue_data_1.next_command_data.next_command_id]
+    do debug "add_commands_to_queue" String.Empty ["next_command_id", queue_data.next_command_data.next_command_id]
     #endif
 
 (* Get the next command ID. *)
-    match queue_data_1.next_command_data.next_command_id with
-
+    match queue_data.next_command_data.next_command_id with
 (* If there are no more commands to add to the queue... *)
-    | None ->
-
-(* If we have already loaded commands, run them. *)
-        if queue_data_1.commands.Count > 0 then
-            do queue.current <- Queue_Running {
-                commands = queue_data_1.commands
-                next_command_data = queue_data_1.next_command_data
-                components_used_by_commands = queue_data_1.components_used_by_commands
-                continue_after_finished = false
-                add_to_history = false
-                menu_variables = queue_data_1.menu_variables
-            }
-(* If we have not already loaded any commands, we are done. *)
-        else do queue.current <- Queue_Done
-
-    | Some next_command_id_2 ->
-
-(* Get the scene for the next command. *)
-        match scenes.TryFind queue_data_1.next_command_data.next_command_scene_id with
-
-        | None -> error "add_commands_to_queue" "Next command scene ID not found." ["next_command_scene_id", queue_data_1.next_command_data.next_command_scene_id; "scenes", scenes] |> invalidOp
-
-        | Some scene ->
-
-(* Get the next command from its scene using the command ID. *)
-            match scene.TryFind next_command_id_2 with
-
-            | None -> error "add_commands_to_queue" "Next command ID not found in current scene." ["scene", queue_data_1.next_command_data.next_command_scene_id; "next_command_id", next_command_id_2] |> invalidOp
-
-            | Some command ->
-
-                let command_data = get_command_data queue_data_1.next_command_data.next_command_scene_id runner_components command queue_data_1.menu_variables
-                let queue_data_2 = add_command_to_queue queue_data_1 command_data
-                match command_data.behavior with
-
-(* We keep adding commands to the queue until we reach a command with behavior Wait_For_Callback. *)
-                | Continue_Immediately ->
-                    do queue.current <- Queue_Loading queue_data_2
-                    add_commands_to_queue queue scenes runner_components
-
-(* Once we reach a command with behavior Wait_For_Callback, set continue_after_finished and add_to_history to reflect that command. *)
-                | Wait_For_Callback wait ->
-                    do queue.current <-
-                        Queue_Running {
-                            commands = queue_data_2.commands
-                            next_command_data = queue_data_2.next_command_data
-                            components_used_by_commands = queue_data_2.components_used_by_commands
-                            continue_after_finished = wait.continue_afterward
-(* Initially, we simply set add_to_history to the inverse of continue_after_finished. Later, if the player interrupts by showing the saved game screen or rolling back/forward, we set continue_after_finished to false, so we cannot determine the value of add_to_history later. *)
-                            add_to_history = not wait.continue_afterward
-                            menu_variables = queue_data_2.menu_variables
-                        }
+    | None -> handle_no_more_commands queue queue_data
+    | Some next_command_id_2 -> handle_next_command queue scenes runner_components queue_data next_command_id_2
 
 let private run_commands
     (queue : IRefValue<Command_Queue>)
@@ -197,13 +217,15 @@ If the last command has behavior Wait_For_Callback, remove_transition () removes
                 data.commands
                     |> Seq.sortBy (fun kv -> kv.Value.order_in_queue)
                     |> Seq.choose (fun kv ->
+
 (* Run the command. *)
                         match kv.Value.command_data.command with
                         | Some f -> f kv.Key
                         | None -> ()
+
 (* If the command does not wait for a transition to complete, remove it from the queue. *)
                         match kv.Value.command_data.behavior with
-                        | Continue_Immediately -> None
+                        | Continue_Immediately _ -> None
                         | _ -> Some (kv.Key, kv.Value)
                     )
                     |> Map.ofSeq
@@ -248,6 +270,7 @@ let run
 (* If there are no more commands, ignore. *)
     | Queue_Done -> ()
 
+// TODO1 Break this function up.
 let remove_transition
     (queue : IRefValue<Command_Queue>)
     (history : IRefValue<Runner_History>)
@@ -289,7 +312,7 @@ let remove_transition
 
                     command_2
 
-// TODO2 Consider break this function up here.
+// TODO1 Consider breaking this function up here.
             let commands =
 (* If the command queue item no longer contains any transitions, remove it. *)
                 if command_1.components_used_by_command.IsEmpty then data.commands.Remove command_queue_item_id
@@ -302,11 +325,17 @@ let remove_transition
                     Queue_Idle {
                         next_command_data = data.next_command_data
                         add_to_history = data.add_to_history
+                        autosave = data.autosave
                         menu_variables = data.menu_variables
                     }
 (* We typically add the current state to the undo/redo history when the queue state is Queue_Idle, which implies we are waiting for player input. *)
+(* TODO1 Potential issue. We entangle the queue emptying out with reaching a Wait_For_Callback command (whether continue_afterward is true/false does not matter). We further entangle certain behaviors, such as autosave and add to history, with the queue being empty and/or reaching a Wait_For_Callback command. This works for now but might not be flexible enough in the future. Think more on this.
+Also, it's confusing that this function (remove_transition) is basically the choke point. Once we break it up, maybe the part we move out can be a function called handle_choke_point ().
+*)
                 if data.add_to_history then
                     add_to_history history runner_components queue
+                if data.autosave then
+                    quicksave_or_autosave queue runner_components Save_Load_Types.Autosave
 (* Run the next command(s) if specified. *)
                 if data.continue_after_finished then
                     run queue scenes runner_components Handle_Queue_Empty

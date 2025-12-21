@@ -31,6 +31,16 @@ type Command =
     | JavaScript_Block of string
     | Jump of int<scene_id>
 
+type Wait_For_Callback_Behavior = {
+    continue_afterward : bool
+    add_to_history : bool
+    autosave : bool
+}
+
+type Continue_Immediately_Behavior = {
+    autosave : bool
+}
+
 (* Continue_Immediately or continue_afterward mean we can automatically progress to the next command after the current one runs. Wait_For_Callback means we need to wait until the current command finishes.
 
 For example:
@@ -44,9 +54,9 @@ JavaScript_Inline   true
 Continue_Immediately implies the command finishes immediately.
 *)
 type Command_Behavior =
-    | Wait_For_Callback of {| continue_afterward : bool |}
+    | Wait_For_Callback of Wait_For_Callback_Behavior
 // TODO2 We should also have an auto-play setting (say, continue after x seconds instead of immediately after finishing.) A setting of 0 could mean continue manually.
-    | Continue_Immediately
+    | Continue_Immediately of Continue_Immediately_Behavior
 
 type Command_Pre_Parse =
     | Command of Command

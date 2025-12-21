@@ -139,6 +139,7 @@ TODO2 Would simply constructing the Configuration component first fix this? Stil
 (* TODO1 Add music.
 - Add fade in/fade out/cross fade.
 
+- Need to save music as part of saved game state and play it on load.
 - Music stops if we refresh page.
 *)
 // TODO1 Need to see how well this renders on mobile.
@@ -260,7 +261,7 @@ This is less urgent now that we've split up Runner.fs.
             member _.download_screenshot () : unit =
                 download_screenshot_1 ()
             member _.quicksave () : unit =
-                quicksave queue runner_components
+                quicksave_or_autosave queue runner_components Quicksave
             member _.export_saved_games_from_storage_to_file () : unit = 
                 runner_components.current.save_load.current.export_saved_games_from_storage_to_file ()
             member _.import_saved_games_from_file_to_storage () : unit =
