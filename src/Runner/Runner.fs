@@ -269,7 +269,9 @@ This is less urgent now that we've split up Runner.fs.
             member _.export_current_game_to_file () : unit =
                 export_current_game_to_file queue runner_components
             member _.import_current_game_from_file () : unit =
-                runner_components.current.save_load.current.import_current_game_from_file ()
+                do force_complete_transitions runner_components queue true (fun () ->
+                    runner_components.current.save_load.current.import_current_game_from_file ()
+                )
             member _.undo () : unit =
 (* When the save/load or configuration screen is visible, we do not want to undo or redo. *)
                 if not <| runner_components.current.save_load.current.is_visible () &&

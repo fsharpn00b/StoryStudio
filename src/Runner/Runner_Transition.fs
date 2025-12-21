@@ -64,7 +64,7 @@ We can close over queue because it is a reference.
     fun (command_queue_item_id : int<command_queue_item_id>) ->
 (* If we do not delay here, and a transition is short enough, this notification can set the queue state to Queue_Idle *before* the transition sets it to Queue_Running. As a result, it is not possible to start any more transitions. *)
         do window.setTimeout ((fun () ->
-            do remove_transition queue history scenes runner_components command_queue_item_id component_id
+            do remove_transition_1 queue history scenes runner_components command_queue_item_id component_id
         ), int notify_transition_complete_delay_time) |> ignore
 
 (* notify_transition_complete is only called when a transition completes on its own, without being interrupted. *)

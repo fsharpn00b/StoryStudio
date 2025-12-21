@@ -98,6 +98,24 @@ To address the possible race condition, we had force_complete_transitions () rec
 4.5 force_complete_transitions () overwrites the queue state with Queue_Running.
 (end)
 *)
+(* 20251221 Where do we call Runner_State.get_state ()?
+1 Runner_State.add_to_history (). That is called in Runner_Queue.remove_transition_2 () after there are no remaining running commands and we have just set the queue state to Queue_Idle.
+2 Runner_State.quicksave_or_autosave (). We call force_complete_transitions () here.
+3 Runner_State.export_current_game_to_file (). We call force_complete_transitions () here.
+4 Runner_State.show_saved_game_screen (). We call force_complete_transitions () here.
+(end)
+
+x Check all calls to this and make sure the override_continue_after_finished parameter value is right. It is always set to true except for player interrupt. It looks right. It means that for player interrupt, we should go ahead and run the next command; for other events, listed below, we should not.
+x Where do we call Runner_State.force_complete_transitions ()?
+1 Runner_Queue.run () (Player interrupt)
+2 Runner_State.undo_redo ()
+3 Runner_State.show_saved_game_screen ()
+4 Runner_State.show_configuration_screen ()
+5 Runner_State.quicksave_or_autosave ()
+6 Runner_State.export_current_game_to_file ()
+7 Runner.import_current_game_from_file ()
+(end)
+*)
 let force_complete_transitions
     (runner_components : IRefValue<Runner_Components>)
     (queue : IRefValue<Command_Queue>)
@@ -385,18 +403,22 @@ let quicksave_or_autosave
     (quicksave_or_autosave : Quicksave_Or_Autosave)
     : unit =
 
-    let runner_state = get_state runner_components queue
-    let json = Encode.Auto.toString (0, runner_state)
-    do runner_components.current.save_load.current.quicksave_or_autosave json quicksave_or_autosave
+    do force_complete_transitions runner_components queue true (fun () ->
+        let runner_state = get_state runner_components queue
+        let json = Encode.Auto.toString (0, runner_state)
+        do runner_components.current.save_load.current.quicksave_or_autosave json quicksave_or_autosave
+    )
 
 let export_current_game_to_file
     (queue : IRefValue<Command_Queue>)
     (runner_components : IRefValue<Runner_Components>)
     : unit =
 
-    let runner_state = get_state runner_components queue
-    let json = Encode.Auto.toString (0, runner_state)
-    do runner_components.current.save_load.current.export_current_game_to_file json
+    do force_complete_transitions runner_components queue true (fun () ->
+        let runner_state = get_state runner_components queue
+        let json = Encode.Auto.toString (0, runner_state)
+        do runner_components.current.save_load.current.export_current_game_to_file json
+    )
 
 let show_saved_game_screen
     (queue : IRefValue<Command_Queue>)
