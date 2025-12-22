@@ -1,18 +1,16 @@
-module Runner_Helpers
+module Runner_Queue_Helpers
 
-// Environment.NewLine
+// DateTime, String
 open System
 
-// console
-open Browser.Dom
 // IRefValue
-open Feliz
+open Fable.React
 
-open Command_Types
 open Character_Types
-open Menu
+open Command_Types
 open JavaScript_Interop
 open Log
+open Menu
 open Runner_Types
 open Scripts
 open Units_Of_Measure
@@ -20,13 +18,13 @@ open Utilities
 
 (* Debug *)
 
-let debug_module_name = "Runner_Helpers"
+let debug_module_name = "Runner_Queue_Helpers"
 
 let private debug : log_function = debug debug_module_name
 let private warn : warn_function = warn debug_module_name
 let private error : error_function = error debug_module_name
 
-(* Functions *)
+(* Helpers *)
 
 let private command_to_behavior (command : Command) : Command_Behavior =
     match command with
@@ -71,16 +69,7 @@ let private command_to_component_ids (command : Command) : Runner_Component_Name
     | JavaScript_Block _
     | Jump _ -> Set.empty
 
-let component_id_to_component
-    (runner_components : IRefValue<Runner_Components>)
-    (component_id : Runner_Component_Names)
-    : I_Transitionable =
-
-    match component_id with
-    | Background -> runner_components.current.background.current :?> I_Transitionable
-    | Characters -> runner_components.current.characters.current :?> I_Transitionable
-    | Dialogue_Box -> runner_components.current.dialogue_box.current :?> I_Transitionable
-    | Menu -> runner_components.current.menu.current :?> I_Transitionable
+(* Main functions *)
 
 let private handle_command 
     (runner_components : IRefValue<Runner_Components>)
@@ -105,37 +94,37 @@ let private handle_command
             Some <| fun _ -> do runner_components.current.music.current.stop ()
 
         | Background_Fade_In command_2 ->
-            Some <| fun (command_queue_item_id : int<command_queue_item_id>) -> do runner_components.current.background.current.fade_in command_2.new_url command_2.transition_time command_queue_item_id
+            Some <| fun (command_queue_item_id : int<runner_queue_item_id>) -> do runner_components.current.background.current.fade_in command_2.new_url command_2.transition_time command_queue_item_id
 
         | Background_Fade_Out command_2 ->
-            Some <| fun (command_queue_item_id : int<command_queue_item_id>) -> do runner_components.current.background.current.fade_out command_2.transition_time command_queue_item_id
+            Some <| fun (command_queue_item_id : int<runner_queue_item_id>) -> do runner_components.current.background.current.fade_out command_2.transition_time command_queue_item_id
 
         | Background_Cross_Fade command_2 ->
-            Some <| fun (command_queue_item_id : int<command_queue_item_id>) -> do runner_components.current.background.current.cross_fade command_2.new_url command_2.transition_time command_queue_item_id
+            Some <| fun (command_queue_item_id : int<runner_queue_item_id>) -> do runner_components.current.background.current.cross_fade command_2.new_url command_2.transition_time command_queue_item_id
 
         | Character_Fade_In command_2 ->
-            Some <| fun (command_queue_item_id : int<command_queue_item_id>) -> do runner_components.current.characters.current.fade_in command_2.character_short_name command_2.url command_2.position command_2.transition_time command_queue_item_id
+            Some <| fun (command_queue_item_id : int<runner_queue_item_id>) -> do runner_components.current.characters.current.fade_in command_2.character_short_name command_2.url command_2.position command_2.transition_time command_queue_item_id
 
         | Character_Fade_Out command_2 ->
-            Some <| fun (command_queue_item_id : int<command_queue_item_id>) -> runner_components.current.characters.current.fade_out command_2.character_short_name command_2.transition_time command_queue_item_id
+            Some <| fun (command_queue_item_id : int<runner_queue_item_id>) -> runner_components.current.characters.current.fade_out command_2.character_short_name command_2.transition_time command_queue_item_id
 
         | Character_Cross_Fade command_2 ->
-            Some <| fun (command_queue_item_id : int<command_queue_item_id>) -> runner_components.current.characters.current.cross_fade command_2.character_short_name command_2.url command_2.transition_time command_queue_item_id
+            Some <| fun (command_queue_item_id : int<runner_queue_item_id>) -> runner_components.current.characters.current.cross_fade command_2.character_short_name command_2.url command_2.transition_time command_queue_item_id
 
         | Fade_Out_All transition_time ->
-            Some <| fun (command_queue_item_id : int<command_queue_item_id>) ->
+            Some <| fun (command_queue_item_id : int<runner_queue_item_id>) ->
                 runner_components.current.dialogue_box.current.hide true <| Some command_queue_item_id
                 runner_components.current.characters.current.fade_out_all transition_time command_queue_item_id
                 runner_components.current.background.current.fade_out transition_time command_queue_item_id
                 
         | Dialogue_Box_Show ->
-            Some <| fun (command_queue_item_id : int<command_queue_item_id>) -> runner_components.current.dialogue_box.current.show true <| Some command_queue_item_id
+            Some <| fun (command_queue_item_id : int<runner_queue_item_id>) -> runner_components.current.dialogue_box.current.show true <| Some command_queue_item_id
 
         | Dialogue_Box_Hide ->
-            Some <| fun (command_queue_item_id : int<command_queue_item_id>) -> runner_components.current.dialogue_box.current.hide true <| Some command_queue_item_id
+            Some <| fun (command_queue_item_id : int<runner_queue_item_id>) -> runner_components.current.dialogue_box.current.hide true <| Some command_queue_item_id
 
         | Dialogue command_2 ->
-            Some <| fun (command_queue_item_id : int<command_queue_item_id>) -> runner_components.current.dialogue_box.current.type_dialogue command_2.character_full_name (eval_js_string_with_menu_variables command_2.text menu_variables) command_queue_item_id
+            Some <| fun (command_queue_item_id : int<runner_queue_item_id>) -> runner_components.current.dialogue_box.current.type_dialogue command_2.character_full_name (eval_js_string_with_menu_variables command_2.text menu_variables) command_queue_item_id
 
         | JavaScript_Inline command_2 ->
             Some <| fun _ -> eval_js_with_menu_variables command_2 menu_variables |> ignore
@@ -208,7 +197,7 @@ let private handle_menu
     : Runner_Command_Data =
 
 (* TODO2 Consider using lazy everywhere we use fun () -> (delay). What is the difference if any? *)
-    let command = fun (command_queue_item_id : int<command_queue_item_id>) ->
+    let command = fun (command_queue_item_id : int<runner_queue_item_id>) ->
 
         let menu_data_2 = {
             menu_data_1 with

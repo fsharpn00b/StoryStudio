@@ -3,8 +3,7 @@ module Runner
 // String.Empty
 open System
 
-// console
-open Browser.Dom
+// IRefValue
 open Feliz
 
 open Background
@@ -15,15 +14,14 @@ open Dialogue_Box_Types
 open Log
 open Menu
 open Music
-open Runner_Helpers
+open Runner_Configuration
+open Runner_Notify
 open Runner_Queue
-open Runner_State
-open Runner_Transition
+open Runner_Save_Load
 open Runner_Types
+open Runner_UI
 open Save_Load
 open Save_Load_Types
-open Units_Of_Measure
-open Utilities
 
 (* Notes *)
 
@@ -79,24 +77,6 @@ let debug_module_name = "Runner"
 let private debug : log_function = debug debug_module_name
 let private warn : warn_function = warn debug_module_name
 let private error : error_function = error debug_module_name
-
-(* Configuration *)
-
-let private default_background_configuration : Background_Configuration = {
-    placeholder = ()
-}
-let private default_characters_configuration : Characters_Configuration = {
-    placeholder = ()
-}
-let private default_dialogue_box_configuration : Dialogue_Box_Configuration = {
-    typing_speed = 0<milliseconds>
-}
-
-let private default_configuration = {
-    background_configuration = default_background_configuration
-    characters_configuration = default_characters_configuration
-    dialogue_box_configuration = default_dialogue_box_configuration
-}
 
 (* Component *)
 
@@ -212,76 +192,28 @@ When you need to trigger events from [an embedded] Elmish component, use React p
             configuration_component_1
         }
 
-(*
-TODO2 We could separate out
-1 Hosting the individual components.
-2 Converting the DUs to component calls. However, that adds another interface layer between 1 and 2.
-3 Actually running the calls.
-
-This is less urgent now that we've split up Runner.fs.
-*)
-
 (* Interface *)
 
     React.useImperativeHandle(props.expose, fun () ->
         { new I_Runner with
-            member _.run (reason : Run_Reason) : unit =
-(* When a menu or the save/load screen or configuration screen is visible, we do not want to run the next command. We could simply ignore mouse clicks except for those handled by the menu or save/load screen or configuration, but this is safer, in case this method is called for some other reason. *)
-                if not <| runner_components.current.menu.current.is_visible () &&
-                    not <| runner_components.current.save_load.current.is_visible () &&
-                    not <| runner_components.current.configuration.current.is_visible () then
-// TODO1 After we save/load screen, show an overlay that says game paused; press click to continue. What about setting that in the dialogue box?
-(* We must determine what the next command is before we can run it. *)
-                    run queue scenes runner_components reason
-(* We do not use these for now. *)
-(*
-            member _.get_state () : Runner_Saveable_State =
-                get_state runner_components queue
-            member _.set_state (state : Runner_Saveable_State) =
-                set_state state queue runner_components
-*)
-            member _.show_configuration_screen () : unit =
-                show_configuration_screen queue runner_components
-            member _.hide_configuration_screen (): unit =
-                runner_components.current.configuration.current.hide ()
-            member _.handle_escape_key () : unit =
-                do
-                    if not <| runner_components.current.configuration.current.is_visible () &&
-                        not <| runner_components.current.save_load.current.is_visible () then
-                        runner_components.current.configuration.current.show ()
-                    else
-                        runner_components.current.save_load.current.hide ()
-                        runner_components.current.configuration.current.hide ()
+            member _.run (reason : Run_Reason) : unit = Runner_UI.run scenes queue runner_components reason
+            member _.show_configuration_screen () : unit = Runner_UI.show_configuration_screen queue runner_components
+            member _.hide_configuration_screen (): unit = Runner_UI.hide_configuration_screen runner_components
+            member _.handle_escape_key () : unit = Runner_UI.handle_escape_key runner_components
             member _.show_saved_game_screen (action : Saved_Game_Action) : unit =
-                show_saved_game_screen queue runner_components action
-            member _.hide_saved_game_screen () : unit =
-                hide_saved_game_screen runner_components
-            member _.show_or_hide_ui () : unit =
-                show_or_hide_ui runner_components
-            member _.download_screenshot () : unit =
-                download_screenshot_1 ()
-            member _.quicksave () : unit =
-                quicksave_or_autosave queue runner_components Quicksave
+                Runner_UI.show_saved_game_screen queue runner_components action
+            member _.hide_saved_game_screen () : unit = Runner_UI.hide_saved_game_screen runner_components
+            member _.show_or_hide_ui () : unit = Runner_UI.show_or_hide_ui runner_components
+            member _.download_screenshot () : unit = download_screenshot_1 ()
+            member _.quicksave () : unit = Runner_UI.quicksave queue runner_components
             member _.export_saved_games_from_storage_to_file () : unit = 
                 runner_components.current.save_load.current.export_saved_games_from_storage_to_file ()
             member _.import_saved_games_from_file_to_storage () : unit =
                 runner_components.current.save_load.current.import_saved_games_from_file_to_storage ()
-            member _.export_current_game_to_file () : unit =
-                export_current_game_to_file queue runner_components
-            member _.import_current_game_from_file () : unit =
-                do force_complete_transitions runner_components queue true (fun () ->
-                    runner_components.current.save_load.current.import_current_game_from_file ()
-                )
-            member _.undo () : unit =
-(* When the save/load or configuration screen is visible, we do not want to undo or redo. *)
-                if not <| runner_components.current.save_load.current.is_visible () &&
-                    not <| runner_components.current.configuration.current.is_visible () then
-                    undo_redo history queue runner_components true
-            member _.redo () : unit =
-(* When the save/load screen is visible, we do not want to undo or redo. *)
-                if not <| runner_components.current.save_load.current.is_visible () &&
-                    not <| runner_components.current.configuration.current.is_visible () then
-                    undo_redo history queue runner_components false
+            member _.export_current_game_to_file () : unit = Runner_UI.export_current_game_to_file queue runner_components
+            member _.import_current_game_from_file () : unit = Runner_Save_Load.import_current_game_from_file queue runner_components
+            member _.undo () : unit = Runner_UI.undo queue runner_components history
+            member _.redo () : unit = Runner_UI.redo queue runner_components history
 (* These are for debugging. *)
             member _.show_queue () : unit = do debug "show_queue" String.Empty ["queue", queue.current]
             member _.show_characters () : unit = do characters_2.current.get_character_data ()

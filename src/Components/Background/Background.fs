@@ -53,11 +53,11 @@ type Background_Cross_Fade_Data = {
 
 type I_Background =
 (* new_data, transition_time *)
-    abstract member fade_in : string -> Fade_Transition_Time -> int<command_queue_item_id> -> unit
+    abstract member fade_in : string -> Fade_Transition_Time -> int<runner_queue_item_id> -> unit
 (* transition_time *)
-    abstract member fade_out : Fade_Transition_Time -> int<command_queue_item_id> -> unit
+    abstract member fade_out : Fade_Transition_Time -> int<runner_queue_item_id> -> unit
 (* new_data, transition_time *)
-    abstract member cross_fade : string -> Fade_Transition_Time -> int<command_queue_item_id> -> unit
+    abstract member cross_fade : string -> Fade_Transition_Time -> int<runner_queue_item_id> -> unit
     abstract member get_state : unit -> Background_Saveable_State
     abstract member set_state : Background_Saveable_State -> unit
     abstract member set_configuration : Background_Configuration -> unit
@@ -237,7 +237,7 @@ let private set_configuration
 let Background
     (props : {| expose : IRefValue<I_Background> |},
     configuration : Background_Configuration,
-    notify_transition_complete : int<command_queue_item_id> -> unit)
+    notify_transition_complete : int<runner_queue_item_id> -> unit)
     : ReactElement =
 
 (* State *)
@@ -277,7 +277,7 @@ We would like fade_transition_timeout_function_handle to be internal to Fade, bu
                 member _.fade_in
                     (new_url : string)
                     (transition_time : Fade_Transition_Time)
-                    (command_queue_item_id : int<command_queue_item_id>) =
+                    (command_queue_item_id : int<runner_queue_item_id>) =
                     dispatch (Fade_In {
                         new_data = new_url
                         transition_time = transition_time
@@ -285,12 +285,12 @@ We would like fade_transition_timeout_function_handle to be internal to Fade, bu
                     })
                 member _.fade_out
                     (transition_time : Fade_Transition_Time)
-                    (command_queue_item_id : int<command_queue_item_id>) =
+                    (command_queue_item_id : int<runner_queue_item_id>) =
                     dispatch (Fade_Out {
                         transition_time = transition_time
                         command_queue_item_id = command_queue_item_id
                     })
-                member _.cross_fade (new_url : string) (transition_time : Fade_Transition_Time) (command_queue_item_id : int<command_queue_item_id>) =
+                member _.cross_fade (new_url : string) (transition_time : Fade_Transition_Time) (command_queue_item_id : int<runner_queue_item_id>) =
                     dispatch (Cross_Fade {
                         new_data = new_url
                         transition_time = transition_time

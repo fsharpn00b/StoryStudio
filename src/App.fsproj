@@ -40,13 +40,19 @@
     <Compile Include="Parser/Parser_2_Helpers.fs" />
     <Compile Include="Parser/Parser_2.fs" />
     <Compile Include="Runner/Runner_Types.fs" />
-    <Compile Include="Runner/Runner_Helpers.fs" />
-    <Compile Include="Runner/Runner_State.fs" />
-    <Compile Include="Runner/Runner_Queue.fs" />
     <Compile Include="Runner/Runner_Transition.fs" />
-    <Compile Include="Runner/Runner.fs" />
+    <Compile Include="Runner/Runner_State.fs" />
+    <Compile Include="Runner/Runner_History.fs" />
+    <Compile Include="Runner/Runner_Configuration.fs" />
+    <Compile Include="Runner/Runner_Save_Load.fs" />
+    <Compile Include="Runner/Runner_Queue_Helpers.fs" />
+    <Compile Include="Runner/Runner_Queue.fs" />
+    <Compile Include="Runner/Runner_Queue_Transition.fs" />
+    <Compile Include="Runner/Runner_Notify.fs" />
     <Compile Include="Runner/Runner_UI.fs" />
+    <Compile Include="Runner/Runner.fs" />
     <Compile Include="Runner/Main.fs" />
+    
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Fable.Browser.Navigator" Version="2.5.0" />

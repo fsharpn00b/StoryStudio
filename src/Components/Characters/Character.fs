@@ -47,7 +47,7 @@ let private fade_in
     (position : int<percent>)
     (height : IRefValue<int<percent>>)
     (transition_time : Fade_Transition_Time)
-    (command_queue_item_id : int<command_queue_item_id>)
+    (command_queue_item_id : int<runner_queue_item_id>)
     : unit =
 
     #if debug
@@ -68,7 +68,7 @@ let private fade_out
     (dispatch : Fade_Message<Visible_Character_Data> -> unit)
     (character_full_name : string)
     (transition_time : Fade_Transition_Time)
-    (command_queue_item_id : int<command_queue_item_id>)
+    (command_queue_item_id : int<runner_queue_item_id>)
     : unit =
 
     #if debug
@@ -87,7 +87,7 @@ let private cross_fade
     (url : string)
     (height : IRefValue<int<percent>>)
     (transition_time : Fade_Transition_Time)
-    (command_queue_item_id : int<command_queue_item_id>)
+    (command_queue_item_id : int<runner_queue_item_id>)
     : unit =
 
     #if debug
@@ -148,7 +148,7 @@ let Character
     (props : {| expose : IRefValue<I_Character> |},
     character : Character_Input,
     character_id : int<character_id>,
-    notify_transition_complete : int<command_queue_item_id> -> unit)
+    notify_transition_complete : int<runner_queue_item_id> -> unit)
     : ReactElement =
 
 (* State *)
@@ -171,18 +171,18 @@ Height is set in the character definition file and not changed afterward. It is 
                     (url : string)
                     (position : int<percent>)
                     (transition_time : Fade_Transition_Time)
-                    (command_queue_item_id : int<command_queue_item_id>)
+                    (command_queue_item_id : int<runner_queue_item_id>)
                     : unit =
                     fade_in dispatch character.full_name url position height transition_time command_queue_item_id
                 member _.fade_out
                     (transition_time : Fade_Transition_Time)
-                    (command_queue_item_id : int<command_queue_item_id>)
+                    (command_queue_item_id : int<runner_queue_item_id>)
                     : unit =
                     fade_out dispatch character.full_name transition_time command_queue_item_id
                 member _.cross_fade
                     (url : string)
                     (transition_time : Fade_Transition_Time)
-                    (command_queue_item_id : int<command_queue_item_id>)
+                    (command_queue_item_id : int<runner_queue_item_id>)
                     : unit =
                     cross_fade dispatch fade_state_ref character.full_name url height transition_time command_queue_item_id
                 member _.get_state () : Character_Saveable_State = get_state fade_state_ref

@@ -31,12 +31,12 @@ type Menu_Data = {
 type Show_Menu_Data = {
     data : Menu_Data
     is_notify_transition_complete : bool
-    command_queue_item_id : int<command_queue_item_id> option
+    command_queue_item_id : int<runner_queue_item_id> option
 }
 
 type Hide_Menu_Data = {
     is_notify_transition_complete : bool
-    command_queue_item_id : int<command_queue_item_id> option
+    command_queue_item_id : int<runner_queue_item_id> option
 }
 
 type Menu_Item_Selected_Data = {
@@ -47,7 +47,7 @@ type Menu_Item_Selected_Data = {
 type Menu_Message =
     | Show of Show_Menu_Data
     | Hide of Hide_Menu_Data
-    | Notify_Transition_Complete of int<command_queue_item_id>
+    | Notify_Transition_Complete of int<runner_queue_item_id>
     | Menu_Item_Selected of Menu_Item_Selected_Data
 
 type Menu_Saveable_State =
@@ -57,8 +57,8 @@ type Menu_Saveable_State =
 (* Interfaces *)
 
 type I_Menu =
-    abstract member show : Menu_Data -> bool -> int<command_queue_item_id> option -> unit
-    abstract member hide : bool -> int<command_queue_item_id> option -> unit
+    abstract member show : Menu_Data -> bool -> int<runner_queue_item_id> option -> unit
+    abstract member hide : bool -> int<runner_queue_item_id> option -> unit
     abstract member is_visible : unit -> bool
     abstract member get_state : unit -> Menu_Saveable_State
     abstract member set_state : Menu_Saveable_State -> unit
@@ -136,7 +136,7 @@ let private set_state
     | Hidden -> dispatch <| Hide { is_notify_transition_complete = false; command_queue_item_id = None }
 
 let private update
-    (notify_transition_complete : int<command_queue_item_id> -> unit)
+    (notify_transition_complete : int<runner_queue_item_id> -> unit)
     (notify_menu_selection : string -> int -> unit)
     (menu_data : IRefValue<Menu_Data option>)
     (message : Menu_Message)
@@ -178,7 +178,7 @@ We now always delay in Runner_Transition.get_notify_transition_complete (). See 
 
 We can only get away with not delaying notification, when determining whether to run the next command, because Runner_Run.wait_for_commands_to_run () waits on a specific state value for each component (namely Idle).
 *)
-    | Notify_Transition_Complete (command_queue_item_id : int<command_queue_item_id>) ->
+    | Notify_Transition_Complete (command_queue_item_id : int<runner_queue_item_id>) ->
         do notify_transition_complete command_queue_item_id
         is_visible, Cmd.none
 
@@ -193,7 +193,7 @@ We can only get away with not delaying notification, when determining whether to
 [<ReactComponent>]
 let Menu
     (props : {| expose : IRefValue<I_Menu> |},
-    notify_transition_complete : int<command_queue_item_id> -> unit,
+    notify_transition_complete : int<runner_queue_item_id> -> unit,
     notify_menu_selection : string -> int -> unit)
     : ReactElement =
 
@@ -208,7 +208,7 @@ let Menu
                 member _.show
                     (menu_data_2 : Menu_Data)
                     (is_notify_transition_complete : bool)
-                    (command_queue_item_id_2 : int<command_queue_item_id> option)
+                    (command_queue_item_id_2 : int<runner_queue_item_id> option)
                     : unit =
 
                     dispatch <| Show {
@@ -218,7 +218,7 @@ let Menu
                     }
                 member _.hide
                     (is_notify_transition_complete : bool)
-                    (command_queue_item_id_2 : int<command_queue_item_id> option)
+                    (command_queue_item_id_2 : int<runner_queue_item_id> option)
                     : unit =
 
                     dispatch <| Hide {

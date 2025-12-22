@@ -1,5 +1,6 @@
 module Runner_Types
 
+// IRefValue
 open Feliz
 
 open Background
@@ -46,7 +47,7 @@ type Runner_Saveable_State_Component_Data = {
 }
 
 type Runner_Saveable_State_Running_Data = {
-    next_command_queue_item_id : int<command_queue_item_id>
+    next_command_queue_item_id : int<runner_queue_item_id>
     scene_id : int<scene_id>
     next_command_id : int<command_id> option
 (* We clear the history when we load a saved game. This determines whether, when we load a saved game, we re-add the current state to the history. *)
@@ -70,7 +71,7 @@ type Runner_History = {
 }
 
 type Runner_Command_Data = {
-    command : (int<command_queue_item_id> -> unit) option
+    command : (int<runner_queue_item_id> -> unit) option
     debug_data : string
     behavior : Command_Behavior
     components_used : Runner_Component_Names Set
@@ -78,20 +79,20 @@ type Runner_Command_Data = {
     next_command_id : int<command_id> option
 }
 
-type Command_Queue_Item = {
+type Runner_Queue_Item = {
     command_data : Runner_Command_Data
-    order_in_queue : int<command_queue_order>
+    order_in_queue : int<runner_queue_order>
     components_used_by_command : Runner_Component_Names Set
 }
 
-type Command_Queue_Next_Command_Data = {
-    next_command_queue_item_id : int<command_queue_item_id>
+type Runner_Queue_Next_Command_Data = {
+    next_command_queue_item_id : int<runner_queue_item_id>
     next_command_scene_id : int<scene_id>
     next_command_id : int<command_id> option
 }
 
-type Command_Queue_State_Idle_Data = {
-    next_command_data : Command_Queue_Next_Command_Data
+type Runner_Queue_State_Idle_Data = {
+    next_command_data : Runner_Queue_Next_Command_Data
 (* See notes in Command_Queue_State_Running_Data. *)
     add_to_history : bool
     autosave : bool
@@ -102,20 +103,20 @@ See also notes in Runner_Transition.get_notify_menu_selection ().
     menu_variables : Menu_Variables
 }
 
-type Command_Queue_Command_Map = Map<int<command_queue_item_id>, Command_Queue_Item>
+type Runner_Queue_Command_Map = Map<int<runner_queue_item_id>, Runner_Queue_Item>
 
-type Command_Queue_State_Loading_Data = {
-    commands : Command_Queue_Command_Map
-    next_command_data : Command_Queue_Next_Command_Data
+type Runner_Queue_State_Loading_Data = {
+    commands : Runner_Queue_Command_Map
+    next_command_data : Runner_Queue_Next_Command_Data
     components_used_by_commands : Runner_Component_Names Set
 (* See notes in Command_Queue_State_Running_Data. *)
     autosave : bool
     menu_variables : Menu_Variables
 }
 
-type Command_Queue_State_Running_Data = {
-    commands : Command_Queue_Command_Map
-    next_command_data : Command_Queue_Next_Command_Data
+type Runner_Queue_State_Running_Data = {
+    commands : Runner_Queue_Command_Map
+    next_command_data : Runner_Queue_Next_Command_Data
     components_used_by_commands : Runner_Component_Names Set
     continue_after_finished : bool
 (* This determines whether, after we run the last command in the queue, we add the current state to the history. We initially set it to the inverse of continue_after_finished. We do not simply use continue_after_finished because we might need to set that to false to halt running commands if the player opens the save/load game screen or rolls back/forward. *)
@@ -126,22 +127,17 @@ type Command_Queue_State_Running_Data = {
 }
 
 // TODO2 This item originally applied to Command_State. We might need another state, Paused (meaning we are waiting for user input). See also the items in Runner_Transition.notify_transition_complete () and Runner_Run.get_next_command (). For now we do not think this would be useful. Command_State is used to carry information between the various Runner_Run functions, but it does not really track state or determine behavior.
-type Command_Queue =
-    | Queue_Idle of Command_Queue_State_Idle_Data
-    | Queue_Loading of Command_Queue_State_Loading_Data
-    | Queue_Running of Command_Queue_State_Running_Data
-    | Queue_Interrupting of Command_Queue_State_Running_Data
+type Runner_Queue =
+    | Queue_Idle of Runner_Queue_State_Idle_Data
+    | Queue_Loading of Runner_Queue_State_Loading_Data
+    | Queue_Running of Runner_Queue_State_Running_Data
+    | Queue_Interrupting of Runner_Queue_State_Running_Data
     | Queue_Done
 
 (* Interfaces *)
 
 type I_Runner =
     abstract member run : Run_Reason -> unit
-(* We do not use these for now. *)
-(*
-    abstract member get_state : unit -> Runner_Saveable_State
-    abstract member set_state : Runner_Saveable_State -> unit
-*)
     abstract member show_configuration_screen : unit -> unit
     abstract member hide_configuration_screen : unit -> unit
     abstract member handle_escape_key : unit -> unit

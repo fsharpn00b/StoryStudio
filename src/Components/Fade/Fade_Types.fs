@@ -12,19 +12,19 @@ type Cross_Fade_Transition_State_Data<'T> = {
     old_data : 'T
     new_data : 'T
     transition_time : Fade_Transition_Time
-    command_queue_item_id : int<command_queue_item_id>
+    command_queue_item_id : int<runner_queue_item_id>
 }
 
 type Fade_In_Transition_State_Data<'T> = {
     new_data : 'T
     transition_time : Fade_Transition_Time
-    command_queue_item_id : int<command_queue_item_id>
+    command_queue_item_id : int<runner_queue_item_id>
 }
 
 type Fade_Out_Transition_State_Data<'T> = {
     old_data : 'T
     transition_time : Fade_Transition_Time
-    command_queue_item_id : int<command_queue_item_id>
+    command_queue_item_id : int<runner_queue_item_id>
 }
 
 type Fade_State<'T> =
@@ -40,31 +40,31 @@ type Fade_State<'T> =
 type Fade_In_Message_Data<'T> = {
     new_data : 'T
     transition_time : Fade_Transition_Time
-    command_queue_item_id : int<command_queue_item_id>
+    command_queue_item_id : int<runner_queue_item_id>
 }
 
 (* We get old_data from Idle_Visible. *)
 type Fade_Out_Message_Data = {
     transition_time : Fade_Transition_Time
-    command_queue_item_id : int<command_queue_item_id>
+    command_queue_item_id : int<runner_queue_item_id>
 }
 
 (* We get old_data from Idle_Visible. *)
 type Cross_Fade_Message_Data<'T> = {
     new_data : 'T
     transition_time : Fade_Transition_Time
-    command_queue_item_id : int<command_queue_item_id>
+    command_queue_item_id : int<runner_queue_item_id>
 }
 
 type Show_Message_Data<'T> = {
     data : 'T
     is_notify_transition_complete : bool
-    command_queue_item_id : int<command_queue_item_id> option
+    command_queue_item_id : int<runner_queue_item_id> option
 }
 
 type Hide_Message_Data<'T> = {
     is_notify_transition_complete : bool
-    command_queue_item_id : int<command_queue_item_id> option
+    command_queue_item_id : int<runner_queue_item_id> option
 }
 
 type Fade_Message<'T> =
@@ -75,4 +75,4 @@ type Fade_Message<'T> =
     | Cross_Fade of Cross_Fade_Message_Data<'T>
     | Begin_Fade_Transition
     | Complete_Fade_Transition
-    | Notify_Transition_Complete of int<command_queue_item_id>
+    | Notify_Transition_Complete of int<runner_queue_item_id>

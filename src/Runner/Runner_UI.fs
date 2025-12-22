@@ -1,110 +1,195 @@
 module Runner_UI
 
-// String
+// String.Empty
 open System
 
-open Browser.Dom
-// Event, KeyboardEvent, WheelEvent
+// Event, KeyboardEvent
 open Browser.Types
+// IRefValue
 open Feliz
 
-// TODO2 Alternate way to apply CSS.
-//open Fable.Core.JsInterop
-//importSideEffects "./0_pages/menu.css"
-
-open Background
-open Character_Types
-open Dialogue_Box_Types
-open Log
+open Command_Types
 open JavaScript_Interop
 open JavaScript_Parser
-open Parser_2
-open Runner
+open Log
+open Runner_History
+open Runner_Queue
+open Runner_Save_Load
+open Runner_Transition
 open Runner_Types
 open Save_Load_Types
-open Scripts
-open Units_Of_Measure
 
 (* Debug *)
 
-let debug_module_name = "Parser"
+let debug_module_name = "Runner_UI"
 
 let private debug : log_function = debug debug_module_name
 let private warn : warn_function = warn debug_module_name
 let private error : error_function = error debug_module_name
 
-(* Set up *)
+let get_menu_variables
+    (queue : IRefValue<Runner_Queue>)
+    : Menu_Variables =
 
-(* TODO2 Move to separate file like Runner_Set_Up.fs?
-- Eventually we might rename this component from Runner_Test to simply Main, since it seems to drive the program at this point.
-*)
+    match queue.current with
+    | Queue_Idle data -> data.menu_variables
+    | Queue_Loading data -> data.menu_variables
+    | Queue_Running data
+    | Queue_Interrupting data -> data.menu_variables
+    | Queue_Done -> Map.empty
 
-let character_inputs= get_character_inputs ()
-let scenes = get_scene_map_and_javascript (get_scripts ()) (get_backgrounds ()) character_inputs
+(* I_Runner implementation *)
 
-(* Component *)
+(* These functions centralize the logic of showing/hiding UI elements as needed before proceeding. *)
 
-[<ReactComponent>]
-let Runner_Test () : ReactElement =
+let run
+    (scenes : Scene_Map)
+    (queue : IRefValue<Runner_Queue>)
+    (runner_components : IRefValue<Runner_Components>)
+    (reason : Run_Reason)
+    : unit =
 
-    let history = React.useRef<Runner_History> {
-        current_index = None
-        history = []
-    }
-    let runner_2 = React.useRef<I_Runner> Unchecked.defaultof<_>
+(* When a menu or the save/load screen or configuration screen is visible, we do not want to run the next command. We could simply ignore mouse clicks except for those handled by the menu or save/load screen or configuration, but this is safer, in case this method is called for some other reason. *)
+    if not <| runner_components.current.menu.current.is_visible () &&
+        not <| runner_components.current.save_load.current.is_visible () &&
+        not <| runner_components.current.configuration.current.is_visible () then
+// TODO1 After we save/load screen, show an overlay that says game paused; press click to continue. What about setting that in the dialogue box?
+(* We must determine what the next command is before we can run it. *)
+        do run queue scenes runner_components reason
 
-    do React.useEffectOnce(fun () ->
-        do runner_2.current.run Initial_Run
+let show_configuration_screen
+    (queue : IRefValue<Runner_Queue>)
+    (runner_components : IRefValue<Runner_Components>)
+    : unit =
+(* The save/load and configuration screens cannot be open at the same time. *)
+    if runner_components.current.save_load.current.is_visible () then
+        do runner_components.current.save_load.current.hide ()
+    do force_complete_transitions runner_components queue true (fun () ->
+        do runner_components.current.configuration.current.show ()
+    )
 
-(* TODO2 Need to write test suite for parser. Which is what this should be. The code in here with the component etc should be in a file called Runner_Test.
-- Need to add an exe or test project for testing non-UI-component modules.
-*)
-        window.addEventListener ("click", fun _ ->
-            do runner_2.current.run Player_Run
-        )
+let hide_configuration_screen
+    (runner_components : IRefValue<Runner_Components>)
+    : unit =
+    do runner_components.current.configuration.current.hide ()
 
-        window.addEventListener ("wheel", (fun (event_1 : Event) ->
-            let event_2 = event_1 :?> WheelEvent
+let handle_escape_key
+    (runner_components : IRefValue<Runner_Components>)
+    : unit =
+    do
+        if runner_components.current.configuration.current.is_visible () then
+            runner_components.current.configuration.current.hide ()
+        elif runner_components.current.save_load.current.is_visible () then
+            runner_components.current.save_load.current.hide ()
+        else
+            runner_components.current.configuration.current.show ()
 
-(* TODO2 Make mouse wheel scroll event more responsive. Unfortunately, this seems to be caused by the browser and we cannot find a way to configure it. *)
-            #if debug
-            do debug "wheel event handler" String.Empty ["Delta Y", event_2.deltaY]
-            #endif
+let show_saved_game_screen
+    (queue : IRefValue<Runner_Queue>)
+    (runner_components : IRefValue<Runner_Components>)
+    (action : Saved_Game_Action)
+    : unit =
+    do
+        if runner_components.current.save_load.current.is_visible () then
+            runner_components.current.save_load.current.switch action
+        else
+(* The save/load and configuration screens cannot be open at the same time. *)
+            if runner_components.current.configuration.current.is_visible () then
+                runner_components.current.configuration.current.hide ()
+            show_saved_game_screen queue runner_components action
 
-            if event_2.deltaY < 0 then do runner_2.current.undo ()
-            elif event_2.deltaY > 0 then do runner_2.current.redo ()
-        ))
+let hide_saved_game_screen
+    (runner_components : IRefValue<Runner_Components>)
+    : unit =
+    if runner_components.current.save_load.current.is_visible () then
+        do runner_components.current.save_load.current.hide ()
 
-        window.addEventListener ("keydown", fun (event_1 : Event) ->
-            let event_2 = event_1 :?> KeyboardEvent
-            match event_2.key with
+let show_or_hide_ui
+    (runner_components : IRefValue<Runner_Components>)
+    : unit =
+(* We do not request notification when the transition completes, or provide a command queue item ID, because this is an internal command. *)
+    do
+        if runner_components.current.dialogue_box.current.is_visible () then runner_components.current.dialogue_box.current.hide false None
+        else runner_components.current.dialogue_box.current.show false None
+
+let quicksave
+    (queue : IRefValue<Runner_Queue>)
+    (runner_components : IRefValue<Runner_Components>)
+    : unit =
+(* If the save/load or configuration screen is visible, hide it so we can get an accurate screenshot of the player's game. *)
+    do
+        if runner_components.current.save_load.current.is_visible () then
+            runner_components.current.save_load.current.hide ()
+        elif runner_components.current.configuration.current.is_visible () then
+            runner_components.current.configuration.current.hide ()
+        quicksave_or_autosave queue runner_components Quicksave
+
+let export_current_game_to_file
+    (queue : IRefValue<Runner_Queue>)
+    (runner_components : IRefValue<Runner_Components>)
+    : unit =
+(* If the save/load or configuration screen is visible, hide it so we can get an accurate screenshot of the player's game. *)
+    do
+        if runner_components.current.save_load.current.is_visible () then
+            runner_components.current.save_load.current.hide ()
+        elif runner_components.current.configuration.current.is_visible () then
+            runner_components.current.configuration.current.hide ()
+        export_current_game_to_file queue runner_components
+
+let undo
+    (queue : IRefValue<Runner_Queue>)
+    (runner_components : IRefValue<Runner_Components>)
+    (history : IRefValue<Runner_History>)
+    : unit =
+(* When the save/load or configuration screen is visible, we do not want to undo or redo. *)
+    if not <| runner_components.current.save_load.current.is_visible () &&
+        not <| runner_components.current.configuration.current.is_visible () then
+        do undo_redo history queue runner_components true
+
+let redo
+    (queue : IRefValue<Runner_Queue>)
+    (runner_components : IRefValue<Runner_Components>)
+    (history : IRefValue<Runner_History>)
+    : unit =
+(* When the save/load or configuration screen is visible, we do not want to undo or redo. *)
+    if not <| runner_components.current.save_load.current.is_visible () &&
+        not <| runner_components.current.configuration.current.is_visible () then
+        do undo_redo history queue runner_components false
+
+(* Event handlers *)
+
+let handle_key_down
+    (scenes : Scene_Map)
+    (runner : IRefValue<I_Runner>)
+    (event : Event)
+    : unit =
+
+    let event_2 = event :?> KeyboardEvent
+    match event_2.key with
 // TODO1 Replace these with consts or configuration values.
-// TODO1 Might need to disable inappropriate keys when saved game or configuration screen is visible. We do handle these cases in runner state? Verify.
-            | "s" -> runner_2.current.show_saved_game_screen Save_Game
-            | "l" -> runner_2.current.show_saved_game_screen Load_Game
-            | "d" -> runner_2.current.show_saved_game_screen Delete_Game
-            | "Escape" -> runner_2.current.handle_escape_key ()
-            | "q" -> runner_2.current.quicksave ()
-// TODO1 These import/export funcs should probably dismiss the configuration screen if it's visible.
-            | "e" -> runner_2.current.export_saved_games_from_storage_to_file ()
-            | "i" -> runner_2.current.import_saved_games_from_file_to_storage ()
-// TODO1 These import/export funcs should probably dismiss the configuration screen and/or saved game screen if they are visible.
-            | Save_Load_Types.export_current_game_key -> runner_2.current.export_current_game_to_file ()
-            | "f" -> runner_2.current.import_current_game_from_file ()
-            | "c" -> runner_2.current.show_configuration_screen ()
-            | "g" -> runner_2.current.download_screenshot ()
-            | "u" -> runner_2.current.show_or_hide_ui ()
-            | _ -> ()
+// TODO1 Might need to disable/ignore inappropriate keys when saved game or configuration screen is visible. Check Runner_UI.
+    | "s" -> runner.current.show_saved_game_screen Save_Game
+    | "l" -> runner.current.show_saved_game_screen Load_Game
+    | "d" -> runner.current.show_saved_game_screen Delete_Game
+    | "Escape" -> runner.current.handle_escape_key ()
+    | "q" -> runner.current.quicksave ()
+    | "e" -> runner.current.export_saved_games_from_storage_to_file ()
+    | "i" -> runner.current.import_saved_games_from_file_to_storage ()
+    | Save_Load_Types.export_current_game_key -> runner.current.export_current_game_to_file ()
+    | "f" -> runner.current.import_current_game_from_file ()
+    | "c" -> runner.current.show_configuration_screen ()
+    | "g" -> runner.current.download_screenshot ()
+    | "u" -> runner.current.show_or_hide_ui ()
+    | _ -> ()
 (* These are for debugging.
 TODO1 Also add key handlers for
 - h help
-- q quicksave
 (end)
 *)
-            match event_2.key with
-            | "Q" -> runner_2.current.show_queue ()
-            | "C" -> runner_2.current.show_characters ()
-            | "B" -> runner_2.current.show_background ()
+    match event_2.key with
+    | "Q" -> runner.current.show_queue ()
+    | "C" -> runner.current.show_characters ()
+    | "B" -> runner.current.show_background ()
 (* After dumping the JavaScript to the browser console, copy it to a .ts file and run
 npx tsc --noEmit --strict <file>
 (end)
@@ -113,27 +198,8 @@ npm install typescript --save-dev
 (end)
 The --save-dev means you are installing the package only for dev purposes, not to be deployed with the application.
 *)
-            | "J" -> scenes |> check_javascript
-            | "T" ->
-                show_js_state ()
-                runner_2.current.show_menu_variables ()
-            | _ -> ()
-        )
-    )
-
-    let runner_1 =
-        Runner {| expose = runner_2 |} history character_inputs scenes
-
-    runner_1
-
-(* Parser transforms DSL commands into DU commands.
-Runner transforms DU commands into UI component function calls.
-
-We cannot translate DSL commands directly to UI component function calls because:
-- Some DSL commands, such as conditionals, will not become UI component function calls at all.
-- We need to extract information from DU commands for other reasons, such as transition time, for auto-advancing to the next command.
-
-We considered having the author write the entire script in JavaScript. We can emit F# functions so they can be called from JavaScript. However, that has the following problems.
-- We need to save the state before and after each command. We could do this by intercepting all F# function calls, but that would be complex. 
-- We lose our DSL (for example, laura This is some dialogue.)
-*)
+    | "J" -> scenes |> check_javascript
+    | "T" ->
+        show_js_state ()
+        runner.current.show_menu_variables ()
+    | _ -> ()

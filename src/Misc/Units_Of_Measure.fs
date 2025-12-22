@@ -7,9 +7,10 @@ module Units_Of_Measure
 [<Measure>] type seconds
 
 [<Measure>] type scene_id
+(* This refers to the ID we assign to each command as we read in each script. Command types (Fade_In_Background, Dialogue, and so on) do not have IDs. *)
 [<Measure>] type command_id
-[<Measure>] type command_queue_item_id
-[<Measure>] type command_queue_order
+[<Measure>] type runner_queue_item_id
+[<Measure>] type runner_queue_order
 [<Measure>] type character_id
 
 [<Measure>] type saved_game_id

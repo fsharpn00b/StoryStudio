@@ -263,7 +263,7 @@ But then we would have to:
 let update
     (configuration : Fade_Configuration)
     (transition_timeout_function_handle : IRefValue<float option>)
-    (notify_transition_complete : int<command_queue_item_id> -> unit)
+    (notify_transition_complete : int<runner_queue_item_id> -> unit)
     (message : Fade_Message<'T>)
     (state : Fade_State<'T>)
     : Fade_State<'T> * Cmd<Fade_Message<'T>> =
