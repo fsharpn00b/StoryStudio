@@ -3,6 +3,11 @@ module Save_Load_Types
 // DateTime
 open System
 
+// window
+open Browser
+// ? operator
+open Fable.Core.JsInterop
+
 open Units_Of_Measure
 
 (* Types - public *)
@@ -98,5 +103,11 @@ let screenshot_encoder_options = 0.7
 [<Literal>]
 let export_current_game_key = "x"
 let warn_recommendation = $"To avoid data loss, recommend exporting current game by pressing '{export_current_game_key}' key."
+let is_indexeddb_supported =
+    let inline exists (name : string) = not (isNull (window?(name)))
+    exists "indexedDB"
+    || exists "mozIndexedDB"
+    || exists "webkitIndexedDB"
+    || exists "msIndexedDB"
 
 let initial_state = Hidden

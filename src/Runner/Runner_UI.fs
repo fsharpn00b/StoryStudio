@@ -167,7 +167,7 @@ let handle_key_down
     let event_2 = event :?> KeyboardEvent
     match event_2.key with
 // TODO1 Replace these with consts or configuration values.
-// TODO1 Might need to disable/ignore inappropriate keys when saved game or configuration screen is visible. Check Runner_UI.
+// TODO1 Check Runner_UI and verify we ignore inappropriate inputs (mouse click, mouse wheel scroll, and key press) when saved game or configuration screen is visible. Make a list and put it there.
     | "s" -> runner.current.show_saved_game_screen Save_Game
     | "l" -> runner.current.show_saved_game_screen Load_Game
     | "d" -> runner.current.show_saved_game_screen Delete_Game

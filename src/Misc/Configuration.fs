@@ -5,18 +5,9 @@ open System
 
 // navigator, Types
 open Browser
-(* TODO2 For some reason we do not need to import this for now. *)
-// document, window
-open Browser.Dom
 // a, Element, HTMLCanvasElement
 open Browser.Types
-// localStorage
-open Browser.WebStorage
 open Elmish
-// Import, jsNative
-open Fable.Core
-// ? operator
-open Fable.Core.JsInterop
 open Feliz
 open Feliz.UseElmish
 // Decode, Encode
@@ -27,7 +18,6 @@ open Character_Types
 open Dialogue_Box_Types
 open Log
 open Units_Of_Measure
-open Utilities
 
 (* Debug *)
 

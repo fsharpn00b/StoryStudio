@@ -14,7 +14,6 @@ open Menu
 open Runner_Types
 open Scripts
 open Units_Of_Measure
-open Utilities
 
 (* Debug *)
 
@@ -24,7 +23,13 @@ let private debug : log_function = debug debug_module_name
 let private warn : warn_function = warn debug_module_name
 let private error : error_function = error debug_module_name
 
-(* Helpers *)
+(* Consts *)
+
+let private if_behavior = Continue_Immediately { autosave = false }
+let private end_if_behavior = Continue_Immediately { autosave = false }
+let private menu_behavior = Wait_For_Callback { continue_afterward = false; add_to_history = true; autosave = true }
+
+(* Helper functions *)
 
 let private command_to_behavior (command : Command) : Command_Behavior =
     match command with
@@ -48,8 +53,6 @@ We set continue_after_running to false because, even if the dialogue box has its
     | JavaScript_Inline _
     | JavaScript_Block _ -> Continue_Immediately { autosave = false }
     | Jump _ -> Continue_Immediately { autosave = true }
-// TODO1 Just give If, EndIf, and Menu Command_Behaviors. They are not Commands. Add a subtype to them to contain behavior.
-(* See also If in handle_if (), EndIf in get_command_data (), and Menu in handle_menu (). They do not have Command_Behaviors, but their behaviors are defined in those functions. *)
 
 let private command_to_component_ids (command : Command) : Runner_Component_Names Set =
     match command with
@@ -68,8 +71,6 @@ let private command_to_component_ids (command : Command) : Runner_Component_Name
     | JavaScript_Inline _
     | JavaScript_Block _
     | Jump _ -> Set.empty
-
-(* Main functions *)
 
 let private handle_command 
     (runner_components : IRefValue<Runner_Components>)
@@ -182,7 +183,7 @@ let private handle_if
     {
         command = None
         debug_data = command.ToString ()
-        behavior = Continue_Immediately { autosave = false }
+        behavior = if_behavior
         components_used = Set.empty
         next_command_scene_id = current_scene_id
         next_command_id = Some next_command_id_2
@@ -217,11 +218,13 @@ let private handle_menu
     {
         command = Some command
         debug_data = menu_data_1.ToString ()
-        behavior = Wait_For_Callback { continue_afterward = false; add_to_history = true; autosave = true }
+        behavior = menu_behavior
         components_used = Set.singleton Menu
         next_command_scene_id = current_scene_id
         next_command_id = next_command_id
     }
+
+(* Main functions *)
 
 let get_command_data
     (scene_id : int<scene_id>)
@@ -232,17 +235,15 @@ let get_command_data
 
     match command.command with
 
-    | Command_Post_Parse_Type.Command command_3 -> handle_command runner_components scene_id   command.next_command_id command_3 menu_variables
+    | Command_Post_Parse_Type.Command command_1 -> handle_command runner_components scene_id   command.next_command_id command_1 menu_variables
 
-(* TODO1 We could have a function Command_Post_Parse_Type -> Runner_Command_Data. Its job is to translate Command_Behavior to Runner_Command_Data, and in the case of If/EndIf/Menu, which are not Commands but still have behaviors, to centralize the definitions of those behaviors.
-*)
-    | Command_Post_Parse_Type.If command_4 -> handle_if scene_id command.next_command_id command_4 menu_variables
+    | Command_Post_Parse_Type.If command_2 -> handle_if scene_id command.next_command_id command_2 menu_variables
 
     | Command_Post_Parse_Type.End_If ->
         {
             command = None
             debug_data = "End_If"
-            behavior = Continue_Immediately { autosave = false }
+            behavior = end_if_behavior
             components_used = Set.empty
             next_command_scene_id = scene_id
             next_command_id = command.next_command_id

@@ -253,7 +253,6 @@ let delete_saved_game_from_storage
 
     request_1?onerror <- (fun ex -> do warn "delete_saved_game_from_storage" true "Failed to open database." ["error", ex])
 
-// TODO0 This is not working. Check delete as well.
 let delete_all_saved_games_from_storage () : unit =
     let request_1 = open_db ()
 
@@ -261,9 +260,9 @@ let delete_all_saved_games_from_storage () : unit =
         let db = request_1?result
         let tx = db?transaction (store_name, "readwrite")
         let store = tx?objectStore store_name
-        let request_2 = store?clear
+        let request_2 = store?clear ()
 
-        request_2?onerror <- (fun ex -> do warn "delete_all_saved_games_from_storage" true "Failed to delete saved game." ["error", ex])
+        request_2?onerror <- (fun ex -> do warn "delete_all_saved_games_from_storage" true "Failed to delete saved games." ["error", ex])
     )
 
     request_1?onerror <- (fun ex -> do warn "delete_all_saved_games_from_storage" true "Failed to open database." ["error", ex])
@@ -320,7 +319,6 @@ let import_saved_games_from_file_to_storage () : unit =
     open_read_file_dialog handle_file
 
 (* This lets players save and load their game even if they do not have indexeddb support. *)
-// TODO1 However, if no indexeddb support, player will need a way to disable autosave. We should detect this ourselves and then log a warning.
 let import_current_game_from_file
     (dispatch : Save_Load_Message -> unit)
     : unit =

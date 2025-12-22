@@ -14,6 +14,7 @@ open Runner_State
 open Runner_History
 open Runner_Transition
 open Runner_Types
+open Save_Load_Storage_Helpers
 open Save_Load_Types
 open Utilities
 
@@ -73,11 +74,18 @@ let quicksave_or_autosave
     (quicksave_or_autosave : Quicksave_Or_Autosave)
     : unit =
 
-    do force_complete_transitions runner_components queue true (fun () ->
-        let runner_state = get_state runner_components queue
-        let json = Encode.Auto.toString (0, runner_state)
-        do runner_components.current.save_load.current.quicksave_or_autosave json quicksave_or_autosave
-    )
+    do
+// TODO2 We should also show a warning in the save/load screen. Even surf supports indexeddb, so this is not high priority.
+        if not is_indexeddb_supported then
+            match quicksave_or_autosave with
+            | Quicksave -> window.alert $"This browser does not support IndexedDB. {warn_recommendation}"
+            | Autosave -> ()
+        else
+            force_complete_transitions runner_components queue true (fun () ->
+                let runner_state = get_state runner_components queue
+                let json = Encode.Auto.toString (0, runner_state)
+                do runner_components.current.save_load.current.quicksave_or_autosave json quicksave_or_autosave
+            )
 
 let export_current_game_to_file
     (queue : IRefValue<Runner_Queue>)
@@ -115,3 +123,14 @@ let show_saved_game_screen
         let json = Encode.Auto.toString (0, runner_state)
         do runner_components.current.save_load.current.show action json
     )
+
+(* TODO1 Issues with surf. We put this here because these issues mostly seem to involve key input, and many key inputs involve save/load.
+- q, l and d are ignored.
+- Esc shows configuration screen, but then does not dismiss it. Could be surf is overriding its behavior.
+- x shows an error.
+
+Notes
+- surf does support indexeddb.
+- Run surf with -N to see dev console.
+(end)
+*)
