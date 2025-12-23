@@ -128,6 +128,15 @@ let show_saved_game_screen
 - q, l and d are ignored.
 - Esc shows configuration screen, but then does not dismiss it. Could be surf is overriding its behavior.
 - x shows an error.
+(end)
+
+- We probably need a clickable menu to fix this. We'll need that anyway for mobile. Menu should contain
+Config
+Save
+Load
+Undo
+Redo
+(end)
 
 Notes
 - surf does support indexeddb.

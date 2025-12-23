@@ -19,6 +19,43 @@ open Runner_Transition
 open Runner_Types
 open Save_Load_Types
 
+(* TODO1 See if we can encode this into a single function.
+
+The player can do the following inputs.
+1 Mouse click (calls run ()).
+2 Mouse wheel scroll (calls undo ()/redo()).
+3 Key press (calls handle_key_down ()).
+
+We should allow/deny input as follows.
+M = Menu
+S = Save/load screen
+C = Configuration screen
+
+Action
+S = Switch
+H = Hide
+I = Ignore
+
+        M   S   C
+1       N   N   N
+2       Y   N   N
+3
+s       Y   S   H
+l       Same
+d       Same
+Esc     I   H   1
+q       Y   H   H
+e       Y   Y   Y
+i       Y   Y   Y
+x       Y   H   H
+f       Y   Y   Y
+c       Y   H   1
+g       Y   Y   Y
+u       Y   Y   Y
+
+1 Hide or show.
+*)
+
 (* Debug *)
 
 let debug_module_name = "Runner_UI"
@@ -64,14 +101,21 @@ let show_configuration_screen
 (* The save/load and configuration screens cannot be open at the same time. *)
     if runner_components.current.save_load.current.is_visible () then
         do runner_components.current.save_load.current.hide ()
-    do force_complete_transitions runner_components queue true (fun () ->
-        do runner_components.current.configuration.current.show ()
-    )
+    elif runner_components.current.configuration.current.is_visible () then
+        do runner_components.current.configuration.current.hide ()
+    else
+        do force_complete_transitions runner_components queue true (fun () ->
+            do runner_components.current.configuration.current.show ()
+        )
 
+// We do not use this for now.
+(*
 let hide_configuration_screen
     (runner_components : IRefValue<Runner_Components>)
     : unit =
-    do runner_components.current.configuration.current.hide ()
+    if runner_components.current.configuration.current.is_visible () then
+        do runner_components.current.configuration.current.hide ()
+*)
 
 let handle_escape_key
     (runner_components : IRefValue<Runner_Components>)
@@ -98,11 +142,14 @@ let show_saved_game_screen
                 runner_components.current.configuration.current.hide ()
             show_saved_game_screen queue runner_components action
 
+// We do not use this for now.
+(*
 let hide_saved_game_screen
     (runner_components : IRefValue<Runner_Components>)
     : unit =
     if runner_components.current.save_load.current.is_visible () then
         do runner_components.current.save_load.current.hide ()
+*)
 
 let show_or_hide_ui
     (runner_components : IRefValue<Runner_Components>)
@@ -167,7 +214,6 @@ let handle_key_down
     let event_2 = event :?> KeyboardEvent
     match event_2.key with
 // TODO1 Replace these with consts or configuration values.
-// TODO1 Check Runner_UI and verify we ignore inappropriate inputs (mouse click, mouse wheel scroll, and key press) when saved game or configuration screen is visible. Make a list and put it there.
     | "s" -> runner.current.show_saved_game_screen Save_Game
     | "l" -> runner.current.show_saved_game_screen Load_Game
     | "d" -> runner.current.show_saved_game_screen Delete_Game

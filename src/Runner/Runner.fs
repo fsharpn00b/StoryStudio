@@ -198,11 +198,13 @@ When you need to trigger events from [an embedded] Elmish component, use React p
         { new I_Runner with
             member _.run (reason : Run_Reason) : unit = Runner_UI.run scenes queue runner_components reason
             member _.show_configuration_screen () : unit = Runner_UI.show_configuration_screen queue runner_components
-            member _.hide_configuration_screen (): unit = Runner_UI.hide_configuration_screen runner_components
+// We do not use this for now.
+//            member _.hide_configuration_screen (): unit = Runner_UI.hide_configuration_screen runner_components
             member _.handle_escape_key () : unit = Runner_UI.handle_escape_key runner_components
             member _.show_saved_game_screen (action : Saved_Game_Action) : unit =
                 Runner_UI.show_saved_game_screen queue runner_components action
-            member _.hide_saved_game_screen () : unit = Runner_UI.hide_saved_game_screen runner_components
+// We do not use this for now.
+//            member _.hide_saved_game_screen () : unit = Runner_UI.hide_saved_game_screen runner_components
             member _.show_or_hide_ui () : unit = Runner_UI.show_or_hide_ui runner_components
             member _.download_screenshot () : unit = download_screenshot_1 ()
             member _.quicksave () : unit = Runner_UI.quicksave queue runner_components

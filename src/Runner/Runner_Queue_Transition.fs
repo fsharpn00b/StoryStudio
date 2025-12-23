@@ -53,9 +53,15 @@ let private remove_transition_2
                 autosave = queue_data.autosave
                 menu_variables = queue_data.menu_variables
             }
-(* We typically add the current state to the undo/redo history when the queue state is Queue_Idle, which implies we are waiting for player input. *)
-(* TODO1 Potential issue. We entangle the queue emptying out with reaching a Wait_For_Callback command (whether continue_afterward is true/false does not matter). We further entangle certain behaviors, such as autosave and add to history, with the queue being empty and/or reaching a Wait_For_Callback command. This works for now but might not be flexible enough in the future. Think more on this.
-Also, it's hard to remember that this function (remove_transition) is where we add to history and autosave.
+(* While the queue state is Queue_Idle,
+- Add the current state to the undo/redo history.
+- Autosave.
+(end)
+*)
+(* TODO2 Potential issues.
+- We add commands to the queue until we reach a command with behavior Wait_For_Callback (regardless of whether continue_afterward is true), then we add that command to the queue, stop, and run the commands in the queue until it is empty. Entangling these two things (waiting for callback and emptying the queue) works for now, but we might want more flexible behavior in the future.
+- When the queue is empty, we add to history and autosave. Again, entangling these two things might not be flexible enough in the future.
+- It's not intuitive to remember that this function (remove_transition) is where we add to history and autosave.
 *)
         if queue_data.add_to_history then
             add_to_history history runner_components queue
@@ -100,6 +106,7 @@ let remove_transition_1
                 | None -> error "remove_transition" "Command queue item not found." ["command_queue_item_id", command_queue_item_id; "commands", queue_data.commands |> Seq.map (fun kv ->
                 $"Command queue id: {kv.Key}. Command: {kv.Value.command_data.debug_data}") |> Seq.toList :> obj] |> invalidOp
 
+(* Remove the transition (as represented by its component ID) from the command. *)
                 | Some command ->
                     let command_2 =
                         if command.components_used_by_command.Contains component_id then
@@ -115,7 +122,8 @@ let remove_transition_1
 
                     command_2
 
-// TODO1 Verify this does not create a separate thread and escape the lock.
+// TODO1 Verify this does not create a separate thread and escape the lock. It should not, since we are making a function call and not dispatching a message.
+(* If the command has no more transitions, remove it from the queue. *)
             remove_transition_2 queue history scenes runner_components queue_data command_queue_item_id command_1
         )
 

@@ -139,10 +139,12 @@ type Runner_Queue =
 type I_Runner =
     abstract member run : Run_Reason -> unit
     abstract member show_configuration_screen : unit -> unit
-    abstract member hide_configuration_screen : unit -> unit
+// We do not use this for now.
+//    abstract member hide_configuration_screen : unit -> unit
     abstract member handle_escape_key : unit -> unit
     abstract member show_saved_game_screen : Saved_Game_Action -> unit
-    abstract member hide_saved_game_screen : unit -> unit
+// We do not use this for now.
+//    abstract member hide_saved_game_screen : unit -> unit
     abstract member show_or_hide_ui : unit -> unit
     abstract member download_screenshot : unit -> unit
     abstract member quicksave : unit -> unit
