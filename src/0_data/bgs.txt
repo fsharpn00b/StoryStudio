@@ -10,5 +10,9 @@
   {
     "name": "path",
     "url": "/0_assets/bg/forest/path.jpg"
+  },
+  {
+    "name": "overhead",
+    "url": "/0_assets/bg/forest/overhead.jpg"
   }
 ]

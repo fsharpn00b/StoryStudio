@@ -44,7 +44,12 @@ let check_current_token_and_next_token (token : Command_Pre_Parse) (next_token :
         | Command_Pre_Parse.If _ -> ()
         | _ -> error "check_current_token_and_next_token" "Else must be followed by command or another If." tokens |> invalidOp
     | Command_Pre_Parse.End_If -> ()
+(* TODO1 Aren't these cases handled by the collect_menu/collect_image_map functions?
+- For that matter, aren't if/else if/end if handled by the handle_if, etc. functions?
+*)
     | Command_Pre_Parse.Menu _ -> ()
+    | Command_Pre_Parse.Image_Map _ -> ()
+    | Command_Pre_Parse.End_Image_Map _ -> ()
 
 (* The first return parameter is the next_command_id for the current command. The second is the ID to be used for the next command. These are not always the same. See the Else_If/Else/End_If case.
 *)
@@ -53,8 +58,9 @@ let get_next_command_id (next_token : Command_Pre_Parse) (parent_command_ids : i
 
     | Command_Pre_Parse.Command _
     | Command_Pre_Parse.If _
-    | Command_Pre_Parse.Menu _ -> Some <| id + 1<command_id>, id + 1<command_id>
-
+    | Command_Pre_Parse.Menu _
+    | Command_Pre_Parse.Image_Map _
+    | Command_Pre_Parse.End_Image_Map _ -> Some <| id + 1<command_id>, id + 1<command_id>
     | Command_Pre_Parse.Else_If _
     | Command_Pre_Parse.Else
     | Command_Pre_Parse.End_If ->

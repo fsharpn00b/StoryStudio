@@ -122,7 +122,6 @@ let private view_fade_in_out
         prop.src url
         prop.style [
             style.opacity opacity
-(* TODO2 We can ignore string interpolation errors. They seem to result from a bug in Ionide. *)
             style.custom ("transition", $"opacity {transition_time}s ease-in-out")
         ]
     ]
@@ -169,6 +168,7 @@ let private view
         debug_render_counter <- debug_render_counter + 1
     #endif
 
+// TODO1 This should probably be per-case.
     Html.div [
         prop.id "background_fade_container"
         prop.children [
@@ -192,7 +192,8 @@ opacity could be moved to a CSS class. But src, key, and transition are not stat
 (* Main functions - state *)
 
 (* We would like to move this to Fade, but each UI component's get_state function must return a saveable state whose type is specific to that component. *)
-let private get_state (state : IRefValue<Fade_State<string>>) : Background_Saveable_State =
+// TODO1 state had type IRefValue<Fade_State<string>>. That should never have compiled, let alone worked. Same issue for set_state () below.
+let private get_state (state : IRefValue<Fade_State<Background_Data>>) : Background_Saveable_State =
     match state.current with
     | Idle_Hidden -> Hidden
     | Idle_Visible data -> Visible data
@@ -204,7 +205,7 @@ let private get_state (state : IRefValue<Fade_State<string>>) : Background_Savea
     | Fade_Out_Transition _ -> Hidden
 
 let private set_state
-    (dispatch : Fade_Message<string> -> unit)
+    (dispatch : Fade_Message<Background_Data> -> unit)
     (current_state : IRefValue<Fade_State<Background_Data>>)
     (saved_state : Background_Saveable_State)
     : unit =

@@ -8,6 +8,7 @@ open Character_Types
 open Command_Types
 open Configuration
 open Dialogue_Box_Types
+open Image_Map
 open JavaScript_Interop
 open Menu
 open Music
@@ -21,18 +22,21 @@ type Runner_Component_Names =
     | Characters
     | Dialogue_Box
     | Menu
+    | Image_Map
 
 type Run_Reason =
     | Initial_Run
     | Player_Run
     | Handle_Queue_Empty
     | Notify_Menu_Selection
+    | Notify_Image_Map_Selection
 
 type Runner_Components = {
     background : IRefValue<I_Background>
     characters : IRefValue<I_Characters>
     dialogue_box : IRefValue<I_Dialogue_Box>
     menu : IRefValue<I_Menu>
+    image_map : IRefValue<I_Image_Map>
     save_load : IRefValue<I_Save_Load>
     music : IRefValue<I_Music>
     configuration : IRefValue<I_Configuration>
@@ -43,6 +47,7 @@ type Runner_Saveable_State_Component_Data = {
     dialogue : Dialogue_Box_Saveable_State
     characters : Characters_Saveable_State
     menu : Menu_Saveable_State
+    image_map : Image_Map_Saveable_State
     javascript : obj
 }
 

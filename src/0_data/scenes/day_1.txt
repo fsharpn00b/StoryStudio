@@ -12,6 +12,7 @@ endif
 // JS interpolation in dialogue.
 l Which way should we go? (Lost: {window.state.player_state.is_lost})
 
+/*
 // Create a menu whose result is stored in a variable named direction.
 menu direction Which way?
 // This menu option is dependent on JS expression.
@@ -19,6 +20,13 @@ menu direction Which way?
 1 left $if false === window.state.player_state.is_lost
 2 right
 endmenu
+*/
+
+imagemap direction overhead 1.0
+// TODO1 These make no sense. 250 "pixels" takes up more than half our 1080 height.
+1 0 0 250 250 $if false === window.state.player_state.is_lost
+2 250 250 500 500
+endimagemap 1.0
 
 // Fade in the character Tom, with a happy expression, at horizontal position 75%, over 1 second.
 fadein t happy 75 1.0

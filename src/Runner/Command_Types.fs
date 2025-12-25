@@ -3,11 +3,12 @@ module Command_Types
 open Character_Types
 open Fade_Types
 open Background
+open Image_Map
 open Menu
 open Units_Of_Measure
 open Utilities
 
-type Dialogue = {
+type Dialogue_Data = {
     character_short_name : string
     character_full_name : string
     text : string
@@ -26,7 +27,7 @@ type Command =
     | Fade_Out_All of Fade_Transition_Time
     | Dialogue_Box_Show
     | Dialogue_Box_Hide
-    | Dialogue of Dialogue
+    | Dialogue of Dialogue_Data
     | JavaScript_Inline of string
     | JavaScript_Block of string
     | Jump of int<scene_id>
@@ -65,6 +66,8 @@ type Command_Pre_Parse =
     | Else
     | End_If
     | Menu of Menu_Data
+    | Image_Map of Image_Map_Data
+    | End_Image_Map of Fade_Transition_Time
 
 (* We cannot simply use next_command_id for an Else_If block's commands because it is not a full Command_Post_Parse. It is just part of If_Block. *)
 type Else_If_Block_With_Id = {
@@ -85,6 +88,8 @@ type Command_Post_Parse_Type =
     | If of If_Block
     | End_If
     | Menu of Menu_Data
+    | Image_Map of Image_Map_Data
+    | End_Image_Map of Fade_Transition_Time
 
 type Command_Post_Parse =
     {

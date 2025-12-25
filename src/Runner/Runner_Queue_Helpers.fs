@@ -9,6 +9,7 @@ open Fable.React
 open Character_Types
 open Command_Types
 open JavaScript_Interop
+open Image_Map
 open Log
 open Menu
 open Runner_Types
@@ -28,6 +29,8 @@ let private error : error_function = error debug_module_name
 let private if_behavior = Continue_Immediately { autosave = false }
 let private end_if_behavior = Continue_Immediately { autosave = false }
 let private menu_behavior = Wait_For_Callback { continue_afterward = false; add_to_history = true; autosave = true }
+let private image_map_behavior = Wait_For_Callback { continue_afterward = false; add_to_history = true; autosave = true }
+let private end_image_map_behavior = Wait_For_Callback { continue_afterward = true; add_to_history = false; autosave = false }
 
 (* Helper functions *)
 
@@ -204,7 +207,7 @@ let private handle_menu
             menu_data_1 with
                 description = eval_js_string_with_menu_variables menu_data_1.description menu_variables
                 items = menu_data_1.items |> List.choose (fun item_1 ->
-(* TODO2 We do not remember why we needed to delay eval of menu item text. *)
+(* TODO2 We do not remember why we needed to delay eval of menu item text. Presumably because otherwise we evaluate the JavaScript too soon. *)
                     let item_2 = lazy { item_1 with text = eval_js_string_with_menu_variables item_1.text menu_variables }
                     match item_1.conditional with
                         | Some conditional ->
@@ -220,6 +223,35 @@ let private handle_menu
         debug_data = menu_data_1.ToString ()
         behavior = menu_behavior
         components_used = Set.singleton Menu
+        next_command_scene_id = current_scene_id
+        next_command_id = next_command_id
+    }
+
+let private handle_image_map
+    (runner_components : IRefValue<Runner_Components>)
+    (current_scene_id : int<scene_id>)
+    (next_command_id : int<command_id> option)
+    (image_map_data_1 : Image_Map_Data)
+    (menu_variables : Menu_Variables)
+    : Runner_Command_Data =
+
+    let command = fun (command_queue_item_id : int<runner_queue_item_id>) ->
+
+        let image_map_data_2 = {
+            image_map_data_1 with
+                items = image_map_data_1.items |> List.filter (fun item ->
+                    match item.conditional with
+                    | Some conditional -> eval_js_boolean_with_menu_variables conditional menu_variables
+                    | None -> true
+                )
+        }
+        runner_components.current.image_map.current.fade_in image_map_data_2 image_map_data_2.transition_time command_queue_item_id
+
+    {
+        command = Some command
+        debug_data = image_map_data_1.ToString ()
+        behavior = image_map_behavior
+        components_used = Set.singleton Image_Map
         next_command_scene_id = current_scene_id
         next_command_id = next_command_id
     }
@@ -249,4 +281,16 @@ let get_command_data
             next_command_id = command.next_command_id
         }
 
-    | Command_Post_Parse_Type.Menu command_5 -> handle_menu runner_components scene_id command.next_command_id command_5 menu_variables
+    | Command_Post_Parse_Type.Menu command_3 -> handle_menu runner_components scene_id command.next_command_id command_3 menu_variables
+
+    | Command_Post_Parse_Type.Image_Map command_4 -> handle_image_map runner_components scene_id command.next_command_id command_4 menu_variables
+
+    | Command_Post_Parse_Type.End_Image_Map transition_time ->
+        {
+            command = Some <| fun (command_queue_item_id : int<runner_queue_item_id>) -> runner_components.current.image_map.current.fade_out transition_time command_queue_item_id
+            debug_data = "End_Image_Map"
+            behavior = end_image_map_behavior
+            components_used = Set.singleton Runner_Component_Names.Image_Map
+            next_command_scene_id = scene_id
+            next_command_id = command.next_command_id
+        }

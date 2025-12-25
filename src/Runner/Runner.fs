@@ -11,6 +11,7 @@ open Character_Types
 open Command_Types
 open Configuration
 open Dialogue_Box_Types
+open Image_Map
 open Log
 open Menu
 open Music
@@ -102,6 +103,7 @@ TODO2 We could use option with .Value.
     let dialogue_box_2 = React.useRef<I_Dialogue_Box> Unchecked.defaultof<_>
     let characters_2 = React.useRef<I_Characters> Unchecked.defaultof<_>
     let menu_2 = React.useRef<I_Menu> Unchecked.defaultof<_>
+    let image_map_2 = React.useRef<I_Image_Map> Unchecked.defaultof<_>
     let save_load_2 = React.useRef<I_Save_Load> Unchecked.defaultof<_>
     let music_2 = React.useRef<I_Music> Unchecked.defaultof<_>
     let configuration_component_2 = React.useRef<I_Configuration> Unchecked.defaultof<_>
@@ -159,6 +161,13 @@ When you need to trigger events from [an embedded] Elmish component, use React p
             (get_notify_menu_selection scenes queue runner_components)
         )
 
+    let image_map_1 =
+        Image_Map.Image_Map (
+            {| expose = image_map_2 |},
+            (get_notify_transition_complete scenes runner_components queue history Runner_Component_Names.Image_Map),
+            (get_notify_image_map_selection scenes queue runner_components)
+        )
+
     let save_load_1 =
         Save_Load (
             {| expose = save_load_2 |},
@@ -175,6 +184,7 @@ When you need to trigger events from [an embedded] Elmish component, use React p
             characters = characters_2
             dialogue_box = dialogue_box_2
             menu = menu_2
+            image_map = image_map_2
             save_load = save_load_2
             music = music_2
             configuration = configuration_component_2
@@ -187,6 +197,7 @@ When you need to trigger events from [an embedded] Elmish component, use React p
             dialogue_box_1
             characters_1
             menu_1
+            image_map_1
             save_load_1
             music_1
             configuration_component_1

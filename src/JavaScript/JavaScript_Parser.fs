@@ -7,6 +7,7 @@ open System
 open Browser.Dom
 
 open Command_Types
+open Image_Map
 open Menu
 open Log
 open Scripts
@@ -70,6 +71,13 @@ let private handle_menu_javascript (menu : Menu_Data) : string =
         combine_javascript_interpolations (menu.items |> List.collect (fun menu_item -> menu_item.javascript_interpolations))
         combine_javascript_conditionals (menu.items |> List.choose (fun menu_item -> menu_item.conditional))
         $"var {menu.name} = 1;{Environment.NewLine}"
+    ]
+
+let private handle_image_map_javascript (image_map : Image_Map_Data) : string =
+    String.concat String.Empty [
+        combine_javascript_interpolations (image_map.items |> List.collect (fun image_map_item -> image_map_item.javascript_interpolations))
+        combine_javascript_conditionals (image_map.items |> List.choose (fun image_map_item -> image_map_item.conditional))
+        $"var {image_map.name} = 1;{Environment.NewLine}"
     ]
 
 let private handle_if_javascript (acc : Parser_JavaScript_Path_Accumulator) (scene_id : int<scene_id>) (if_block : If_Block) =
@@ -149,6 +157,13 @@ let rec private try_javascript_path
             try_javascript_path {
                 acc with javascript = (handle_menu_javascript menu) :: acc.javascript
             } scenes scene_id scene command.next_command_id
+
+        | Image_Map image_map ->
+            try_javascript_path {
+                acc with javascript = (handle_image_map_javascript image_map) :: acc.javascript
+            } scenes scene_id scene command.next_command_id
+
+        | End_Image_Map _ -> try_javascript_path acc scenes scene_id scene command.next_command_id
 
         | If if_block -> handle_if_javascript acc scene_id if_block
 

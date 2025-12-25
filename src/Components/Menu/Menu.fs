@@ -11,6 +11,7 @@ open Feliz.UseElmish
 
 open Log
 open Units_Of_Measure
+open Utilities
 
 (* Types - public *)
 
@@ -126,7 +127,7 @@ let private set_state
     (dispatch : Menu_Message -> unit)
     : unit =
     match saved_state with
-(* We do not notify Runner when the transition completes when the player loads a saved game or rolls back/forward. *)
+(* We do not notify Runner when the transition completes when the player loads a saved game or rolls back/forward, because we are not running a command. *)
     | Visible data ->
         dispatch <| Show {
             data = data
@@ -228,6 +229,11 @@ let Menu
                 member _.is_visible (): bool = is_visible_ref.current
                 member _.get_state () = get_state is_visible_ref menu_data_1
                 member _.set_state (saved_state : Menu_Saveable_State) = set_state saved_state dispatch
+(* For now, menu does not have transitions. *)
+            interface I_Transitionable with
+                member _.is_running_transition () : bool = false
+                member _.force_complete_transition () : unit = ()
+                member _.get_name () : string = "Menu"
         }
     )
 

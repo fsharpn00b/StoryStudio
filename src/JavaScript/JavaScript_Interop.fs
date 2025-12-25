@@ -10,6 +10,7 @@ open Fable.Core
 
 open Log
 open Scripts
+open Units_Of_Measure
 
 (* Debug *)
 
@@ -46,7 +47,6 @@ let private eval_js_string (code : string) : string =
 (* We need to copy the state by value, not by reference. *)
 let get_state_from_js () : obj = eval_js $"JSON.parse(JSON.stringify(window.{game_state_name}));"
 
-(* We cannot use even an F# Literal here. *)
 [<Emit(set_state_in_js_emit)>]
 let set_state_in_js (code : obj) : unit = jsNative
 

@@ -1,0 +1,33 @@
+/* TODO1 Need a better way to scale background/image map to window size. */
+
+#image_map_container {
+  position: absolute;
+/* TODO1 Move these z-indexes to the code where we can use constants. */
+  z-index: 4;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.image_map_image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  object-fit: contain;
+}
+
+.image_map_hotspot {
+  position: absolute;
+  cursor: pointer;
+/* Prevent layout shift when we show border. */
+  border: 1px solid transparent;
+  z-index: 5;
+}
+
+.image_map_hotspot:hover {
+  border: 1px solid red;
+}

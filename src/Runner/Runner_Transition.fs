@@ -32,6 +32,7 @@ let private component_id_to_component
     | Characters -> runner_components.current.characters.current :?> I_Transitionable
     | Dialogue_Box -> runner_components.current.dialogue_box.current :?> I_Transitionable
     | Menu -> runner_components.current.menu.current :?> I_Transitionable
+    | Image_Map -> runner_components.current.image_map.current :?> I_Transitionable
 
 (* Main functions *)
 

@@ -4,8 +4,6 @@ open Units_Of_Measure
 
 (* Types - public *)
 
-
-
 type Fade_Configuration = unit
 
 type Cross_Fade_Transition_State_Data<'T> = {

@@ -28,32 +28,34 @@ The player can do the following inputs.
 
 We should allow/deny input as follows.
 M = Menu
+P = Image map
 S = Save/load screen
 C = Configuration screen
 
 Action
 S = Switch
 H = Hide
-I = Ignore
 
-        M   S   C
-1       N   N   N
-2       Y   N   N
+        M   P   S   C
+1       N   N   N   N
+2       Y   Y   N   N
 3
-s       Y   S   H
+s       Y   Y   S   H
 l       Same
 d       Same
-Esc     I   H   1
-q       Y   H   H
-e       Y   Y   Y
-i       Y   Y   Y
-x       Y   H   H
-f       Y   Y   Y
-c       Y   H   1
-g       Y   Y   Y
-u       Y   Y   Y
+Esc     1   1   2   3
+q       Y   Y   H   H
+e       Y   Y   Y   Y
+i       Y   Y   Y   Y
+x       Y   Y   H   H
+f       Y   Y   Y   Y
+c       Y   Y   H   1
+g       Y   Y   Y   Y
+u       Y   Y   Y   Y
 
-1 Hide or show.
+1 Show configuration screen.
+2 Hide save/load screen and show configuration screen.
+3 Hide configuration screen.
 *)
 
 (* Debug *)
@@ -88,6 +90,7 @@ let run
 
 (* When a menu or the save/load screen or configuration screen is visible, we do not want to run the next command. We could simply ignore mouse clicks except for those handled by the menu or save/load screen or configuration, but this is safer, in case this method is called for some other reason. *)
     if not <| runner_components.current.menu.current.is_visible () &&
+        not <| runner_components.current.image_map.current.is_visible () &&
         not <| runner_components.current.save_load.current.is_visible () &&
         not <| runner_components.current.configuration.current.is_visible () then
 // TODO1 After we save/load screen, show an overlay that says game paused; press click to continue. What about setting that in the dialogue box?

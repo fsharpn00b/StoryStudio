@@ -7,9 +7,10 @@ open System.Text.RegularExpressions
 
 open Character_Types
 open Command_Types
-open Fade_Types
+open Image_Map
 open Menu
 open Log
+open Units_Of_Measure
 
 (* Debug *)
 
@@ -23,19 +24,22 @@ let private error : error_function = error debug_module_name
 
 let get_compiled_regex (pattern : string) = Regex (pattern, RegexOptions.Compiled ||| RegexOptions.IgnoreCase)
 
+(* TODO2 This will also match an int. So if we want to try to match either a float or int, we should try to match an int first. *)
+let float_regex = @"[0-9]+(\.[0-9]+)?"
+
 let single_line_comment_regex = @"^//.*$" |> get_compiled_regex
 let multi_line_comment_start_regex = @"^/\*.*$" |> get_compiled_regex
 let multi_line_comment_end_regex = @".*?\*/$" |> get_compiled_regex
 let private music_play_regex = @"^play\s+(\S+)$" |> get_compiled_regex
 let private music_stop_regex = @"^stop$" |> get_compiled_regex
-let private background_fade_in_regex = @"^fadein\s+(\S+)\s+([\d\.]+)$" |> get_compiled_regex
-let private background_fade_out_regex = @"^fadeout\s+([\d\.]+)$" |> get_compiled_regex
-let private background_cross_fade_regex = @"^fadeto\s+(\S+)\s+([\d\.]+)$" |> get_compiled_regex
+let private background_fade_in_regex = @$"^fadein\s+(\S+)\s+({float_regex})$" |> get_compiled_regex
+let private background_fade_out_regex = @$"^fadeout\s+({float_regex})$" |> get_compiled_regex
+let private background_cross_fade_regex = @$"^fadeto\s+(\S+)\s+({float_regex})$" |> get_compiled_regex
 let private dialogue_regex = @"^(\w+)\s+(.+)$" |> get_compiled_regex
-let private fade_in_character_regex = @"^fadein\s+(\w+)\s+(\w+)\s+(\d+)\s+([\d\.]+)$" |> get_compiled_regex
-let private fade_out_character_regex = @"^fadeout\s+(\w+)\s+([\d\.]+)$" |> get_compiled_regex
-let private cross_fade_character_regex = @"^fadeto\s+(\w+)\s+(\w+)\s+([\d\.]+)$" |> get_compiled_regex
-let private fade_out_all_regex = @"^fadeoutall\s+([\d\.]+)$" |> get_compiled_regex
+let private fade_in_character_regex = @$"^fadein\s+(\w+)\s+(\w+)\s+(\d+)\s+({float_regex})$" |> get_compiled_regex
+let private fade_out_character_regex = @$"^fadeout\s+(\w+)\s+({float_regex})$" |> get_compiled_regex
+let private cross_fade_character_regex = @$"^fadeto\s+(\w+)\s+(\w+)\s+({float_regex})$" |> get_compiled_regex
+let private fade_out_all_regex = @$"^fadeoutall\s+({float_regex})$" |> get_compiled_regex
 let private dialogue_box_show_regex = @"^show dialogue box$" |> get_compiled_regex
 let private dialogue_box_hide_regex = @"^hide dialogue box$" |> get_compiled_regex
 
@@ -50,6 +54,7 @@ let private if_start_regex = @"^if\s+(.+)$" |> get_compiled_regex
 let private end_if_regex = @"^endif$" |> get_compiled_regex
 let private else_if_regex = @"^elseif\s+(.+)$" |> get_compiled_regex
 let private else_regex = @"^else$" |> get_compiled_regex
+(* \w includes _, but not -. *)
 let private jump_regex = @"^jump\s+([\w-]+)$" |> get_compiled_regex
 
 (* These are used in Parser_1_Match_Functions.fs. *)
@@ -58,6 +63,9 @@ let javascript_end_regex = @"^endjs$" |> get_compiled_regex
 let menu_start_regex = @"^menu\s+(\w+)\s+(.+)$" |> get_compiled_regex
 let menu_item_regex = @"^(\d+)\s+([^\$]+?)(?:\s+(\$if\s+(.+)))?$" |> get_compiled_regex
 let end_menu_regex = @"^endmenu$" |> get_compiled_regex
+let image_map_start_regex = @$"^imagemap\s+(\w+)\s+(\w+)\s+({float_regex})$" |> get_compiled_regex
+let image_map_item_regex = @"^(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)(?:\s+(\$if\s+(.+)))?$" |> get_compiled_regex
+let end_image_map_regex = @$"^endimagemap\s+({float_regex})$" |> get_compiled_regex
 
 (* Helper functions - patterns *)
 
@@ -85,6 +93,7 @@ let match_music_stop (text : string) : Command_Pre_Parse option =
 let match_background_fade_in (text : string) (backgrounds : Map<string, string>) : Command_Pre_Parse option =
     let m = background_fade_in_regex.Match text
     if m.Success then
+// TODO1 Failure to match these parameters (fade transition time, character position, etc) should throw a specific error rather than silently fail.
         match Double.TryParse m.Groups[2].Value with
         | true, transition_time ->
             let background = m.Groups[1].Value
@@ -215,6 +224,7 @@ let match_dialogue (text : string) (characters : Character_Input_Map) : Command_
                 text = text |> convert_string_to_use_javascript_interpolation
                 javascript_interpolations = extract_javascript_interpolations text
             } |> Command_Pre_Parse.Command |> Some
+// TODO1 Might be better to just return None and end up with unrecognized command. In the error message for that, suggest checking character name. Or make this message clearer (that it could be either an unknown character or unrecognized command).
         | None -> error "match_dialogue" "Unknown character." ["character_short_name", character_short_name; "characters", characters] |> invalidOp
     else None
 
@@ -265,6 +275,43 @@ let match_menu_item (text : string) : Menu_Item_Data option =
             javascript_interpolations = extract_javascript_interpolations text
 (* If the pattern defines an optional group, that group is present in m.Groups even if it was not matched in the input text. *)
             conditional = if m.Groups[4].Success then m.Groups[4].Value |> Some else None
+        } |> Some
+    else None
+
+let match_image_map_start (text : string) (backgrounds : Map<string, string>) : Image_Map_Data option =
+    let m = image_map_start_regex.Match text
+    if m.Success then
+        let background = m.Groups[2].Value
+        match backgrounds.TryFind background with
+        | Some url ->
+            {
+                name = m.Groups[1].Value
+                url = url
+                items = []
+// TODO1 Again, throw specific error here.
+                transition_time = m.Groups[3].Value |> Double.Parse |> LanguagePrimitives.FloatWithMeasure
+            } |> Some
+        | None -> error "match_image_map_start" "Unknown background." ["background", background; "backgrounds", backgrounds] |> invalidOp
+    else None
+
+let match_image_map_end (text : string) : Fade_Transition_Time option =
+    let m = end_image_map_regex.Match text
+// TODO1 Again, throw specific error here.
+    if m.Success then m.Groups[1].Value |> Double.Parse |> LanguagePrimitives.FloatWithMeasure |> Some
+    else None
+
+let match_image_map_item (text : string) : Image_Map_Item_Data option =
+    let m = image_map_item_regex.Match text
+    if m.Success then
+        {
+            value = Int32.Parse m.Groups[1].Value
+            x1 = Int32.Parse m.Groups[2].Value
+            y1 = Int32.Parse m.Groups[3].Value
+            x2 = Int32.Parse m.Groups[4].Value
+            y2 = Int32.Parse m.Groups[5].Value
+            javascript_interpolations = extract_javascript_interpolations text
+(* If the pattern defines an optional group, that group is present in m.Groups even if it was not matched in the input text. *)
+            conditional = if m.Groups[7].Success then m.Groups[7].Value |> Some else None
         } |> Some
     else None
 

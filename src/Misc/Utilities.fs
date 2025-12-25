@@ -17,7 +17,6 @@ let hide_save_load_screen_delay_time = 10<milliseconds>
 
 (* Interfaces *)
 
-// TODO2 This belongs at a higher level of abstraction.
 type I_Transitionable =
     abstract member is_running_transition : unit -> bool
     abstract member force_complete_transition : unit -> unit

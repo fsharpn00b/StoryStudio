@@ -112,3 +112,25 @@ That is because the Menu command is for showing the menu, and after that, the co
                     run queue scenes runner_components Run_Reason.Notify_Menu_Selection
                 ), int notify_transition_complete_delay_time) |> ignore
             ), int notify_transition_complete_delay_time) |> ignore
+
+let get_notify_image_map_selection
+    (scenes : Scene_Map)
+    (queue : IRefValue<Runner_Queue>)
+    (runner_components : IRefValue<Runner_Components>)
+    : string -> int -> unit =
+
+    fun (image_map_name : string) (selected_index : int) ->
+        do
+            match queue.current with
+            | Queue_Idle data ->
+(* Save image map variables in the same map as menu variables. *)
+                queue.current <- Queue_Idle { data with menu_variables = data.menu_variables.Add (image_map_name, selected_index) }
+            | _ -> error "get_notify_image_map_selection" "Unexpected queue state." ["Queue state", queue.current] |> invalidOp
+
+            window.setTimeout((fun () ->
+                window.setTimeout((fun () ->
+(* Since the user has to select an image map item, we set run_manually to true. *)
+                    run queue scenes runner_components Run_Reason.Notify_Image_Map_Selection
+                ), int notify_transition_complete_delay_time) |> ignore
+            ), int notify_transition_complete_delay_time) |> ignore
+

@@ -5,6 +5,7 @@ open System
 
 open Character_Types
 open Command_Types
+open Image_Map
 open Menu
 open Log
 open Parser_1_Match_Functions
@@ -21,7 +22,7 @@ let private error : error_function = error debug_module_name
 
 (* Main functions - parsing *)
 
-let private handle_command (acc : Parser_Accumulator) (command_1 : Command) (next_token : Command_Pre_Parse) : Parser_Accumulator =
+let private handle_command (acc : Parser_Accumulator) (command : Command_Post_Parse_Type) (next_token : Command_Pre_Parse) : Parser_Accumulator =
     let next_id_for_command, next_available_id = get_next_command_id next_token acc.parent_command_ids acc.current_command_id
     {
         acc with
@@ -29,20 +30,7 @@ let private handle_command (acc : Parser_Accumulator) (command_1 : Command) (nex
                 id = acc.current_command_id
                 next_command_id = next_id_for_command
                 parent_command_id = match acc.parent_command_ids with | head :: _ -> Some head | _ -> None
-                command = Command_Post_Parse_Type.Command command_1
-            })
-            current_command_id = next_available_id
-    }
-
-let private handle_menu (acc : Parser_Accumulator) (menu : Menu_Data) (next_token : Command_Pre_Parse) : Parser_Accumulator =
-    let next_id_for_command, next_available_id = get_next_command_id next_token acc.parent_command_ids acc.current_command_id
-    {
-        acc with
-            scene = acc.scene.Add (acc.current_command_id, {
-                id = acc.current_command_id
-                next_command_id = next_id_for_command
-                parent_command_id = match acc.parent_command_ids with | head :: _ -> Some head | _ -> None
-                command = Command_Post_Parse_Type.Menu menu
+                command = command
             })
             current_command_id = next_available_id
     }
@@ -137,12 +125,14 @@ let parse_commands
     let result = (initial_value, tokens_1 |> List.pairwise) ||> List.fold (fun acc (token, next_token) ->
         do check_current_token_and_next_token token next_token
         match token with
-        | Command_Pre_Parse.Command command -> handle_command acc command next_token
+        | Command_Pre_Parse.Command command -> handle_command acc (Command_Post_Parse_Type.Command command) next_token
         | Command_Pre_Parse.If conditional -> handle_if acc conditional
         | Command_Pre_Parse.Else_If conditional -> handle_else_if acc conditional
         | Command_Pre_Parse.Else -> handle_else acc
         | Command_Pre_Parse.End_If -> handle_end_if acc next_token
-        | Command_Pre_Parse.Menu menu -> handle_menu acc menu next_token
+        | Command_Pre_Parse.Menu menu -> handle_command acc (Command_Post_Parse_Type.Menu menu) next_token
+        | Command_Pre_Parse.Image_Map image_map_data -> handle_command acc (Command_Post_Parse_Type.Image_Map image_map_data) next_token
+        | Command_Pre_Parse.End_Image_Map transition_time -> handle_command acc (Command_Post_Parse_Type.End_Image_Map transition_time) next_token
     )
 
 (* The last token should be either a command or End_If. *)

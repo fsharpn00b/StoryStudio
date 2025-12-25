@@ -5,6 +5,7 @@ open System
 
 open Character_Types
 open Command_Types
+open Image_Map
 open Menu
 open Log
 open Parser_1_Match_Patterns
@@ -93,6 +94,40 @@ let rec private collect_menu
             collect_menu menu_2 tail
         else error "collect_menu" "While parsing menu block, encountered line that is neither menu item nor EndMenu." ["line", head; "menu", menu_1_acc] |> invalidOp
 
+let rec private collect_image_map
+    (image_map_1_acc : Image_Map_Data)
+    (remaining_commands : string list)
+    : {|
+        image_map_data : Image_Map_Data
+        remaining_commands : string list
+    |} =
+    match remaining_commands with
+    | [] -> error "collect_image_map" "ImageMap block never terminates." ["image_map", image_map_1_acc] |> invalidOp
+    | head :: tail ->
+(* Discard single-line comments. *)
+        if head |> single_line_comment_regex.IsMatch then
+            collect_image_map image_map_1_acc tail
+(* Discard multi-line comments. *)
+        elif head |> multi_line_comment_start_regex.IsMatch then
+            let remaining_commands = collect_multi_line_comment tail
+            collect_image_map image_map_1_acc remaining_commands
+        elif head |> end_image_map_regex.IsMatch then
+            if 0 = List.length image_map_1_acc.items then
+                error "collect_image_map" "ImageMap contains no items." ["image_map", image_map_1_acc] |> invalidOp
+            elif image_map_1_acc.items |> List.forall (fun item -> item.conditional.IsSome) then
+                error "collect_image_map" "ImageMap contains only conditional items. At least one item must be non-conditional." ["image_map", image_map_1_acc] |> invalidOp
+            else {|
+(* We append each image_map item to the accumulator, so reverse the accumulator before returning it. *)
+                image_map_data = { image_map_1_acc with items = image_map_1_acc.items |> List.rev }
+(* Leave end_image_map in the list of remaining commands. We handle it separately and use it to fade out the image map. *)
+                remaining_commands = remaining_commands
+            |}
+        elif head |> image_map_item_regex.IsMatch then
+            let image_map_item = (match_image_map_item head).Value
+            let image_map_2 = { image_map_1_acc with items = image_map_item :: image_map_1_acc.items }
+            collect_image_map image_map_2 tail
+        else error "collect_image_map" "While parsing image_map block, encountered line that is neither image map item nor EndImageMap." ["line", head; "image_map", image_map_1_acc] |> invalidOp
+
 (* Main functions - matching *)
 
 (* Try to match the command using our patterns in descending order of priority and/or increasing order of generality. *)
@@ -155,6 +190,14 @@ let match_commands
                 let menu_data = (match_menu_start head).Value
                 let result = collect_menu menu_data tail
                 helper (Command_Pre_Parse.Menu result.menu_data :: command_acc) result.remaining_commands
+(* If we encounter an image map block, collect the statements in the block. *)
+            elif head |> image_map_start_regex.IsMatch then
+                let image_map_data = (match_image_map_start head backgrounds).Value
+                let result = collect_image_map image_map_data tail
+                helper (Command_Pre_Parse.Image_Map result.image_map_data :: command_acc) result.remaining_commands
+(* We handle end_image_map separately and use it to fade out the image map. *)
+            elif head |> end_image_map_regex.IsMatch then 
+                helper (Command_Pre_Parse.End_Image_Map (match_image_map_end head).Value :: command_acc) tail
 (* Otherwise, determine what kind of command this is. *)
             else
                 helper ((match_command head backgrounds characters scenes) :: command_acc) tail
