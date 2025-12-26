@@ -45,6 +45,7 @@ If add_to_history is false, which means that when we halted running commands, we
                 characters = runner_components.current.characters.current.get_state ()
                 menu = runner_components.current.menu.current.get_state ()
                 image_map = runner_components.current.image_map.current.get_state ()
+                music = runner_components.current.music.current.get_state ()
                 javascript = get_state_from_js ()
             }
             menu_variables = data.menu_variables
@@ -58,6 +59,7 @@ If add_to_history is false, which means that when we halted running commands, we
             characters = runner_components.current.characters.current.get_state ()
             menu = runner_components.current.menu.current.get_state ()
             image_map = runner_components.current.image_map.current.get_state ()
+            music = runner_components.current.music.current.get_state ()
             javascript = get_state_from_js ()
         }
 
@@ -91,6 +93,7 @@ We might want to get the state at the most recent pausable point (which might be
         runner_components.current.characters.current.set_state component_data.characters
         runner_components.current.menu.current.set_state component_data.menu
         runner_components.current.image_map.current.set_state component_data.image_map
+        runner_components.current.music.current.set_state component_data.music
         set_state_in_js component_data.javascript
 
 (* We set the command state afterward to prevent having it overwritten due to a component completing an existing transition (on its own, not because we called its set_state () method) after we set the command state but before we call the components' set_state () methods.

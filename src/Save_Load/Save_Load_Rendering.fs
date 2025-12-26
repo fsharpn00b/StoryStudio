@@ -89,7 +89,11 @@ let private view_saved_game_grid
         |> Seq.map (fun kv ->
             Html.div [
                 prop.className "saved_game_slot"
-                prop.onClick (fun _ -> handle_slot_click kv.Key kv.Value.name state dispatch)
+                prop.onClick (fun event ->
+                    do
+                        event.stopPropagation ()
+                        handle_slot_click kv.Key kv.Value.name state dispatch
+                )
                 prop.children [
                     Html.img [ prop.src kv.Value.screenshot ]
                     Html.div [ prop.text $"{kv.Value.name}{Environment.NewLine}" ]
@@ -112,6 +116,8 @@ let view
         Html.div [
             prop.className "save_load_screen"
             prop.style [style.zIndex save_load_screen_z_index]
+(* Prevent a mouse click from calling Runner.run (). *)
+            prop.onClick (fun event -> do event.stopPropagation ())
             prop.children [
                 Html.div [
                     prop.className "save_load_header"
@@ -133,20 +139,38 @@ let view
                     prop.className "save_load_grid"
                     prop.children (view_saved_game_grid state_2 dispatch)
                 ]
-                match state_2.action with
-                | Save_Game ->
-                    Html.button [
-                        prop.text "New Save"
-                        prop.onClick (fun _ -> handle_save_new state_2 dispatch)
+                Html.div [
+                    prop.className "controls"
+                    prop.children [
+                        match state_2.action with
+                        | Save_Game ->
+                            Html.button [
+                                prop.text "New Save"
+                                prop.onClick (fun event ->
+                                    do
+                                        event.stopPropagation ()
+                                        handle_save_new state_2 dispatch
+                                )
+                            ]
+                        | Delete_Game ->
+                            Html.button [
+                                prop.text "Delete All"
+                                prop.onClick (fun event ->
+                                    do event.stopPropagation ()
+                                    if window.confirm "Delete all saved games? This CANNOT be undone!" then
+                                        do dispatch <| Message_Delete_All_Games
+                                )
+                            ]
+                        | _ -> Html.none
+                        Html.button [
+                            prop.text "Exit"
+                            prop.onClick (fun event ->
+                                do
+                                    event.stopPropagation ()
+                                    dispatch Hide
+                            )
+                        ]
                     ]
-                | Delete_Game ->
-                    Html.button [
-                        prop.text "Delete All"
-                        prop.onClick (fun _ ->
-                            if window.confirm "Delete all saved games? This CANNOT be undone!" then
-                                do dispatch <| Message_Delete_All_Games
-                        )
-                    ]
-                | _ -> Html.none
+                ]
             ]
         ]

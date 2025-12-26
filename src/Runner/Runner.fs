@@ -118,12 +118,6 @@ TODO2 Would simply constructing the Configuration component first fix this? Stil
         | None -> default_configuration
     )
 
-(* TODO1 Add music.
-- Add fade in/fade out/cross fade.
-
-- Need to save music as part of saved game state and play it on load.
-- Music stops if we refresh page.
-*)
 // TODO1 Need to see how well this renders on mobile.
 
 (*

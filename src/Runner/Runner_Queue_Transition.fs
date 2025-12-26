@@ -122,7 +122,6 @@ let remove_transition_1
 
                     command_2
 
-// TODO1 Verify this does not create a separate thread and escape the lock. It should not, since we are making a function call and not dispatching a message.
 (* If the command has no more transitions, remove it from the queue. *)
             remove_transition_2 queue history scenes runner_components queue_data command_queue_item_id command_1
         )

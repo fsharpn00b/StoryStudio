@@ -21,6 +21,8 @@ open Save_Load_Types
 
 (* TODO1 See if we can encode this into a single function.
 
+20251226 This should now be partly handled by stopping click event propagation.
+
 The player can do the following inputs.
 1 Mouse click (calls run ()).
 2 Mouse wheel scroll (calls undo ()/redo()).

@@ -16,13 +16,13 @@ let wait_for_transitions_to_complete_time = 10<milliseconds>
 let hide_save_load_screen_delay_time = 10<milliseconds>
 
 let character_z_index = 1
-let configuration_z_index = 5
 let dialogue_box_z_index = 2
 let dialogue_box_character_name_z_index = 3
 let image_map_z_index = 4
-let image_map_hotspot_z_index = 5
 let menu_z_index = 4
-let save_load_screen_z_index = 5
+let image_map_hotspot_z_index = 5
+let configuration_z_index = 6
+let save_load_screen_z_index = 6
 
 (* Interfaces *)
 

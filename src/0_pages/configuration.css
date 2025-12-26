@@ -24,27 +24,3 @@
 .configuration_dialogue {
   padding-left: 1rem;
 }
-
-.controls {
-/*
-  display: flex;
-  justify-content: flex-end;
-*/
-  padding-left: 1rem;
-  margin-top: 1rem;
-}
-
-.controls button {
-  padding: 0.5rem 1rem;
-  font-size: 1rem;
-  background-color: #0078d4;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.controls button:hover {
-  background-color: #005fa1;
-}
-

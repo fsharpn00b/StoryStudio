@@ -81,6 +81,8 @@ let private view_idle_visible
     Html.div [
         prop.id "image_map_container"
         prop.style [style.zIndex image_map_z_index]
+(* Prevent a mouse click from calling Runner.run (). *)
+        prop.onClick (fun event -> do event.stopPropagation ())
         prop.children [
             Html.img [
                 prop.className "image_map_image"
@@ -98,13 +100,15 @@ let private view_idle_visible
                     prop.className "image_map_hotspot"
                     prop.style [
                         style.zIndex image_map_hotspot_z_index
-                        style.left (length.px left)
-                        style.top (length.px top)
-                        style.width (length.px width)
-                        style.height (length.px height)
+                        style.left (length.percent left)
+                        style.top (length.percent top)
+                        style.width (length.percent width)
+                        style.height (length.percent height)
                     ]
-                    prop.onClick (fun _ ->
-                        notify_image_map_selection data.name item.value
+                    prop.onClick (fun event ->
+                        do
+                            event.stopPropagation ()
+                            notify_image_map_selection data.name item.value
                     )
                 ]
         ]
@@ -130,13 +134,15 @@ let private view_fade_in_out
 
     Html.div [
         prop.id "image_map_container"
+        prop.style [style.zIndex image_map_z_index]
+(* Prevent a mouse click from calling Runner.run (). *)
+        prop.onClick (fun event -> do event.stopPropagation ())
         prop.children [
             Html.img [
                 prop.className "image_map_image"
                 prop.key url
                 prop.src url
                 prop.style [
-                    style.zIndex image_map_hotspot_z_index
                     style.opacity opacity
                     style.custom ("transition", $"opacity {transition_time}s ease-in-out")
                 ]

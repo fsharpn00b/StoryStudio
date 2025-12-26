@@ -87,6 +87,8 @@ let private view
             Html.div [
                 prop.id "menu_container"
                 prop.style [style.zIndex menu_z_index]
+(* Prevent a mouse click from calling Runner.run (). *)
+                prop.onClick (fun event -> do event.stopPropagation ())
                 prop.children [
                     Html.div [
                         prop.id "menu_description"
@@ -99,11 +101,13 @@ let private view
                                 Html.li [
                                     prop.className "menu_item"
                                     prop.text item.text
-                                    prop.onClick (fun _ ->
-                                        dispatch <| Menu_Item_Selected {
-                                            name = menu_data_2.name
-                                            value = item.value
-                                        })
+                                    prop.onClick (fun event ->
+                                        do
+                                            event.stopPropagation ()
+                                            dispatch <| Menu_Item_Selected {
+                                                name = menu_data_2.name
+                                                value = item.value
+                                            })
                                 ]
                         ]
                     ]

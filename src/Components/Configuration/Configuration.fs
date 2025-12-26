@@ -117,6 +117,8 @@ let private view
         Html.div [
             prop.className "configuration_screen"
             prop.style [style.zIndex configuration_z_index]
+(* Prevent a mouse click from calling Runner.run (). *)
+            prop.onClick (fun event -> do event.stopPropagation ())
             prop.children [
                 Html.div [
                     prop.className "configuration_header"
@@ -149,9 +151,18 @@ let private view
                     prop.children [
                         Html.button [
                             prop.text "Save"
-                            prop.onClick (fun _ ->
+                            prop.onClick (fun event ->
                                 do
+                                    event.stopPropagation ()
                                     update_typing_speed configuration set_configuration (document.getElementById "txt_typing_speed"  :?> HTMLTextAreaElement)
+                                    dispatch Hide
+                            )
+                        ]
+                        Html.button [
+                            prop.text "Exit"
+                            prop.onClick (fun event ->
+                                do
+                                    event.stopPropagation ()
                                     dispatch Hide
                             )
                         ]
