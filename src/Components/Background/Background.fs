@@ -168,31 +168,33 @@ let private view
         debug_render_counter <- debug_render_counter + 1
     #endif
 
-// TODO1 This should probably be per-case.
-    Html.div [
-        prop.id "background_fade_container"
-        prop.children [
+    match state.current with
+    | Idle_Hidden -> Html.none
+    | _ ->
+        Html.div [
+            prop.id "background_fade_container"
+            prop.children [
+                match state.current with
 (* TODO2 This is still entangled with Fade_State, but that probably cannot be helped.
 opacity could be moved to a CSS class. But src, key, and transition are not static and must be determined by code.
 *)
-            match state.current with
-            | Idle_Hidden -> Html.none
-            | Idle_Visible url -> view_idle_visible url
-            | Fade_In_Pre_Transition transition_data -> view_fade_in_out true true transition_data.new_data transition_data.transition_time
-            | Fade_In_Transition transition_data -> view_fade_in_out false true transition_data.new_data transition_data.transition_time
-            | Fade_Out_Pre_Transition transition_data -> view_fade_in_out true false transition_data.old_data transition_data.transition_time
-            | Fade_Out_Transition transition_data -> view_fade_in_out false false transition_data.old_data transition_data.transition_time
-            | Cross_Fade_Pre_Transition transition_data ->
-                yield! view_cross_fade true transition_data.old_data transition_data.new_data transition_data.transition_time
-            | Cross_Fade_Transition transition_data ->
-                yield! view_cross_fade false transition_data.old_data transition_data.new_data transition_data.transition_time
+                | Idle_Visible url -> view_idle_visible url
+                | Fade_In_Pre_Transition transition_data -> view_fade_in_out true true transition_data.new_data transition_data.transition_time
+                | Fade_In_Transition transition_data -> view_fade_in_out false true transition_data.new_data transition_data.transition_time
+                | Fade_Out_Pre_Transition transition_data -> view_fade_in_out true false transition_data.old_data transition_data.transition_time
+                | Fade_Out_Transition transition_data -> view_fade_in_out false false transition_data.old_data transition_data.transition_time
+                | Cross_Fade_Pre_Transition transition_data ->
+                    yield! view_cross_fade true transition_data.old_data transition_data.new_data transition_data.transition_time
+                | Cross_Fade_Transition transition_data ->
+                    yield! view_cross_fade false transition_data.old_data transition_data.new_data transition_data.transition_time
+                | _ -> Html.none
+            ]
         ]
-    ]
 
 (* Main functions - state *)
 
 (* We would like to move this to Fade, but each UI component's get_state function must return a saveable state whose type is specific to that component. *)
-// TODO1 state had type IRefValue<Fade_State<string>>. That should never have compiled, let alone worked. Same issue for set_state () below.
+// TODO2 state had type IRefValue<Fade_State<string>>. That should never have compiled, let alone worked. Same issue for set_state () below. Does IRefValue just erase the types it contains?
 let private get_state (state : IRefValue<Fade_State<Background_Data>>) : Background_Saveable_State =
     match state.current with
     | Idle_Hidden -> Hidden

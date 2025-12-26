@@ -86,6 +86,7 @@ let private view
         | Some menu_data_2 ->
             Html.div [
                 prop.id "menu_container"
+                prop.style [style.zIndex menu_z_index]
                 prop.children [
                     Html.div [
                         prop.id "menu_description"

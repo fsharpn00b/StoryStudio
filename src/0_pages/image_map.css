@@ -2,8 +2,6 @@
 
 #image_map_container {
   position: absolute;
-/* TODO1 Move these z-indexes to the code where we can use constants. */
-  z-index: 4;
   top: 0;
   left: 0;
   width: 100vw;
@@ -25,7 +23,6 @@
   cursor: pointer;
 /* Prevent layout shift when we show border. */
   border: 1px solid transparent;
-  z-index: 5;
 }
 
 .image_map_hotspot:hover {

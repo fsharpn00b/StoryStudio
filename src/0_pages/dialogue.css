@@ -7,7 +7,6 @@
   transform: translateX(-50%); /* Center horizontally */
   width: 60%;
   height: 22%;
-  z-index: 2;
 }
 
 #dialogue_box {
@@ -44,7 +43,6 @@
   font-weight: bold;
   font-size: 1rem;
   border-radius: 5px;
-  z-index: 3;
 }
 
 #dialogue_text {

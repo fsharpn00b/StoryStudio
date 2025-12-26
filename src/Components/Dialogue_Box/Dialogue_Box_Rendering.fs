@@ -8,6 +8,7 @@ open Feliz
 open Dialogue_Box_Types
 open Fade_Types
 open Log
+open Utilities
 
 (* Debug *)
 
@@ -31,10 +32,12 @@ let view
         Html.div [
             prop.id "dialogue_box_container"
             prop.key "dialogue_box_container"
+            prop.style [style.zIndex dialogue_box_z_index]
             prop.children [
                 Html.div [
                     prop.id "dialogue_box_character_name_label"
                     prop.key "dialogue_box_character_name_label"
+                    prop.style [style.zIndex dialogue_box_character_name_z_index]
                     prop.text character
                 ]
                 Html.div [

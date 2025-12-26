@@ -18,6 +18,7 @@ open Character_Types
 open Dialogue_Box_Types
 open Log
 open Units_Of_Measure
+open Utilities
 
 (* Debug *)
 
@@ -115,6 +116,7 @@ let private view
     if state.current.is_visible then
         Html.div [
             prop.className "configuration_screen"
+            prop.style [style.zIndex configuration_z_index]
             prop.children [
                 Html.div [
                     prop.className "configuration_header"

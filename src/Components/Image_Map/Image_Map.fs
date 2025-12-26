@@ -69,7 +69,7 @@ let private error : error_function = error debug_module_name
 
 (* Main functions - rendering *)
 
-(* TODO1 We can't cross fade between image map and background image because they use different z-indices. Plus we'd have to know whether we were cross fading between background image and image map, or between two image maps. The type info for each would be different (backround image is just a url, image map is Image_Map_Data).
+(* TODO2 We can't cross fade between image map and background image because they use different z-indices. Plus we'd have to know whether we were cross fading between background image and image map, or between two image maps. The type info for each would be different (backround image is just a url, image map is Image_Map_Data).
 We could use fade_out_all for the background, characters, and dialogue box, the continue immediately (rather than wait for callback) to the fade in for the image map. But then we would need to save the states for the background, characters, and dialogue box, and add a fade_in_all command.
 *)
 
@@ -80,6 +80,7 @@ let private view_idle_visible
 
     Html.div [
         prop.id "image_map_container"
+        prop.style [style.zIndex image_map_z_index]
         prop.children [
             Html.img [
                 prop.className "image_map_image"
@@ -96,6 +97,7 @@ let private view_idle_visible
                 Html.div [
                     prop.className "image_map_hotspot"
                     prop.style [
+                        style.zIndex image_map_hotspot_z_index
                         style.left (length.px left)
                         style.top (length.px top)
                         style.width (length.px width)
@@ -134,6 +136,7 @@ let private view_fade_in_out
                 prop.key url
                 prop.src url
                 prop.style [
+                    style.zIndex image_map_hotspot_z_index
                     style.opacity opacity
                     style.custom ("transition", $"opacity {transition_time}s ease-in-out")
                 ]

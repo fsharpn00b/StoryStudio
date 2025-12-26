@@ -22,34 +22,34 @@ type Parser_Accumulator = {
 
 (* Helper functions - parsing *)
 
-(* This function makes sure we do not get an invalid token sequence, such as If followed by Else_If with no commands. *)
+(* This function checks for invalid token sequences involving If/Else_If/Else, such as If followed by Else_If with no commands.
+For Menu and Image_Map, we check for invalid token sequences with Parser_1_Match_Functions.collect_menu () and collect_image_map (). Menu and Image_Map cannot have nested commands, whereas If/Else_If/Else can.
+Parser_1_Match_Patterns.match_if_start (), match_else_if (), match_else (), and match_if_end () do not check for invalid token sequences. They just get the corresponding conditionals.
+*)
 let check_current_token_and_next_token (token : Command_Pre_Parse) (next_token : Command_Pre_Parse) : unit =
     let tokens = ["token", token :> obj; "next_token", next_token :> obj]
 
     match token with
-    | Command_Pre_Parse.Command _ -> ()
+
     | Command_Pre_Parse.If _ ->
         match next_token with
         | Command_Pre_Parse.Command _
         | Command_Pre_Parse.If _ -> ()
         | _ -> error "check_current_token_and_next_token" "If must be followed by command or another If." tokens |> invalidOp
+
     | Command_Pre_Parse.Else_If _ ->
         match next_token with
         | Command_Pre_Parse.Command _
         | Command_Pre_Parse.If _ -> ()
         | _ -> error "check_current_token_and_next_token" "ElseIf must be followed by command or If." tokens |> invalidOp
+
     | Command_Pre_Parse.Else ->
         match next_token with
         | Command_Pre_Parse.Command _
         | Command_Pre_Parse.If _ -> ()
         | _ -> error "check_current_token_and_next_token" "Else must be followed by command or another If." tokens |> invalidOp
-    | Command_Pre_Parse.End_If -> ()
-(* TODO1 Aren't these cases handled by the collect_menu/collect_image_map functions?
-- For that matter, aren't if/else if/end if handled by the handle_if, etc. functions?
-*)
-    | Command_Pre_Parse.Menu _ -> ()
-    | Command_Pre_Parse.Image_Map _ -> ()
-    | Command_Pre_Parse.End_Image_Map _ -> ()
+
+    | _ -> ()
 
 (* The first return parameter is the next_command_id for the current command. The second is the ID to be used for the next command. These are not always the same. See the Else_If/Else/End_If case.
 *)

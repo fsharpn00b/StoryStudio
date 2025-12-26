@@ -93,7 +93,6 @@ let match_music_stop (text : string) : Command_Pre_Parse option =
 let match_background_fade_in (text : string) (backgrounds : Map<string, string>) : Command_Pre_Parse option =
     let m = background_fade_in_regex.Match text
     if m.Success then
-// TODO1 Failure to match these parameters (fade transition time, character position, etc) should throw a specific error rather than silently fail.
         match Double.TryParse m.Groups[2].Value with
         | true, transition_time ->
             let background = m.Groups[1].Value
@@ -104,7 +103,7 @@ let match_background_fade_in (text : string) (backgrounds : Map<string, string>)
                     transition_time = LanguagePrimitives.FloatWithMeasure transition_time
                 } |> Command_Pre_Parse.Command |> Some
             | None -> error "match_background_fade_in" "Unknown background." ["background", background; "backgrounds", backgrounds] |> invalidOp
-        | _ -> None
+        | _ -> error "match_background_fade_in" "Failed to parse transition time." ["transition_time", m.Groups[2].Value] |> invalidOp
     else None
 
 let match_background_fade_out (text : string) : Command_Pre_Parse option =
@@ -115,7 +114,7 @@ let match_background_fade_out (text : string) : Command_Pre_Parse option =
             Command_Types.Background_Fade_Out {
                 transition_time = LanguagePrimitives.FloatWithMeasure transition_time
             } |> Command_Pre_Parse.Command |> Some
-        | _ -> None
+        | _ -> error "match_background_fade_out" "Failed to parse transition time." ["transition_time", m.Groups[1].Value] |> invalidOp
     else None
 
 let match_background_cross_fade (text : string) (backgrounds : Map<string, string>) : Command_Pre_Parse option =
@@ -131,7 +130,7 @@ let match_background_cross_fade (text : string) (backgrounds : Map<string, strin
                     transition_time = LanguagePrimitives.FloatWithMeasure transition_time
                 } |> Command_Pre_Parse.Command |> Some
             | None -> error "match_background_cross_fade" "Unknown background." ["background", background; "backgrounds", backgrounds] |> invalidOp
-        | _ -> None
+        | _ -> error "match_background_cross_fade" "Failed to parse transition time." ["transition_time", m.Groups[2].Value] |> invalidOp
     else None
 
 let match_character_fade_in (text : string) (characters : Character_Input_Map) : Command_Pre_Parse option =
@@ -154,8 +153,8 @@ let match_character_fade_in (text : string) (characters : Character_Input_Map) :
                         } |> Command_Pre_Parse.Command |> Some
                     | None -> error "match_character_fade_in" "Unknown mood." ["character_full_name", character.full_name; "character", character; "mood", mood] |> invalidOp
                 | None -> error "match_character_fade_in" "Unknown character." ["character_short_name", character_short_name; "characters", characters] |> invalidOp
-            | _ -> None
-        | _ -> None
+            | _ -> error "match_character_fade_in" "Failed to parse transition time." ["transition_time", m.Groups[4].Value] |> invalidOp
+        | _ -> error "match_character_fade_in" "Failed to parse position." ["position", m.Groups[3].Value] |> invalidOp
     else None
 
 let match_character_fade_out (text : string) (characters : Character_Input_Map): Command_Pre_Parse option =
@@ -170,7 +169,7 @@ let match_character_fade_out (text : string) (characters : Character_Input_Map):
                     transition_time = LanguagePrimitives.FloatWithMeasure transition_time
                 } |> Command_Pre_Parse.Command |> Some
             else error "match_character_fade_out" "Unknown character." ["character_short_name", character_short_name; "characters", characters] |> invalidOp
-        | _ -> None
+        | _ -> error "match_character_fade_out" "Failed to parse transition time." ["transition_time", m.Groups[2].Value] |> invalidOp
     else None
 
 let match_character_cross_fade (text : string) (characters : Character_Input_Map) : Command_Pre_Parse option =
@@ -190,7 +189,7 @@ let match_character_cross_fade (text : string) (characters : Character_Input_Map
                     } |> Command_Pre_Parse.Command |> Some
                 | None -> error "match_character_cross_fade" "Unknown mood." ["character_full_name", character.full_name; "character", character; "mood", mood] |> invalidOp
             | None -> error "match_character_cross_fade" "Unknown character." ["character_short_name", character_short_name; "characters", characters] |> invalidOp
-        | _ -> None
+        | _ -> error "match_character_cross_fade" "Failed to parse transition time." ["transition_time", m.Groups[3].Value] |> invalidOp
     else None
 
 let match_fade_out_all (text : string) : Command_Pre_Parse option =
@@ -199,7 +198,7 @@ let match_fade_out_all (text : string) : Command_Pre_Parse option =
         match Double.TryParse m.Groups[1].Value with
         | true, transition_time ->
             transition_time |> LanguagePrimitives.FloatWithMeasure |> Fade_Out_All |> Command_Pre_Parse.Command |> Some
-        | _ -> None
+        | _ -> error "match_fade_out_all" "Failed to parse transition time." ["transition_time", m.Groups[1].Value] |> invalidOp
     else None
 
 let match_dialogue_box_show (text : string) : Command_Pre_Parse option =
@@ -224,8 +223,9 @@ let match_dialogue (text : string) (characters : Character_Input_Map) : Command_
                 text = text |> convert_string_to_use_javascript_interpolation
                 javascript_interpolations = extract_javascript_interpolations text
             } |> Command_Pre_Parse.Command |> Some
-// TODO1 Might be better to just return None and end up with unrecognized command. In the error message for that, suggest checking character name. Or make this message clearer (that it could be either an unknown character or unrecognized command).
-        | None -> error "match_dialogue" "Unknown character." ["character_short_name", character_short_name; "characters", characters] |> invalidOp
+// TODO2 This error usually results from an unrecognized command, so we clarified the error message for that instead.
+//        | None -> error "match_dialogue" "Unrecognized character." ["character_short_name", character_short_name; "characters", characters] |> invalidOp
+        | None -> None
     else None
 
 let match_javascript_inline (text : string) : Command_Pre_Parse option =
@@ -268,51 +268,69 @@ let match_menu_start (text : string) : Menu_Data option =
 let match_menu_item (text : string) : Menu_Item_Data option =
     let m = menu_item_regex.Match text
     if m.Success then
-        let text = m.Groups[2].Value
-        {
-            value = Int32.Parse m.Groups[1].Value
-            text = text |> convert_string_to_use_javascript_interpolation
-            javascript_interpolations = extract_javascript_interpolations text
+        match Int32.TryParse m.Groups[1].Value with
+        | true, value ->
+            let text = m.Groups[2].Value
+            {
+                value = value
+                text = text |> convert_string_to_use_javascript_interpolation
+                javascript_interpolations = extract_javascript_interpolations text
 (* If the pattern defines an optional group, that group is present in m.Groups even if it was not matched in the input text. *)
-            conditional = if m.Groups[4].Success then m.Groups[4].Value |> Some else None
-        } |> Some
+                conditional = if m.Groups[4].Success then m.Groups[4].Value |> Some else None
+            } |> Some
+        | _ -> error "match_menu_item" "Failed to parse menu item index." ["menu item index", m.Groups[1].Value] |> invalidOp
     else None
 
 let match_image_map_start (text : string) (backgrounds : Map<string, string>) : Image_Map_Data option =
     let m = image_map_start_regex.Match text
     if m.Success then
-        let background = m.Groups[2].Value
-        match backgrounds.TryFind background with
-        | Some url ->
-            {
-                name = m.Groups[1].Value
-                url = url
-                items = []
-// TODO1 Again, throw specific error here.
-                transition_time = m.Groups[3].Value |> Double.Parse |> LanguagePrimitives.FloatWithMeasure
-            } |> Some
-        | None -> error "match_image_map_start" "Unknown background." ["background", background; "backgrounds", backgrounds] |> invalidOp
+        match Double.TryParse m.Groups[3].Value with
+        | true, transition_time ->
+            let background = m.Groups[2].Value
+            match backgrounds.TryFind background with
+            | Some url ->
+                {
+                    name = m.Groups[1].Value
+                    url = url
+                    items = []
+                    transition_time = transition_time |> LanguagePrimitives.FloatWithMeasure
+                } |> Some
+            | None -> error "match_image_map_start" "Unknown background." ["background", background; "backgrounds", backgrounds] |> invalidOp
+        | _ -> error "match_image_map_start" "Failed to parse transition time." ["transition_time", m.Groups[3].Value] |> invalidOp
     else None
 
 let match_image_map_end (text : string) : Fade_Transition_Time option =
     let m = end_image_map_regex.Match text
-// TODO1 Again, throw specific error here.
-    if m.Success then m.Groups[1].Value |> Double.Parse |> LanguagePrimitives.FloatWithMeasure |> Some
+    if m.Success then
+        match Double.TryParse m.Groups[1].Value with
+        | true, transition_time -> transition_time |> LanguagePrimitives.FloatWithMeasure |> Some
+        | _ -> error "match_image_map_end" "Failed to parse transition time." ["transition_time", m.Groups[1].Value] |> invalidOp
     else None
 
 let match_image_map_item (text : string) : Image_Map_Item_Data option =
     let m = image_map_item_regex.Match text
     if m.Success then
-        {
-            value = Int32.Parse m.Groups[1].Value
-            x1 = Int32.Parse m.Groups[2].Value
-            y1 = Int32.Parse m.Groups[3].Value
-            x2 = Int32.Parse m.Groups[4].Value
-            y2 = Int32.Parse m.Groups[5].Value
-            javascript_interpolations = extract_javascript_interpolations text
+        match Int32.TryParse m.Groups[1].Value with
+        | true, value ->
+            match
+                Int32.TryParse m.Groups[2].Value,
+                Int32.TryParse m.Groups[3].Value,
+                Int32.TryParse m.Groups[4].Value,
+                Int32.TryParse m.Groups[5].Value
+            with
+            | (true, x1), (true, y1), (true, x2), (true, y2) ->
+                {
+                    value = value
+                    x1 = x1
+                    y1 = y1
+                    x2 = x2
+                    y2 = y2
+                    javascript_interpolations = extract_javascript_interpolations text
 (* If the pattern defines an optional group, that group is present in m.Groups even if it was not matched in the input text. *)
-            conditional = if m.Groups[7].Success then m.Groups[7].Value |> Some else None
-        } |> Some
+                    conditional = if m.Groups[7].Success then m.Groups[7].Value |> Some else None
+                } |> Some
+            | _ -> error "match_image_map_item" "Failed to parse one or more coordinates." ["x1", m.Groups[2].Value; "y1", m.Groups[3].Value; "x2", m.Groups[4].Value; "y2", m.Groups[5].Value] |> invalidOp
+        | _ -> error "match_image_map_item" "Failed to parse image map item index." ["image map item index", m.Groups[1].Value] |> invalidOp
     else None
 
 let match_jump (text : string) (scripts : Script list) : Command_Pre_Parse option =

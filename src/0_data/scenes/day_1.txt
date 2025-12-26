@@ -24,6 +24,7 @@ endmenu
 
 imagemap direction overhead 1.0
 // TODO1 These make no sense. 250 "pixels" takes up more than half our 1080 height.
+// TODO1 We should let the author define a shape we can pass straight through to HTML. Depends on what shapes a div supports.
 1 0 0 250 250 $if false === window.state.player_state.is_lost
 2 250 250 500 500
 endimagemap 1.0

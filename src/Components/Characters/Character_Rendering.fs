@@ -9,6 +9,7 @@ open Character_Types
 open Fade_Types
 open Log
 open Units_Of_Measure
+open Utilities
 
 (* Debug *)
 
@@ -21,14 +22,14 @@ let mutable debug_render_counter = 1
 
 (* Helper functions - rendering *)
 
-let private get_character_style (character : Visible_Character_Data) =
+let private get_character_style (character : Visible_Character_Data) : IStyleAttribute list =
     [
         style.custom ("position", "absolute")
         style.bottom 0
         style.custom ("left", $"{character.position}%%")
         style.custom ("height", $"{character.height}vh")
         style.custom ("width", "auto")
-        style.zIndex 1
+        style.zIndex character_z_index
     ]
 
 (* Main functions - rendering *)

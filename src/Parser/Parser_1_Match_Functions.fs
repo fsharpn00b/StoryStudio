@@ -160,7 +160,7 @@ let private match_command
     }
     match Seq.tryPick id attempts with
     | Some result -> result
-    | None -> error "match_command" "Unrecognized command." ["command", command] |> invalidOp
+    | None -> error "match_command" "Unrecognized command. This might also be due to a dialogue command with an unrecognized character, as the parser tries to parse dialogue last." ["command", command] |> invalidOp
 
 let match_commands
     (backgrounds : Map<string, string>)

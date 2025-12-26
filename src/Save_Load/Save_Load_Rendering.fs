@@ -12,6 +12,7 @@ open Save_Load_Storage
 open Save_Load_Storage_Helpers
 open Save_Load_Types
 open Units_Of_Measure
+open Utilities
 
 (* Helper functions - rendering *)
 
@@ -110,6 +111,7 @@ let view
     | Visible state_2 ->
         Html.div [
             prop.className "save_load_screen"
+            prop.style [style.zIndex save_load_screen_z_index]
             prop.children [
                 Html.div [
                     prop.className "save_load_header"
