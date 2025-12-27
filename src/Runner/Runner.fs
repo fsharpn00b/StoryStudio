@@ -8,6 +8,7 @@ open Feliz
 
 open Background
 open Character_Types
+open Command_Menu
 open Command_Types
 open Configuration
 open Dialogue_Box_Types
@@ -16,6 +17,7 @@ open Log
 open Menu
 open Music
 open Runner_Configuration
+open Runner_History
 open Runner_Notify
 open Runner_Queue
 open Runner_Save_Load
@@ -23,6 +25,8 @@ open Runner_Types
 open Runner_UI
 open Save_Load
 open Save_Load_Types
+
+// TODO1 Need to see how well this renders on mobile.
 
 (* Notes *)
 
@@ -85,7 +89,6 @@ let private error : error_function = error debug_module_name
 [<ReactComponent>]
 let Runner
     (props : {| expose : IRefValue<I_Runner> |})
-    (history : IRefValue<Runner_History>)
     (characters : Character_Input_Map)
     (scenes : Scene_Map)
     : ReactElement =
@@ -93,6 +96,15 @@ let Runner
 (* State *)
 
     let queue = React.useRef <| get_initial_queue ()
+
+(* We let the save/load state live in the Save_Load component, but we keep the configuration state here instead of in the Configuration component. We need the configuration to construct other components, so we must have it available immediately, rather than waiting for the Configuration component to be ready.
+TODO2 Would simply constructing the Configuration component first fix this? Still, we could argue the configuration belongs to the Runner rather than to a component whose job is only to show a UI to manage the configuration. This might be a better separation of concerns.
+*)
+    let configuration_1 = React.useRef (
+        match get_configuration_from_local_storage () with
+        | Some configuration_2 -> configuration_2
+        | None -> default_configuration
+    )
 
 (* UI components *)
 
@@ -107,18 +119,15 @@ TODO2 We could use option with .Value.
     let save_load_2 = React.useRef<I_Save_Load> Unchecked.defaultof<_>
     let music_2 = React.useRef<I_Music> Unchecked.defaultof<_>
     let configuration_component_2 = React.useRef<I_Configuration> Unchecked.defaultof<_>
+    let command_menu_2 = React.useRef<I_Command_Menu> Unchecked.defaultof<_>
     let runner_components = React.useRef<Runner_Components> Unchecked.defaultof<_>
 
-(* We let the save/load state live in the Save_Load component, but we keep the configuration state here instead of in the Configuration component. We need the configuration to construct other components, so we must have it available immediately, rather than waiting for the Configuration component to be ready.
-TODO2 Would simply constructing the Configuration component first fix this? Still, we could argue the configuration belongs to the Runner rather than to a component whose job is only to show a UI to manage the configuration. This might be a better separation of concerns.
-*)
-    let configuration_1 = React.useRef (
-        match get_configuration_from_local_storage () with
-        | Some configuration_2 -> configuration_2
-        | None -> default_configuration
-    )
-
-// TODO1 Need to see how well this renders on mobile.
+(* History is part of state, but must be declared after runner_components. *)
+    let history = React.useRef<Runner_History> {
+        current_index = None
+        history = []
+        notify_history_changed = fun () -> runner_components.current.command_menu.current.redraw ()
+    }
 
 (*
 https://fable-hub.github.io/Feliz/#/Hooks/UseElmish
@@ -172,6 +181,22 @@ When you need to trigger events from [an embedded] Elmish component, use React p
 
     let configuration_component_1 = Configuration ({| expose = configuration_component_2 |}, configuration_1, set_configuration runner_components configuration_1)
 
+    let command_menu_1 =
+        Command_Menu (
+            {| expose = command_menu_2 |},
+            {
+                show_configuration_screen = fun () -> Runner_UI.show_configuration_screen queue runner_components
+                show_save_game_screen = fun () -> Runner_UI.show_saved_game_screen queue runner_components Save_Game
+                show_load_game_screen = fun () -> Runner_UI.show_saved_game_screen queue runner_components Load_Game
+                can_undo = fun () -> can_undo history
+                can_redo = fun () -> can_redo history
+                undo = fun () -> Runner_UI.undo queue runner_components history
+                redo = fun () -> Runner_UI.redo queue runner_components history
+            }
+        )
+
+(* Setup *)
+
     React.useEffectOnce(fun () ->
         runner_components.current <- {
             background = background_2
@@ -182,20 +207,9 @@ When you need to trigger events from [an embedded] Elmish component, use React p
             save_load = save_load_2
             music = music_2
             configuration = configuration_component_2
+            command_menu = command_menu_2
         }
     )
-
-    let children =
-        seq {
-            background_1
-            dialogue_box_1
-            characters_1
-            menu_1
-            image_map_1
-            save_load_1
-            music_1
-            configuration_component_1
-        }
 
 (* Interface *)
 
@@ -230,5 +244,18 @@ When you need to trigger events from [an embedded] Elmish component, use React p
     )
 
 (* Render *)
+
+    let children =
+        seq {
+            background_1
+            dialogue_box_1
+            characters_1
+            menu_1
+            image_map_1
+            save_load_1
+            music_1
+            configuration_component_1
+            command_menu_1
+        }
 
     React.fragment children

@@ -5,6 +5,7 @@ open Feliz
 
 open Background
 open Character_Types
+open Command_Menu
 open Command_Types
 open Configuration
 open Dialogue_Box_Types
@@ -40,6 +41,7 @@ type Runner_Components = {
     save_load : IRefValue<I_Save_Load>
     music : IRefValue<I_Music>
     configuration : IRefValue<I_Configuration>
+    command_menu : IRefValue<I_Command_Menu>
 }
 
 type Runner_Saveable_State_Component_Data = {
@@ -74,6 +76,7 @@ Does Runner_Saveable_State_Running_Data.add to history play any role in undo/red
 type Runner_History = {
     current_index : int option
     history : Runner_Saveable_State list
+    notify_history_changed : unit -> unit
 }
 
 type Runner_Command_Data = {

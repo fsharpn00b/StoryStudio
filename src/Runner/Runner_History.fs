@@ -19,23 +19,54 @@ let private debug : log_function = debug debug_module_name
 let private warn : warn_function = warn debug_module_name
 let private error : error_function = error debug_module_name
 
+(* Functions *)
+
 let add_to_history
     (history : IRefValue<Runner_History>)
     (runner_components : IRefValue<Runner_Components>)
     (queue : IRefValue<Runner_Queue>)
     : unit =
-    do history.current <-
-        match history.current.current_index with
-        | None ->
-            {
-                current_index = Some 0
-                history = [get_state runner_components queue]
-            }
-        | Some current_index ->
-            {
-                current_index = Some <| current_index + 1
-                history = (List.take (current_index + 1) history.current.history) @ [get_state runner_components queue]
-            }
+
+    do
+        history.current <-
+            match history.current.current_index with
+            | None ->
+                {
+                    history.current with
+                        current_index = Some 0
+                        history = [get_state runner_components queue]
+                }
+            | Some current_index ->
+                {
+                    history.current with
+                        current_index = Some <| current_index + 1
+                        history = (List.take (current_index + 1) history.current.history) @ [get_state runner_components queue]
+                }
+        history.current.notify_history_changed ()
+
+let clear_history
+    (history : IRefValue<Runner_History>)
+    : unit =
+
+    do
+        history.current <- { history.current with current_index = None; history = [] }
+        history.current.notify_history_changed ()
+
+let can_undo
+    (history : IRefValue<Runner_History>)
+    : bool =
+
+    match history.current.current_index with
+    | Some current_index_1 -> current_index_1 > 0
+    | None -> false
+
+let can_redo
+    (history : IRefValue<Runner_History>)
+    : bool =
+
+    match history.current.current_index with
+    | Some current_index_1 -> current_index_1 < history.current.history.Length - 1
+    | None -> false
 
 (* TODO2 We have not tried to redo during a transition. That is possible, as we only truncate the history when we add to it. In other words, we could:
 1 Run a command (a) that uses a transition.
@@ -68,6 +99,7 @@ let undo_redo
                 let current_index_2 = if undo then current_index_1 - 1 else current_index_1 + 1
                 do
                     history.current <- { history.current with current_index = Some current_index_2 }
+                    history.current.notify_history_changed ()
 
                     #if debug
                     debug "undo_redo" String.Empty ["History index (after)", history.current.current_index; "History length", history.current.history.Length]

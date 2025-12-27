@@ -40,7 +40,7 @@ let private load_game
     | Ok saved_state ->
         do
 (* Clear the history. *)
-            history.current <- { current_index = None; history = [] }
+            clear_history history
 (* We do not need to call force_complete_transitions () because we did so before showing the saved game screen.
 Each UI component's set_state () method dispatches Show or Hide messages with notify_transition_complete = false to prevent commands from auto-continuing unexpectedly.
 *)

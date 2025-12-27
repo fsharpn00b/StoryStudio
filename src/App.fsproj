@@ -25,6 +25,7 @@
     <Compile Include="Components/Dialogue_Box/Dialogue_Box_State.fs" />
     <Compile Include="Components/Dialogue_Box/Dialogue_Box.fs" />
     <Compile Include="Components/Configuration/Configuration.fs" />
+    <Compile Include="Components/Command_Menu/Command_Menu.fs" />
     <Compile Include="Components/Menu/Menu.fs" />
     <Compile Include="Components/Image_Map/Image_Map.fs" />
     <Compile Include="Runner/Command_Types.fs" />

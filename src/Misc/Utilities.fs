@@ -23,6 +23,7 @@ let menu_z_index = 4
 let image_map_hotspot_z_index = 5
 let configuration_z_index = 6
 let save_load_screen_z_index = 6
+let command_menu_z_index = 7
 
 (* Interfaces *)
 

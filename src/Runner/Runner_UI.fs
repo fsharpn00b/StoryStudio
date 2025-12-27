@@ -159,10 +159,12 @@ let hide_saved_game_screen
 let show_or_hide_ui
     (runner_components : IRefValue<Runner_Components>)
     : unit =
-(* We do not request notification when the transition completes, or provide a command queue item ID, because this is an internal command. *)
     do
+(* We do not request notification when the transition completes, or provide a command queue item ID, because this is an internal command. *)
         if runner_components.current.dialogue_box.current.is_visible () then runner_components.current.dialogue_box.current.hide false None
         else runner_components.current.dialogue_box.current.show false None
+        if runner_components.current.command_menu.current.is_visible () then runner_components.current.command_menu.current.hide ()
+        else runner_components.current.command_menu.current.show ()
 
 let quicksave
     (queue : IRefValue<Runner_Queue>)

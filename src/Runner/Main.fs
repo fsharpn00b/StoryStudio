@@ -41,10 +41,6 @@ let scenes = get_scene_map_and_javascript (get_scripts ()) (get_backgrounds ()) 
 [<ReactComponent>]
 let Main () : ReactElement =
 
-    let history = React.useRef<Runner_History> {
-        current_index = None
-        history = []
-    }
     let runner_2 = React.useRef<I_Runner> Unchecked.defaultof<_>
 
     do React.useEffectOnce(fun () ->
@@ -73,7 +69,7 @@ let Main () : ReactElement =
     )
 
     let runner_1 =
-        Runner {| expose = runner_2 |} history character_inputs scenes
+        Runner {| expose = runner_2 |} character_inputs scenes
 
     runner_1
 
