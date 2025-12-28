@@ -16,6 +16,8 @@ open Image_Map
 open Log
 open Menu
 open Music
+open Temporary_Notification
+open Notifications
 open Runner_Configuration
 open Runner_History
 open Runner_Notify
@@ -25,6 +27,7 @@ open Runner_Types
 open Runner_UI
 open Save_Load
 open Save_Load_Types
+open Units_Of_Measure
 
 // TODO1 Need to see how well this renders on mobile.
 
@@ -112,14 +115,16 @@ TODO2 Would simply constructing the Configuration component first fix this? Stil
 TODO2 We could use option with .Value.
 *)
     let background_2 = React.useRef<I_Background> Unchecked.defaultof<_>
-    let dialogue_box_2 = React.useRef<I_Dialogue_Box> Unchecked.defaultof<_>
     let characters_2 = React.useRef<I_Characters> Unchecked.defaultof<_>
-    let menu_2 = React.useRef<I_Menu> Unchecked.defaultof<_>
-    let image_map_2 = React.useRef<I_Image_Map> Unchecked.defaultof<_>
-    let save_load_2 = React.useRef<I_Save_Load> Unchecked.defaultof<_>
-    let music_2 = React.useRef<I_Music> Unchecked.defaultof<_>
-    let configuration_component_2 = React.useRef<I_Configuration> Unchecked.defaultof<_>
     let command_menu_2 = React.useRef<I_Command_Menu> Unchecked.defaultof<_>
+    let configuration_component_2 = React.useRef<I_Configuration> Unchecked.defaultof<_>
+    let dialogue_box_2 = React.useRef<I_Dialogue_Box> Unchecked.defaultof<_>
+    let image_map_2 = React.useRef<I_Image_Map> Unchecked.defaultof<_>
+    let menu_2 = React.useRef<I_Menu> Unchecked.defaultof<_>
+    let music_2 = React.useRef<I_Music> Unchecked.defaultof<_>
+    let notifications_2 = React.useRef<I_Notifications> Unchecked.defaultof<_>
+    let save_load_2 = React.useRef<I_Save_Load> Unchecked.defaultof<_>
+
     let runner_components = React.useRef<Runner_Components> Unchecked.defaultof<_>
 
 (* History is part of state, but must be declared after runner_components. *)
@@ -142,13 +147,6 @@ When you need to trigger events from [an embedded] Elmish component, use React p
             (get_notify_transition_complete scenes runner_components queue history Runner_Component_Names.Background)
         )
 
-    let dialogue_box_1 =
-        Dialogue_Box.Dialogue_Box (
-            {| expose = dialogue_box_2 |},
-            configuration_1.current.dialogue_box_configuration,
-            (get_notify_transition_complete scenes runner_components queue history Runner_Component_Names.Dialogue_Box)
-        )
-
     let characters_1 = 
         Characters.Characters (
             {| expose = characters_2 |},
@@ -156,30 +154,6 @@ When you need to trigger events from [an embedded] Elmish component, use React p
             (get_notify_transition_complete scenes runner_components queue history Runner_Component_Names.Characters),
             characters
         )
-
-    let menu_1 =
-        Menu.Menu (
-            {| expose = menu_2 |},
-            (get_notify_transition_complete scenes runner_components queue history Runner_Component_Names.Menu),
-            (get_notify_menu_selection scenes queue runner_components)
-        )
-
-    let image_map_1 =
-        Image_Map.Image_Map (
-            {| expose = image_map_2 |},
-            (get_notify_transition_complete scenes runner_components queue history Runner_Component_Names.Image_Map),
-            (get_notify_image_map_selection scenes queue runner_components)
-        )
-
-    let save_load_1 =
-        Save_Load (
-            {| expose = save_load_2 |},
-            get_load_game runner_components history queue 
-        )
-
-    let music_1 = Music {| expose = music_2 |}
-
-    let configuration_component_1 = Configuration ({| expose = configuration_component_2 |}, configuration_1, set_configuration runner_components configuration_1)
 
     let command_menu_1 =
         Command_Menu (
@@ -195,19 +169,57 @@ When you need to trigger events from [an embedded] Elmish component, use React p
             }
         )
 
+    let configuration_component_1 = Configuration ({| expose = configuration_component_2 |}, configuration_1, set_configuration runner_components configuration_1)
+
+    let dialogue_box_1 =
+        Dialogue_Box.Dialogue_Box (
+            {| expose = dialogue_box_2 |},
+            configuration_1.current.dialogue_box_configuration,
+            (get_notify_transition_complete scenes runner_components queue history Runner_Component_Names.Dialogue_Box)
+        )
+
+    let image_map_1 =
+        Image_Map.Image_Map (
+            {| expose = image_map_2 |},
+            (get_notify_transition_complete scenes runner_components queue history Runner_Component_Names.Image_Map),
+            (get_notify_image_map_selection scenes queue runner_components)
+        )
+
+    let menu_1 =
+        Menu.Menu (
+            {| expose = menu_2 |},
+            (get_notify_transition_complete scenes runner_components queue history Runner_Component_Names.Menu),
+            (get_notify_menu_selection scenes queue runner_components)
+        )
+
+    let music_1 = Music {| expose = music_2 |}
+
+    let notifications_1 =
+        Notifications (
+            {| expose = notifications_2 |},
+            configuration_1.current.temporary_notifications_configuration
+        )
+
+    let save_load_1 =
+        Save_Load (
+            {| expose = save_load_2 |},
+            get_load_game runner_components history queue 
+        )
+
 (* Setup *)
 
     React.useEffectOnce(fun () ->
         runner_components.current <- {
             background = background_2
             characters = characters_2
-            dialogue_box = dialogue_box_2
-            menu = menu_2
-            image_map = image_map_2
-            save_load = save_load_2
-            music = music_2
-            configuration = configuration_component_2
             command_menu = command_menu_2
+            configuration = configuration_component_2
+            dialogue_box = dialogue_box_2
+            image_map = image_map_2
+            menu = menu_2
+            music = music_2
+            notifications = notifications_2
+            save_load = save_load_2
         }
     )
 
@@ -248,14 +260,15 @@ When you need to trigger events from [an embedded] Elmish component, use React p
     let children =
         seq {
             background_1
-            dialogue_box_1
             characters_1
-            menu_1
-            image_map_1
-            save_load_1
-            music_1
-            configuration_component_1
             command_menu_1
+            configuration_component_1
+            dialogue_box_1
+            image_map_1
+            menu_1
+            music_1
+            notifications_1
+            save_load_1
         }
 
     React.fragment children

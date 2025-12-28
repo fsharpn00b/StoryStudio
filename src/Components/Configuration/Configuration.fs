@@ -17,6 +17,7 @@ open Background
 open Character_Types
 open Dialogue_Box_Types
 open Log
+open Temporary_Notification
 open Units_Of_Measure
 open Utilities
 
@@ -35,6 +36,7 @@ type Runner_Configuration = {
     background_configuration : Background_Configuration
     characters_configuration : Characters_Configuration
     dialogue_box_configuration : Dialogue_Box_Configuration
+    temporary_notifications_configuration : Temporary_Notifications_Configuration
 }
 
 type Configuration_State = {
@@ -86,23 +88,45 @@ let private set_configuration_in_local_storage
     let json = Encode.Auto.toString (0, configuration.current)
     do localStorage.setItem (local_storage_name, json)
 
-let private update_typing_speed
+let private update_configuration
     (configuration : IRefValue<Runner_Configuration>)
     (set_configuration : Runner_Configuration -> unit)
-    (new_value_1 : HTMLTextAreaElement)
+    (new_typing_speed_value_1 : HTMLTextAreaElement)
+    (new_notification_display_time_value_1 : HTMLTextAreaElement)
+    (new_notification_transition_time_value_1 : HTMLTextAreaElement)
     : unit =
 
-    match Int32.TryParse new_value_1.value with
+    match Int32.TryParse new_typing_speed_value_1.value with
     | true, new_value_2 ->
         let new_value_3 =
             if new_value_2 > 0 then characters_per_second_to_delay_between_characters new_value_2
             else 0<milliseconds>
         do
             configuration.current <- { configuration.current with dialogue_box_configuration = { typing_speed = new_value_3 }}
-            set_configuration configuration.current
-            set_configuration_in_local_storage configuration
-
     | _ -> ()
+
+    match Int32.TryParse new_notification_display_time_value_1.value with
+    | true, new_value_2 ->
+        let new_value_3 =
+            if new_value_2 < int min_temporary_notification_display_time then int min_temporary_notification_display_time
+            elif new_value_2 > int max_temporary_notification_display_time then int max_temporary_notification_display_time
+            else new_value_2
+
+        do configuration.current <- { configuration.current with temporary_notifications_configuration = { configuration.current.temporary_notifications_configuration with display_time = new_value_3 |> float |> LanguagePrimitives.FloatWithMeasure } }
+    | _ -> ()
+
+    match Int32.TryParse new_notification_transition_time_value_1.value with
+    | true, new_value_2 ->
+        let new_value_3 =
+            if new_value_2 < int min_temporary_notification_transition_time then int min_temporary_notification_transition_time
+            elif new_value_2 > int max_temporary_notification_transition_time then int max_temporary_notification_transition_time
+            else new_value_2
+
+        do configuration.current <- { configuration.current with temporary_notifications_configuration = { configuration.current.temporary_notifications_configuration with transition_time = new_value_3 |> float |> LanguagePrimitives.FloatWithMeasure } }
+    | _ -> ()
+
+    set_configuration configuration.current
+    set_configuration_in_local_storage configuration
 
 (* Main functions - rendering *)
 
@@ -139,10 +163,30 @@ let private view
 (* It seems we are supposed to use this instead of ``type``. *)
                             prop.type' "text"
                             prop.maxLength 3
-                            prop.style [
-                                style.width (length.em 4)
-                            ]
+                            prop.style [style.width (length.em 4)]
                             prop.defaultValue (configuration.current.dialogue_box_configuration.typing_speed |> int |> delay_between_characters_to_characters_per_second)
+                        ]
+                        Html.br []
+                        Html.label [
+                            prop.text $"Notification display time (seconds, minimum {int min_temporary_notification_display_time}, maximim {int max_temporary_notification_display_time})"
+                        ]
+                        Html.input [
+                            prop.id "txt_notification_display_time"
+                            prop.type' "text"
+                            prop.maxLength 2
+                            prop.style [style.width (length.em 3)]
+                            prop.defaultValue (configuration.current.temporary_notifications_configuration.display_time |> int)
+                        ]
+                        Html.br []
+                        Html.label [
+                            prop.text $"Notification fade in/fade out time (seconds, minimum {int min_temporary_notification_transition_time}, maximium {int max_temporary_notification_transition_time})"
+                        ]
+                        Html.input [
+                            prop.id "txt_notification_transition_time"
+                            prop.type' "text"
+                            prop.maxLength 2
+                            prop.style [style.width (length.em 3)]
+                            prop.defaultValue (configuration.current.temporary_notifications_configuration.transition_time |> int)
                         ]
                     ]
                 ]
@@ -154,7 +198,7 @@ let private view
                             prop.onClick (fun event ->
                                 do
                                     event.stopPropagation ()
-                                    update_typing_speed configuration set_configuration (document.getElementById "txt_typing_speed"  :?> HTMLTextAreaElement)
+                                    update_configuration configuration set_configuration (document.getElementById "txt_typing_speed" :?> HTMLTextAreaElement) (document.getElementById "txt_notification_display_time" :?> HTMLTextAreaElement) (document.getElementById "txt_notification_transition_time" :?> HTMLTextAreaElement)
                                     dispatch Hide
                             )
                         ]

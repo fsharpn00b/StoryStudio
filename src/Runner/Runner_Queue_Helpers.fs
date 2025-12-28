@@ -52,6 +52,7 @@ We set continue_after_running to false because, even if the dialogue box has its
     | Dialogue _ -> Wait_For_Callback { continue_afterward = false; add_to_history = true; autosave = false }
     | Music_Play _
     | Music_Stop
+    | Temporary_Notification _
 // TODO2 Possibly these should not be commands, or should at least be a separate subtype.
     | JavaScript_Inline _
     | JavaScript_Block _ -> Continue_Immediately { autosave = false }
@@ -69,8 +70,11 @@ let private command_to_component_ids (command : Command) : Runner_Component_Name
     | Dialogue_Box_Show
     | Dialogue_Box_Hide
     | Dialogue _ -> Set.singleton Dialogue_Box
+(* The Music component does not have transitions. *)
     | Music_Play _
     | Music_Stop
+(* The Notifications component does not notify Runner when it completes a transition. *)
+    | Temporary_Notification _
     | JavaScript_Inline _
     | JavaScript_Block _
     | Jump _ -> Set.empty
@@ -96,6 +100,10 @@ let private handle_command
 
         | Music_Stop ->
             Some <| fun _ -> do runner_components.current.music.current.stop ()
+
+        | Temporary_Notification command_2 ->
+// TODO1 There is no way to see whether we have applied JS interpolation to the text field yet. Use separate types? This applies to other commands that use JS interpolation also.
+            Some <| fun _ -> do runner_components.current.notifications.current.add_temporary_notification { command_2 with text = eval_js_string_with_menu_variables command_2.text menu_variables }
 
         | Background_Fade_In command_2 ->
             Some <| fun (command_queue_item_id : int<runner_queue_item_id>) -> do runner_components.current.background.current.fade_in command_2.new_url command_2.transition_time command_queue_item_id

@@ -17,3 +17,4 @@ module Units_Of_Measure
 
 type Fade_Transition_Time = float<seconds>
 type Dialogue_Box_Typing_Speed = int<milliseconds>
+type Temporary_Notification_Display_Time = float<seconds>

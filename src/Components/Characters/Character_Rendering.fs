@@ -73,7 +73,6 @@ let private view_fade_in_out
             get_character_style character
             @ [
                 style.opacity opacity
-(* TODO2 We can ignore string interpolation errors. They seem to result from a bug in Ionide. *)
                 style.custom ("transition", $"opacity {transition_time}s ease-in-out")
             ]
         )

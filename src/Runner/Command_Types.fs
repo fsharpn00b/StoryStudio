@@ -5,6 +5,7 @@ open Fade_Types
 open Background
 open Image_Map
 open Menu
+open Temporary_Notification
 open Units_Of_Measure
 open Utilities
 
@@ -28,6 +29,7 @@ type Command =
     | Dialogue_Box_Show
     | Dialogue_Box_Hide
     | Dialogue of Dialogue_Data
+    | Temporary_Notification of Temporary_Notification_Data
     | JavaScript_Inline of string
     | JavaScript_Block of string
     | Jump of int<scene_id>

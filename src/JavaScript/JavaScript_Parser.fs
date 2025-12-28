@@ -62,7 +62,8 @@ let private handle_command_javascript (command_1 : Command) : string option =
     match command_1 with
     | JavaScript_Inline command_2
     | JavaScript_Block command_2 -> Some $"{command_2}{Environment.NewLine}"
-    | Dialogue command_3 -> combine_javascript_interpolations command_3.javascript_interpolations |> Some
+    | Dialogue command_2 -> combine_javascript_interpolations command_2.javascript_interpolations |> Some
+    | Temporary_Notification command_2 -> combine_javascript_interpolations command_2.javascript_interpolations |> Some
     | _ -> None
 
 let private handle_menu_javascript (menu : Menu_Data) : string =

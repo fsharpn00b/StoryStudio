@@ -23,7 +23,7 @@ let private error : error_function = error log_module_name
 
 let mutable debug_render_counter = 1
 
-(* Consts *)
+(* Globa values *)
 
 let mutable remove_character_transition_lock = 0
 
@@ -107,7 +107,7 @@ let private set_configuration
     : unit =
     do old_configuration.current <- new_configuration
 
-(* Main functions - visibility *)
+(* Main functions - rendering *)
 
 let private fade_in
     (characters : IRefValue<Character_Map>)

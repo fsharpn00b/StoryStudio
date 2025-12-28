@@ -13,6 +13,7 @@ open Image_Map
 open JavaScript_Interop
 open Menu
 open Music
+open Notifications
 open Save_Load_Types
 open Units_Of_Measure
 
@@ -42,6 +43,7 @@ type Runner_Components = {
     music : IRefValue<I_Music>
     configuration : IRefValue<I_Configuration>
     command_menu : IRefValue<I_Command_Menu>
+    notifications : IRefValue<I_Notifications>
 }
 
 type Runner_Saveable_State_Component_Data = {

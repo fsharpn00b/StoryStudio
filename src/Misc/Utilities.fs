@@ -16,6 +16,7 @@ let wait_for_transitions_to_complete_time = 10<milliseconds>
 let hide_save_load_screen_delay_time = 10<milliseconds>
 
 let character_z_index = 1
+let notifications_z_index = 2
 let dialogue_box_z_index = 2
 let dialogue_box_character_name_z_index = 3
 let image_map_z_index = 4

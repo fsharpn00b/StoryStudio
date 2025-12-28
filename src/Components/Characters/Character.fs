@@ -164,6 +164,8 @@ Height is set in the character definition file and not changed afterward. It is 
     let fade_state_ref = React.useRef fade_state
     do fade_state_ref.current <- fade_state
 
+(* Interface *)
+
     do React.useImperativeHandle(props.expose, fun () ->
         {
             new I_Character with

@@ -8,8 +8,9 @@ open System.Text.RegularExpressions
 open Character_Types
 open Command_Types
 open Image_Map
-open Menu
 open Log
+open Menu
+open Temporary_Notification
 open Units_Of_Measure
 
 (* Debug *)
@@ -27,6 +28,8 @@ let get_compiled_regex (pattern : string) = Regex (pattern, RegexOptions.Compile
 (* TODO2 This will also match an int. So if we want to try to match either a float or int, we should try to match an int first. *)
 let float_regex = @"[0-9]+(\.[0-9]+)?"
 
+// TODO1 To improve matching, use text.StartsWith () to get the command, then use regex to match the rest. That makes matching less brittle. Even if the author formats the parameters wrong, we still know what command they were using, and can give them more useful error messages.
+// TODO1 We also need to keep a list of reserved words so the author cannot name characters after them.
 let single_line_comment_regex = @"^//.*$" |> get_compiled_regex
 let multi_line_comment_start_regex = @"^/\*.*$" |> get_compiled_regex
 let multi_line_comment_end_regex = @".*?\*/$" |> get_compiled_regex
@@ -35,13 +38,14 @@ let private music_stop_regex = @"^stop$" |> get_compiled_regex
 let private background_fade_in_regex = @$"^fadein\s+(\S+)\s+({float_regex})$" |> get_compiled_regex
 let private background_fade_out_regex = @$"^fadeout\s+({float_regex})$" |> get_compiled_regex
 let private background_cross_fade_regex = @$"^fadeto\s+(\S+)\s+({float_regex})$" |> get_compiled_regex
-let private dialogue_regex = @"^(\w+)\s+(.+)$" |> get_compiled_regex
 let private fade_in_character_regex = @$"^fadein\s+(\w+)\s+(\w+)\s+(\d+)\s+({float_regex})$" |> get_compiled_regex
 let private fade_out_character_regex = @$"^fadeout\s+(\w+)\s+({float_regex})$" |> get_compiled_regex
 let private cross_fade_character_regex = @$"^fadeto\s+(\w+)\s+(\w+)\s+({float_regex})$" |> get_compiled_regex
 let private fade_out_all_regex = @$"^fadeoutall\s+({float_regex})$" |> get_compiled_regex
 let private dialogue_box_show_regex = @"^show dialogue box$" |> get_compiled_regex
 let private dialogue_box_hide_regex = @"^hide dialogue box$" |> get_compiled_regex
+let private dialogue_regex = @"^(\w+)\s+(.+)$" |> get_compiled_regex
+let private temporary_notification_regex = @$"^notify\s+(.+)$" |> get_compiled_regex
 
 let private javascript_inline_regex = @"^js\s+(.+)$" |> get_compiled_regex
 (* We use curly braces to delimit interpolations, so the author cannot, for instance, write an interpolation that contains the following.
@@ -221,11 +225,21 @@ let match_dialogue (text : string) (characters : Character_Input_Map) : Command_
                 character_short_name = character_short_name
                 character_full_name = character.full_name
                 text = text |> convert_string_to_use_javascript_interpolation
-                javascript_interpolations = extract_javascript_interpolations text
+                javascript_interpolations = text |> extract_javascript_interpolations
             } |> Command_Pre_Parse.Command |> Some
 // TODO2 This error usually results from an unrecognized command, so we clarified the error message for that instead.
 //        | None -> error "match_dialogue" "Unrecognized character." ["character_short_name", character_short_name; "characters", characters] |> invalidOp
         | None -> None
+    else None
+
+let match_temporary_notification (text : string) : Command_Pre_Parse option =
+    let m = temporary_notification_regex.Match text
+    if m.Success then
+        let text = m.Groups[1].Value
+        {
+            text = text |> convert_string_to_use_javascript_interpolation
+            javascript_interpolations = text |> extract_javascript_interpolations
+        } |> Temporary_Notification |> Command_Pre_Parse.Command |> Some
     else None
 
 let match_javascript_inline (text : string) : Command_Pre_Parse option =
@@ -325,6 +339,7 @@ let match_image_map_item (text : string) : Image_Map_Item_Data option =
                     y1 = y1
                     x2 = x2
                     y2 = y2
+// TODO1 Why would an image map item have a JS interpolation? There is no text. It can have a conditional, but not an interpolation. We think this was copied over from menu item. We could leave it in here for alt text.
                     javascript_interpolations = extract_javascript_interpolations text
 (* If the pattern defines an optional group, that group is present in m.Groups even if it was not matched in the input text. *)
                     conditional = if m.Groups[7].Success then m.Groups[7].Value |> Some else None
