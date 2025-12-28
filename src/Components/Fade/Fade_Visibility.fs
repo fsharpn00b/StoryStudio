@@ -52,13 +52,12 @@ let private update_fade_out<'T when 'T : equality>
 
 TODO2 Maybe Notify_Transition_Complete should always delay. We cannot think of a case where we can safely set delay to false.
 *)
-        Idle_Hidden, command
+        state, command
 
     | Idle_Visible old_data ->
 (* If the transition time is 0, just hide the old data. *)
         if fade_out_data.transition_time <= 0.0<seconds> then
-            state, command
-
+            Idle_Hidden, command
         else
 (* Trigger the first render, to set up the old data before fading out. *)
             #if debug

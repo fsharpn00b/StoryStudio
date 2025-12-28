@@ -44,7 +44,6 @@ type I_Temporary_Notification =
 let max_temporary_notification_display_time = 30<seconds>
 let min_temporary_notification_display_time = 1<seconds>
 let max_temporary_notification_transition_time = 5<seconds>
-// TODO0 If we set transition time to 0, final message in queue never disappears.
 let min_temporary_notification_transition_time = 0<seconds>
 
 (* Main functions - rendering *)

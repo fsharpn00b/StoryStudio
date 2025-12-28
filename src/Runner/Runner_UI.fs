@@ -95,7 +95,6 @@ let run
         not <| runner_components.current.image_map.current.is_visible () &&
         not <| runner_components.current.save_load.current.is_visible () &&
         not <| runner_components.current.configuration.current.is_visible () then
-// TODO1 After we save/load screen, show an overlay that says game paused; press click to continue. What about setting that in the dialogue box?
 (* We must determine what the next command is before we can run it. *)
         do run queue scenes runner_components reason
 

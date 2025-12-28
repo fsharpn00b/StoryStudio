@@ -133,6 +133,14 @@ let Notifications (
 (* Render *)
     view temporary_notification_component
 
+(* TODO1 When we pause, show temporary notification telling player to click to continue.
+- After showing save/load screen
+- After showing configuration screen
+- After player presses key to import/export single/multiple games to/from file
+
+- Basically any scenario where we force transition completion except Runner.run ().
+*)
+
 (* TODO1 How to implement.
 
 - Permanent notifications
@@ -148,7 +156,7 @@ let Notifications (
 / Temporary notifications
 x Author issues a notify command.
 x Show one notification at a time. If more than one, queue them up.
-/ Let player configure display time and fade in/out time.
+x Let player configure display time and fade in/out time.
 - Save timeout handle to cancel notification in case we - what? load new game? undo?
 - Also need to clear queue in that case?
 (end)
