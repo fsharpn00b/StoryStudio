@@ -59,7 +59,7 @@ let private convert_file_path_to_scene_name (path : string) =
     | -1 -> fileName
     | idx -> fileName.Substring (0, idx)
 
-let private moods_decoder : Decoder<Map<string,string>> =
+let private sprites_decoder : Decoder<Map<string,string>> =
     Decode.keyValuePairs Decode.string
     |> Decode.map Map.ofList
 
@@ -68,7 +68,7 @@ let private character_decoder : Decoder<Character_Input> =
         { full_name  = get.Required.Field "full_name" Decode.string
           short_name = get.Required.Field "short_name" Decode.string
           height     = get.Required.Field "height" Decode.int |> LanguagePrimitives.Int32WithMeasure
-          moods      = get.Required.Field "moods" moods_decoder })
+          sprites      = get.Required.Field "sprites" sprites_decoder })
 
 let private characters_decoder = Decode.list character_decoder
 

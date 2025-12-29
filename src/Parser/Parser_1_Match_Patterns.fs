@@ -144,10 +144,10 @@ let match_character_fade_in (text : string) (characters : Character_Input_Map) :
         | true, position ->
             match Double.TryParse m.Groups[4].Value with
             | true, transition_time ->
-                let character_short_name, mood = m.Groups[1].Value, m.Groups[2].Value
+                let character_short_name, sprite = m.Groups[1].Value, m.Groups[2].Value
                 match characters.TryFind character_short_name with
                 | Some character ->
-                    match character.moods.TryFind mood with
+                    match character.sprites.TryFind sprite with
                     | Some url ->
                         Command_Types.Character_Fade_In {
                             character_short_name = character_short_name
@@ -155,7 +155,7 @@ let match_character_fade_in (text : string) (characters : Character_Input_Map) :
                             position = LanguagePrimitives.Int32WithMeasure position
                             transition_time = LanguagePrimitives.FloatWithMeasure transition_time
                         } |> Command_Pre_Parse.Command |> Some
-                    | None -> error "match_character_fade_in" "Unknown mood." ["character_full_name", character.full_name; "character", character; "mood", mood] |> invalidOp
+                    | None -> error "match_character_fade_in" "Unknown sprite." ["character_full_name", character.full_name; "character", character; "sprite", sprite] |> invalidOp
                 | None -> error "match_character_fade_in" "Unknown character." ["character_short_name", character_short_name; "characters", characters] |> invalidOp
             | _ -> error "match_character_fade_in" "Failed to parse transition time." ["transition_time", m.Groups[4].Value] |> invalidOp
         | _ -> error "match_character_fade_in" "Failed to parse position." ["position", m.Groups[3].Value] |> invalidOp
@@ -181,17 +181,17 @@ let match_character_cross_fade (text : string) (characters : Character_Input_Map
     if m.Success then
         match Double.TryParse m.Groups[3].Value with
         | true, transition_time ->
-            let character_short_name, mood = m.Groups[1].Value, m.Groups[2].Value
+            let character_short_name, sprite = m.Groups[1].Value, m.Groups[2].Value
             match characters.TryFind character_short_name with
             | Some character ->
-                match character.moods.TryFind mood with
+                match character.sprites.TryFind sprite with
                 | Some url ->
                     Command_Types.Character_Cross_Fade {
                         character_short_name = character_short_name
                         url = url
                         transition_time = LanguagePrimitives.FloatWithMeasure transition_time
                     } |> Command_Pre_Parse.Command |> Some
-                | None -> error "match_character_cross_fade" "Unknown mood." ["character_full_name", character.full_name; "character", character; "mood", mood] |> invalidOp
+                | None -> error "match_character_cross_fade" "Unknown sprite." ["character_full_name", character.full_name; "character", character; "sprite", sprite] |> invalidOp
             | None -> error "match_character_cross_fade" "Unknown character." ["character_short_name", character_short_name; "characters", characters] |> invalidOp
         | _ -> error "match_character_cross_fade" "Failed to parse transition time." ["transition_time", m.Groups[3].Value] |> invalidOp
     else None

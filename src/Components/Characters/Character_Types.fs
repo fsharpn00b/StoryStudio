@@ -15,14 +15,14 @@ type Characters_Configuration = {
     placeholder : unit
 }
 
-type Character_Moods = Map<string, string>
+type Character_Sprites = Map<string, string>
 
 type Character_Input = {
     full_name : string
     short_name : string
 (* Height does not change during character animations. *)
     height : int<percent>
-    moods : Character_Moods
+    sprites : Character_Sprites
 }
 
 type Character_Input_Map = Map<string, Character_Input>
@@ -32,7 +32,7 @@ type Character_Input_Map = Map<string, Character_Input>
 Visible_Character_Data does not really need to be wrapped inside Fade_State. Fade_State really only needs the URL, so it knows whether to ignore a Fade_In or Cross_Fade message (if the old URL is the same as the new URL).
 Character position and height are only needed here, in Characters, for the view function.
 
-The height field is duplicated between this type and Visible_Character_Data. We need it here because Visible_Character_Data is ephemeral. It is re-created every time we want to show the character in a different position or with a different mood (which means a different URL).
+The height field is duplicated between this type and Visible_Character_Data. We need it here because Visible_Character_Data is ephemeral. It is re-created every time we want to show the character in a different position or with a different sprite (which means a different URL).
 
 We could remove height and url from Visible_Character_Data, and only store height here and url in Fade_State. However, Visible_Character_Data is a convenient encapsulation. It simplifies several functions so they do not require the entire Character type. Having Visible_Character_Data wrapped inside Fade_State has not, so far, created any issues with handling the intersections of various state types.
 (end)

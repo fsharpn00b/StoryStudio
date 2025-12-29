@@ -162,7 +162,7 @@ let private cross_fade
     : unit =
 
     #if debug
-    do debug "cross_fade" String.Empty ["characters", characters; "character_short_name", character_short_name; "mood", mood; "transition_time",transition_time]
+    do debug "cross_fade" String.Empty ["characters", characters; "character_short_name", character_short_name; "url", url; "transition_time",transition_time]
     #endif
 
     match characters.current.TryGetValue character_short_name with
