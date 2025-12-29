@@ -151,6 +151,7 @@ let private match_command
         match_dialogue_box_show command
         match_dialogue_box_hide command
         match_temporary_notification command
+        match_permanent_notification command
         match_javascript_inline command
         match_if_start command
         match_else_if command

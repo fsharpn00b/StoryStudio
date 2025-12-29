@@ -1,12 +1,24 @@
 // Starting script is always named start.txt.
 
-js
 // Set up initial state.
+js
 window.state = {
   player_state : {
     is_lost : false
   }
 };
+endjs
+
+// Set up function.
+js
+window.is_lost = (function () {
+  if (true === window.state.player_state.is_lost) {
+    return "You are currently lost.";
+  }
+  else {
+    return "You are not currently lost.";
+  }
+});
 endjs
 
 // Go to first day scene.

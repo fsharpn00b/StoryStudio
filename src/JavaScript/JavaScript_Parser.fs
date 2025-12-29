@@ -64,6 +64,7 @@ let private handle_command_javascript (command_1 : Command) : string option =
     | JavaScript_Block command_2 -> Some $"{command_2}{Environment.NewLine}"
     | Dialogue command_2 -> combine_javascript_interpolations command_2.javascript_interpolations |> Some
     | Temporary_Notification command_2 -> combine_javascript_interpolations command_2.javascript_interpolations |> Some
+    | Permanent_Notification command_2 -> combine_javascript_interpolations command_2.javascript_interpolations |> Some
     | _ -> None
 
 let private handle_menu_javascript (menu : Menu_Data) : string =

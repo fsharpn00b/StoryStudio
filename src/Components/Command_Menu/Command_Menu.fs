@@ -72,14 +72,6 @@ let private view
                     prop.id "command_menu"
                     prop.children [
                         Html.label [
-                            prop.text "..."
-                            prop.onClick (fun event ->
-                                do
-                                    event.stopPropagation ()
-                                    commands.show_configuration_screen ()
-                            )
-                        ]
-                        Html.label [
                             prop.text "Save"
                             prop.onClick (fun event ->
                                 do
@@ -118,6 +110,14 @@ let private view
                             )
                             let color = if can_redo then "white" else "gray"
                             prop.style <| [style.color color]
+                        ]
+                        Html.label [
+                            prop.text "..."
+                            prop.onClick (fun event ->
+                                do
+                                    event.stopPropagation ()
+                                    commands.show_configuration_screen ()
+                            )
                         ]
                     ]
                 ]

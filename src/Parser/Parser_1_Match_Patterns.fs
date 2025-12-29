@@ -46,6 +46,7 @@ let private dialogue_box_show_regex = @"^show dialogue box$" |> get_compiled_reg
 let private dialogue_box_hide_regex = @"^hide dialogue box$" |> get_compiled_regex
 let private dialogue_regex = @"^(\w+)\s+(.+)$" |> get_compiled_regex
 let private temporary_notification_regex = @$"^notify\s+(.+)$" |> get_compiled_regex
+let private permanent_notification_regex = @$"^status\s+(.+)$" |> get_compiled_regex
 
 let private javascript_inline_regex = @"^js\s+(.+)$" |> get_compiled_regex
 (* We use curly braces to delimit interpolations, so the author cannot, for instance, write an interpolation that contains the following.
@@ -240,6 +241,16 @@ let match_temporary_notification (text : string) : Command_Pre_Parse option =
             text = text |> convert_string_to_use_javascript_interpolation
             javascript_interpolations = text |> extract_javascript_interpolations
         } |> Temporary_Notification |> Command_Pre_Parse.Command |> Some
+    else None
+
+let match_permanent_notification (text : string) : Command_Pre_Parse option =
+    let m = permanent_notification_regex.Match text
+    if m.Success then
+        let text = m.Groups[1].Value
+        {
+            text = text |> convert_string_to_use_javascript_interpolation
+            javascript_interpolations = text |> extract_javascript_interpolations
+        } |> Permanent_Notification |> Command_Pre_Parse.Command |> Some
     else None
 
 let match_javascript_inline (text : string) : Command_Pre_Parse option =

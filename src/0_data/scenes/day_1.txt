@@ -2,6 +2,8 @@
 play /0_assets/music/whispers-of-autumn-love-stocktune.mp3
 // Fade in daytime background over 2 seconds.
 fadein day 2.0
+// Display status (permanent notification).
+status {window.is_lost ()}
 // If/then example.
 if true === window.state.player_state.is_lost
 // Fade in the character Laura, with a sad expression, at horizontal position 25%, over 1 second.
@@ -46,6 +48,7 @@ if 1 === direction
 
 else
     if true === window.state.player_state.is_lost
+        js window.state.player_state.is_lost = false;
         notify You are no longer lost.
     endif
 

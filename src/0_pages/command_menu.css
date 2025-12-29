@@ -1,8 +1,7 @@
 #command_menu_container {
   position: fixed;
   top: 0rem;
-  left: 0;
-  right: 0;
+  right: 0rem;
   display: flex;
   justify-content: center;
   pointer-events: none;

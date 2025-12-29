@@ -64,6 +64,12 @@ let eval_js_boolean_with_menu_variables (code : string) (menu_variables : Menu_V
 let eval_js_string_with_menu_variables (code : string) (menu_variables : Menu_Variables) =
     eval_js_string $"{emit_menu_variables menu_variables}{code}"
 
+(* In some cases we must run JavaScript code that might fail. If the JavaScript code fails, eval_js_string returns null, which is a valid value of System.String. We check for that here and return String.Empty instead. *)
+let try_eval_js_string_with_menu_variables (code : string) (menu_variables : Menu_Variables) =
+    let result = eval_js_string $"{emit_menu_variables menu_variables}{code}"
+    if isNull result then String.Empty
+    else result        
+
 (* This is for debugging. *)
 let show_js_state () : unit =
     do

@@ -2,9 +2,12 @@
   position: absolute;
   top: 0rem;
   left: 0rem;
+  background: (0, 0, 0, 0.4);
+  backdrop-filter: blur(10px);          /* Frosted glass effect */
+  -webkit-backdrop-filter: blur(10px);  /* Safari support */
 }
 
 .notification {
-  background-color: (0, 0, 0, 0.4);
+
   padding: 0.25rem 1rem;
 }

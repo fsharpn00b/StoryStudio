@@ -53,6 +53,7 @@ We set continue_after_running to false because, even if the dialogue box has its
     | Music_Play _
     | Music_Stop
     | Temporary_Notification _
+    | Permanent_Notification _
 // TODO2 Possibly these should not be commands, or should at least be a separate subtype.
     | JavaScript_Inline _
     | JavaScript_Block _ -> Continue_Immediately { autosave = false }
@@ -75,6 +76,7 @@ let private command_to_component_ids (command : Command) : Runner_Component_Name
     | Music_Stop
 (* The Notifications component does not notify Runner when it completes a transition. *)
     | Temporary_Notification _
+    | Permanent_Notification _
     | JavaScript_Inline _
     | JavaScript_Block _
     | Jump _ -> Set.empty
@@ -104,6 +106,12 @@ let private handle_command
         | Temporary_Notification command_2 ->
 // TODO1 There is no way to see whether we have applied JS interpolation to the text field yet. Use separate types? This applies to other commands that use JS interpolation also.
             Some <| fun _ -> do runner_components.current.notifications.current.add_temporary_notification { command_2 with text = eval_js_string_with_menu_variables command_2.text menu_variables }
+
+        | Permanent_Notification command_2 ->
+            Some <| fun _ ->
+                do
+                    runner_components.current.notifications.current.set_permanent_notification_before_eval_js command_2.text
+                    runner_components.current.notifications.current.set_permanent_notification_after_eval_js <| eval_js_string_with_menu_variables command_2.text menu_variables
 
         | Background_Fade_In command_2 ->
             Some <| fun (command_queue_item_id : int<runner_queue_item_id>) -> do runner_components.current.background.current.fade_in command_2.new_url command_2.transition_time command_queue_item_id
@@ -139,10 +147,18 @@ let private handle_command
             Some <| fun (command_queue_item_id : int<runner_queue_item_id>) -> runner_components.current.dialogue_box.current.type_dialogue command_2.character_full_name (eval_js_string_with_menu_variables command_2.text menu_variables) command_queue_item_id
 
         | JavaScript_Inline command_2 ->
-            Some <| fun _ -> eval_js_with_menu_variables command_2 menu_variables |> ignore
+            Some <| fun _ ->
+                do eval_js_with_menu_variables command_2 menu_variables |> ignore
+(* Update permanent notification.
+We use try_eval_js_string_with_menu_variables () because, when we define JavaScript functions in start.txt, we might not be able to define all values or functions used by JavaScript expressions in the permanent notification text right away. As a result, trying to evaluate these expressions might fail at first.
+*)
+                do runner_components.current.notifications.current.set_permanent_notification_after_eval_js <| try_eval_js_string_with_menu_variables (runner_components.current.notifications.current.get_permanent_notification_before_eval_js ()) menu_variables
 
         | JavaScript_Block command_2 ->
-            Some <| fun _ -> eval_js_with_menu_variables command_2 menu_variables |> ignore
+            Some <| fun _ ->
+                eval_js_with_menu_variables command_2 menu_variables |> ignore
+(* Update permanent notification. See comments for JavaScript_Inline. *)
+                do runner_components.current.notifications.current.set_permanent_notification_after_eval_js <| try_eval_js_string_with_menu_variables (runner_components.current.notifications.current.get_permanent_notification_before_eval_js ()) menu_variables
 
         | Jump _ -> None
 
