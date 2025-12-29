@@ -98,6 +98,15 @@ let run
 (* We must determine what the next command is before we can run it. *)
         do run queue scenes runner_components reason
 
+(* TODO1 When we pause, show temporary notification telling player to click to continue.
+- After showing save/load screen
+- After showing configuration screen
+- After player presses key to import/export single/multiple games to/from file
+
+- Basically any scenario where we force transition completion except Runner.run ().
+*)
+
+// TODO1 Rename these functions to show_or_hide_*.
 let show_configuration_screen
     (queue : IRefValue<Runner_Queue>)
     (runner_components : IRefValue<Runner_Components>)

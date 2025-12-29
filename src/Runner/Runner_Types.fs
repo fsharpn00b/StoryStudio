@@ -53,6 +53,7 @@ type Runner_Saveable_State_Component_Data = {
     menu : Menu_Saveable_State
     image_map : Image_Map_Saveable_State
     music : Music_State
+    notifications : Notifications_Saveable_State
     javascript : obj
 }
 

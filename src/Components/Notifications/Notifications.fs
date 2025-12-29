@@ -26,16 +26,26 @@ type Temporary_Notifications_Queue = Temporary_Notification_Data list
 (* For now, these types contain the same data. *)
 type Permanent_Notification_Data = Temporary_Notification_Data
 
-// TODO0 Not implemented yet. Might not be needed? We just regenerate this from the current JS state? OTOH, using the set_state mechanism is probably simplest. It will cause an issue if this relies on any mutable state that exists outside the scope of the history though. I.e. we assume that both the JS state, and a string derived from that state, are the same as before.
-//type Permanent_Notification_Saveable_State = Permanent_Notification_Data
+(* TODO2 For now, we only worry about permanent notifications.
+If we decide to handle temporary notifications:
+- Save timeout function handle to cancel transition/notification in case we load new game/undo?
+- Also need to clear notification queue in that case?
+*)
+type Notifications_Saveable_State = {
+    permanent_notification_before_eval_js : string
+    permanent_notification_after_eval_js : string
+}
 
 (* Interfaces *)
 
+// TODO1 We need hide/show/is_visible for the hide UI command. Use a fade state for that so we can just dispatch show/hide? We'll need to implement our own is_visible ().
 type I_Notifications =
     abstract member add_temporary_notification : Temporary_Notification_Data -> unit
     abstract member get_permanent_notification_before_eval_js : unit -> string
     abstract member set_permanent_notification_before_eval_js : string -> unit
     abstract member set_permanent_notification_after_eval_js : string -> unit
+    abstract member get_state : unit -> Notifications_Saveable_State
+    abstract member set_state : Notifications_Saveable_State -> unit
 (* We do not use this for now. *)
 //    abstract member get_configuration : unit -> Temporary_Notifications_Configuration
     abstract member set_configuration : Temporary_Notifications_Configuration -> unit
@@ -46,11 +56,7 @@ let mutable temporary_notification_queue_lock = 0
 
 (* Main functions - state *)
 
-// TODO0 This is for getting permanent notification state. Not implemented yet.
-(*
-let private get_state (notifications : IRefValue<Permanent_Notification>) : Permanent_Notification_Saveable_State =
-    String.Empty
-*)
+
 
 (* Main functions - rendering *)
 
@@ -140,6 +146,15 @@ let Notifications (
                 member _.get_permanent_notification_before_eval_js () : string = permanent_notification_data_before_eval_js.current
                 member _.set_permanent_notification_before_eval_js (data : string) : unit = do permanent_notification_data_before_eval_js.current <- data
                 member _.set_permanent_notification_after_eval_js (data : string) : unit = do set_permanent_notification_data_after_js_eval data
+                member _.get_state () : Notifications_Saveable_State =
+                    {
+                        permanent_notification_before_eval_js = permanent_notification_data_before_eval_js.current
+                        permanent_notification_after_eval_js = permanent_notification_data_after_eval_js
+                    }
+                member _.set_state (data : Notifications_Saveable_State) : unit =
+                    do
+                        permanent_notification_data_before_eval_js.current <- data.permanent_notification_before_eval_js
+                        set_permanent_notification_data_after_js_eval data.permanent_notification_after_eval_js
 (* We do not use this for now. *)
 //                member _.get_configuration () : Temporary_Notifications_Configuration = configuration_ref.current
                 member _.set_configuration (configuration : Temporary_Notifications_Configuration) : unit =
@@ -152,39 +167,3 @@ let Notifications (
 
 (* Render *)
     view permanent_notification_data_after_eval_js temporary_notification_component
-
-(* TODO1 When we pause, show temporary notification telling player to click to continue.
-- After showing save/load screen
-- After showing configuration screen
-- After player presses key to import/export single/multiple games to/from file
-
-- Basically any scenario where we force transition completion except Runner.run ().
-*)
-
-(* TODO1 How to implement.
-
-/ Permanent notifications
-N Have author configure a json file for permanent notifications.
-N Show them in order defined.
-x Just have a single string that can include newlines.
-N Create a set_(name)/get_(name) method in the javascript for each one?
-x They can use JS interpolations, and we'll re-get those each time we re-display the notification?
-N Any way we can auto-update? We would need to maybe expose a JS method/struct that mimics a JS var for the author, and when they "set" it, they are really pinging us. In that case they could specify it in a json file rather than use the notify command.
-
-(end)
-
-/ Temporary notifications
-x Author issues a notify command.
-x Show one notification at a time. If more than one, queue them up.
-x Let player configure display time and fade in/out time.
-- Save timeout handle to cancel notification in case we - what? load new game? undo?
-- Also need to clear queue in that case?
-(end)
-
-- Both
-- We need hide/show/is_visible for hide UI command. Use a fade state for that so we can just dispatch show/hide? We'll need to implement our own is_visible ().
-- For now, when we get state (to save, add to history, etc.), we only worry about permanent notifications.
-
-(end)
-
-*)
