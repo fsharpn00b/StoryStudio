@@ -24,7 +24,7 @@ let private error : error_function = error debug_module_name
 
 type private TypeScript_Compile_Result = { js_code : string; errors : string [] }
 
-(* TODO1 Make it so value can be any type. Including discriminated unions.
+(* TODO1 #future Make it so value can be any type. Including discriminated unions.
 Replace this with a JavaScript_Environment type to which the author can add arbitrary variable definitions.
 *)
 type Menu_Variables = Map<string, int>

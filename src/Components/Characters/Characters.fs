@@ -209,7 +209,7 @@ let Characters
     let characters_in_transition = React.useRef Set.empty
 
 (* Convert the character input data to components. *)
-    let characters_2 = React.useRef <| Character_Map ()
+    let characters_2 = React.useRef Map.empty
     let characters_3 = characters_1 |> Seq.mapi (fun i character_1 ->
         let character_id = i |> LanguagePrimitives.Int32WithMeasure
 (* This stores the I_Character interface. See the notes in the Runner constructor. *)
@@ -222,7 +222,7 @@ let Characters
             get_notify_character_transition_complete character_id characters_in_transition notify_transition_complete
         )
 (* Add the I_Character interface to the map. The key is the character's short name. *)
-        characters_2.current.Add (character_1.Key, character_2)
+        do characters_2.current <- characters_2.current.Add (character_1.Key, character_2)
 (* Return the component to be rendered. *)
         character_3
     )

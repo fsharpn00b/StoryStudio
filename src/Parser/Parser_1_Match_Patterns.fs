@@ -350,7 +350,7 @@ let match_image_map_item (text : string) : Image_Map_Item_Data option =
                     y1 = y1
                     x2 = x2
                     y2 = y2
-// TODO1 Why would an image map item have a JS interpolation? There is no text. It can have a conditional, but not an interpolation. We think this was copied over from menu item. We could leave it in here for alt text.
+// TODO2 Why would an image map item have a JS interpolation? There is no text. It can have a conditional, but not an interpolation. We think this was copied over from menu item. We could leave it in here for the author to show alt text (that can include JS interpolation).
                     javascript_interpolations = extract_javascript_interpolations text
 (* If the pattern defines an optional group, that group is present in m.Groups even if it was not matched in the input text. *)
                     conditional = if m.Groups[7].Success then m.Groups[7].Value |> Some else None

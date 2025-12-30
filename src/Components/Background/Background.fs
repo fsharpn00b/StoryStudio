@@ -95,7 +95,7 @@ Keys tell React which array item each component corresponds to, so that it can m
         prop.src url
     ]
 
-(* TODO1 Make Fade_* more abstract so it can transition any property, not just opacity. That assumes we can use the same process, namely (1) draw very briefly with original property value, draw again with target property value, set back to idle.
+(* TODO1 #future Make Fade_* more abstract so it can transition any property, not just opacity. That assumes we can use the same process, namely (1) draw very briefly with original property value, draw again with target property value, set back to idle.
 For instance, if you give original and target x or y coordinates, does HTML know to animate between the two?
 *)
 let private view_fade_in_out

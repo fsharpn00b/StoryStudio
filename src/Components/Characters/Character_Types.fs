@@ -114,5 +114,4 @@ type I_Characters =
 
 (* This must be defined after I_Character. *)
 (* Character_Map is just a container. We do not need to change it because we do not add or remove characters after we initialize it. Nor do we need to replace the characters within Character_Map to change them, because character states are mutable, not immutable. *)
-// TODO1 Why are we using Dictionary instead of Map?
-type Character_Map = Dictionary<string, IRefValue<I_Character>>
+type Character_Map = Map<string, IRefValue<I_Character>>

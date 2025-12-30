@@ -19,7 +19,7 @@ open Runner_Transition
 open Runner_Types
 open Save_Load_Types
 
-(* TODO1 See if we can encode this into a single function.
+(* TODO2 See if we can encode this into a single function.
 
 20251226 This should now be partly handled by stopping click event propagation.
 
@@ -270,7 +270,7 @@ let handle_key_down
 
     let event_2 = event :?> KeyboardEvent
     match event_2.key with
-// TODO1 Replace these with consts or configuration values.
+// TODO1 Replace these with literals or configuration values.
     | "s" -> runner.current.show_saved_game_screen Save_Game
     | "l" -> runner.current.show_saved_game_screen Load_Game
     | "d" -> runner.current.show_saved_game_screen Delete_Game

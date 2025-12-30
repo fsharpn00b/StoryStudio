@@ -144,13 +144,13 @@ let show_saved_game_screen
         do runner_components.current.save_load.current.show action json
     )
 
-(* TODO1 Issues with surf. We put this here because these issues mostly seem to involve key input, and many key inputs involve save/load.
+(* TODO2 Issues with surf. We put this here because these issues mostly seem to involve key input, and many key inputs involve save/load.
 - q, l and d are ignored.
 - Esc shows configuration screen, but then does not dismiss it. Could be surf is overriding its behavior.
 - x shows an error.
 (end)
 
-- We probably need a clickable menu to fix this. We'll need that anyway for mobile. Menu should contain
+x We probably need a clickable menu to fix this. We'll need that anyway for mobile. Menu should contain
 Config
 Save
 Load
