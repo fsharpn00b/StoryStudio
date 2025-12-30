@@ -66,7 +66,9 @@ let get_load_game
 We also need to delay the evaluation of this function until runner_components_1 is not None. The delayed result of this function is passed to the constructors of these components.
 We can close over command_state because it is a reference.
 *)
-    fun (saved_game_state : string) -> load_game history queue runner_components saved_game_state
+(* TODO2 #pause For now, we do not show the pause notification when we actually load a game. That is because we already do it when we hide the save/load screen (which we do after we load a game) and when the player presses f to import a saved game from a file (whether they proceed to load the game or not).
+*)
+    fun (saved_game_state : string) -> do load_game history queue runner_components saved_game_state
 
 let quicksave_or_autosave
     (queue : IRefValue<Runner_Queue>)
@@ -105,6 +107,24 @@ let import_current_game_from_file
     
     do force_complete_transitions runner_components queue true (fun () ->
         runner_components.current.save_load.current.import_current_game_from_file ()
+    )
+
+let export_saved_games_from_storage_to_file
+    (queue : IRefValue<Runner_Queue>)
+    (runner_components : IRefValue<Runner_Components>)
+    : unit =
+    
+    do force_complete_transitions runner_components queue true (fun () ->
+        runner_components.current.save_load.current.export_saved_games_from_storage_to_file ()
+    )
+
+let import_saved_games_from_file_to_storage
+    (queue : IRefValue<Runner_Queue>)
+    (runner_components : IRefValue<Runner_Components>)
+    : unit =
+    
+    do force_complete_transitions runner_components queue true (fun () ->
+        runner_components.current.save_load.current.import_saved_games_from_file_to_storage ()
     )
 
 let show_saved_game_screen

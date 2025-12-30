@@ -21,10 +21,10 @@ let dialogue_box_character_name_z_index = 3
 let image_map_z_index = 4
 let menu_z_index = 4
 let image_map_hotspot_z_index = 5
-let configuration_z_index = 6
-let save_load_screen_z_index = 6
-let command_menu_z_index = 7
-let notifications_z_index = 8
+let notifications_z_index = 6
+let configuration_z_index = 7
+let save_load_screen_z_index = 7
+let command_menu_z_index = 8
 
 (* Interfaces *)
 

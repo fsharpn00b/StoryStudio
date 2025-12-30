@@ -29,7 +29,7 @@ let get_compiled_regex (pattern : string) = Regex (pattern, RegexOptions.Compile
 let float_regex = @"[0-9]+(\.[0-9]+)?"
 
 // TODO1 To improve matching, use text.StartsWith () to get the command, then use regex to match the rest. That makes matching less brittle. Even if the author formats the parameters wrong, we still know what command they were using, and can give them more useful error messages.
-// TODO1 We also need to keep a list of reserved words so the author cannot name characters after them.
+// TODO1 Keep a list of reserved words so the author cannot name characters after them.
 let single_line_comment_regex = @"^//.*$" |> get_compiled_regex
 let multi_line_comment_start_regex = @"^/\*.*$" |> get_compiled_regex
 let multi_line_comment_end_regex = @".*?\*/$" |> get_compiled_regex

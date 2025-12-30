@@ -66,6 +66,7 @@ let download_screenshot_1 () : unit =
 let private update
 (* load_game is Runner_State.load_game (), closed over runner_components, history, and queue. All it needs is the saved game state. *)
     (load_game : string -> unit)
+    (show_game_paused_notification : unit -> unit)
     (message : Save_Load_Message)
     (state_1 : Save_Load_State)
     : Save_Load_State * Cmd<Save_Load_Message> =
@@ -83,7 +84,9 @@ let private update
             usage = data.usage
         }, Cmd.none
 
-    | Hide -> Hidden, Cmd.none
+    | Hide ->
+        do show_game_paused_notification ()
+        Hidden, Cmd.none
 
     | Switch action ->
         match state_1 with
@@ -142,10 +145,12 @@ let private update
 [<ReactComponent>]
 let Save_Load
     (props : {| expose : IRefValue<I_Save_Load> |},
-    load_game : string -> unit)
+    load_game : string -> unit,
+    show_game_paused_notification : unit -> unit
+    )
     : ReactElement =
 
-    let state, dispatch = React.useElmish ((initial_state, Cmd.none), update load_game, [||])
+    let state, dispatch = React.useElmish ((initial_state, Cmd.none), update load_game show_game_paused_notification, [||])
     let state_ref = React.useRef state
     do state_ref.current <- state
 

@@ -26,7 +26,9 @@ endmenu
 */
 
 imagemap direction overhead 1.0
-// TODO1 We should let the author define a shape we can pass straight through to HTML. Depends on what shapes a div supports.
+/* TODO1 We should let the author define a shape we can pass straight through to HTML. Depends on what shapes a div supports.
+That would also let the user put labels or onmouseover handlers in the hotspot.
+*/
 1 0 0 25 25 $if false === window.state.player_state.is_lost
 2 25 25 50 50
 endimagemap 1.0

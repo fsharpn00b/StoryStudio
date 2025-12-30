@@ -159,7 +159,7 @@ When you need to trigger events from [an embedded] Elmish component, use React p
         Command_Menu (
             {| expose = command_menu_2 |},
             {
-                show_configuration_screen = fun () -> Runner_UI.show_configuration_screen queue runner_components
+                show_or_hide_configuration_screen = fun () -> Runner_UI.show_or_hide_configuration_screen queue runner_components
                 show_save_game_screen = fun () -> Runner_UI.show_saved_game_screen queue runner_components Save_Game
                 show_load_game_screen = fun () -> Runner_UI.show_saved_game_screen queue runner_components Load_Game
                 can_undo = fun () -> can_undo history
@@ -169,7 +169,13 @@ When you need to trigger events from [an embedded] Elmish component, use React p
             }
         )
 
-    let configuration_component_1 = Configuration ({| expose = configuration_component_2 |}, configuration_1, set_configuration runner_components configuration_1)
+    let configuration_component_1 = Configuration (
+        {| expose = configuration_component_2 |},
+        configuration_1,
+        set_configuration runner_components configuration_1,
+(* We must delay this because the Notifications component is not ready yet. *)
+        fun () -> notifications_2.current.show_game_paused_notification ()
+        )
 
     let dialogue_box_1 =
         Dialogue_Box.Dialogue_Box (
@@ -203,7 +209,11 @@ When you need to trigger events from [an embedded] Elmish component, use React p
     let save_load_1 =
         Save_Load (
             {| expose = save_load_2 |},
-            get_load_game runner_components history queue 
+            get_load_game runner_components history queue,
+(* As with get_load_game, we must delay this because the Notifications component is not ready yet.
+TODO2 It should be, though?
+*)
+            fun () -> notifications_2.current.show_game_paused_notification ()
         )
 
 (* Setup *)
@@ -228,10 +238,10 @@ When you need to trigger events from [an embedded] Elmish component, use React p
     React.useImperativeHandle(props.expose, fun () ->
         { new I_Runner with
             member _.run (reason : Run_Reason) : unit = Runner_UI.run scenes queue runner_components reason
-            member _.show_configuration_screen () : unit = Runner_UI.show_configuration_screen queue runner_components
+            member _.show_or_hide_configuration_screen () : unit = Runner_UI.show_or_hide_configuration_screen queue runner_components
 // We do not use this for now.
 //            member _.hide_configuration_screen (): unit = Runner_UI.hide_configuration_screen runner_components
-            member _.handle_escape_key () : unit = Runner_UI.handle_escape_key runner_components
+            member _.handle_escape_key () : unit = Runner_UI.handle_escape_key queue runner_components
             member _.show_saved_game_screen (action : Saved_Game_Action) : unit =
                 Runner_UI.show_saved_game_screen queue runner_components action
 // We do not use this for now.
@@ -239,12 +249,10 @@ When you need to trigger events from [an embedded] Elmish component, use React p
             member _.show_or_hide_ui () : unit = Runner_UI.show_or_hide_ui runner_components
             member _.download_screenshot () : unit = download_screenshot_1 ()
             member _.quicksave () : unit = Runner_UI.quicksave queue runner_components
-            member _.export_saved_games_from_storage_to_file () : unit = 
-                runner_components.current.save_load.current.export_saved_games_from_storage_to_file ()
-            member _.import_saved_games_from_file_to_storage () : unit =
-                runner_components.current.save_load.current.import_saved_games_from_file_to_storage ()
+            member _.export_saved_games_from_storage_to_file () : unit = Runner_UI.export_saved_games_from_storage_to_file queue runner_components
+            member _.import_saved_games_from_file_to_storage () : unit = Runner_UI.import_saved_games_from_file_to_storage queue runner_components
             member _.export_current_game_to_file () : unit = Runner_UI.export_current_game_to_file queue runner_components
-            member _.import_current_game_from_file () : unit = Runner_Save_Load.import_current_game_from_file queue runner_components
+            member _.import_current_game_from_file () : unit = Runner_UI.import_current_game_from_file queue runner_components
             member _.undo () : unit = Runner_UI.undo queue runner_components history
             member _.redo () : unit = Runner_UI.redo queue runner_components history
 (* These are for debugging. *)

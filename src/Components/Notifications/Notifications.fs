@@ -38,7 +38,6 @@ type Notifications_Saveable_State = {
 
 (* Interfaces *)
 
-// TODO1 We need hide/show/is_visible for the hide UI command. Use a fade state for that so we can just dispatch show/hide? We'll need to implement our own is_visible ().
 type I_Notifications =
     abstract member add_temporary_notification : Temporary_Notification_Data -> unit
     abstract member get_permanent_notification_before_eval_js : unit -> string
@@ -49,10 +48,24 @@ type I_Notifications =
 (* We do not use this for now. *)
 //    abstract member get_configuration : unit -> Temporary_Notifications_Configuration
     abstract member set_configuration : Temporary_Notifications_Configuration -> unit
+    abstract member show : unit -> unit
+    abstract member hide : unit -> unit
+    abstract member is_visible : unit -> bool
+(* When we pause the game by calling Runner_Transition.force_complete_transitions (), we want to show a temporary notification to tell the player the game is paused and they must click to continue.
+x After we show the save/load screen.
+x After we show the configuration screen.
+x After the player imports/exports current/multiple saved games to/from file.
+x Exceptions: Runner_Queue.run (), Runner_History.undo_redo ().
+*)
+    abstract member show_game_paused_notification : unit -> unit
 
 (* Global values *)
 
 let mutable temporary_notification_queue_lock = 0
+
+(* Consts *)
+
+let private game_paused_notification = "Game paused. Click to continue."
 
 (* Main functions - state *)
 
@@ -61,24 +74,27 @@ let mutable temporary_notification_queue_lock = 0
 (* Main functions - rendering *)
 
 let view
+    (is_visible : bool)
     (permanent_notification_data : string)
     (temporary_notification_component : IRefValue<ReactElement>)
     : ReactElement =
 
-    Html.div [
-        prop.id "notifications_container"
-        prop.style [style.zIndex notifications_z_index]
-        prop.children [
-            if permanent_notification_data.Length > 0 then
-                Html.label [
-                    prop.key permanent_notification_data
-                    prop.className "notification"
-                    prop.text permanent_notification_data
-                ]
-                Html.br []
-            temporary_notification_component.current
+    if is_visible then
+        Html.div [
+            prop.id "notifications_container"
+            prop.style [style.zIndex notifications_z_index]
+            prop.children [
+                if permanent_notification_data.Length > 0 then
+                    Html.label [
+                        prop.key permanent_notification_data
+                        prop.className "notification"
+                        prop.text permanent_notification_data
+                    ]
+                    Html.br []
+                temporary_notification_component.current
+            ]
         ]
-    ]
+    else Html.none
 
 (* Main functions - state *)
 
@@ -127,6 +143,8 @@ let Notifications (
 (* We store the configuration in an IRefValue so the player can update it. *)
     let configuration_ref = React.useRef initial_configuration
 
+    let is_visible, set_is_visible = React.useState true
+
     let queue : IRefValue<Temporary_Notifications_Queue> = React.useRef []
 
     let permanent_notification_data_before_eval_js = React.useRef String.Empty
@@ -161,9 +179,13 @@ let Notifications (
                     do
                         configuration_ref.current <- configuration
                         temporary_notification_interface.current.set_configuration configuration
+                member _.is_visible () : bool = is_visible
+                member _.show () : unit = set_is_visible true
+                member _.hide () : unit = set_is_visible false
+                member _.show_game_paused_notification () : unit = add_temporary_notification queue temporary_notification_interface.current.show { text = game_paused_notification; javascript_interpolations = [] }
         }
     )
 (* This component does not implement I_Transitionable. *)
 
 (* Render *)
-    view permanent_notification_data_after_eval_js temporary_notification_component
+    view is_visible permanent_notification_data_after_eval_js temporary_notification_component

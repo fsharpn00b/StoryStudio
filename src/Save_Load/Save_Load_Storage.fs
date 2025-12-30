@@ -302,7 +302,7 @@ let export_current_game_to_file (current_game_state : string) : unit =
                 game_state = current_game_state
             }
 (* import_saved_games_from_file () expects a list of saved games. *)
-            let json = Encode.Auto.toString (0, [saved_game])
+            let json = Encode.Auto.toString (0, [ saved_game ])
             download_file file_name "text/json" json
         )
 
@@ -325,6 +325,7 @@ let import_current_game_from_file
 
     let handle_file (file_name : string) (file_contents : string) : unit =
         match Decode.Auto.fromString<New_Saved_Game list> file_contents with
+(* For simplicity, we always export a list of saved games, whether we are exporting all saved games or only the current game. *)
         | Ok (head :: _) ->
             if window.confirm $"Load save '{head.name}'? Current progress will be lost." then
                 do dispatch <| Message_Load_Game head.game_state

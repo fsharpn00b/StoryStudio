@@ -21,7 +21,7 @@ let private error : error_function = error debug_module_name
 (* Types *)
 
 type Command_Menu_Commands = {
-    show_configuration_screen : unit -> unit
+    show_or_hide_configuration_screen : unit -> unit
     show_save_game_screen : unit -> unit
     show_load_game_screen : unit -> unit
     can_undo : unit -> bool
@@ -116,7 +116,7 @@ let private view
                             prop.onClick (fun event ->
                                 do
                                     event.stopPropagation ()
-                                    commands.show_configuration_screen ()
+                                    commands.show_or_hide_configuration_screen ()
                             )
                         ]
                     ]

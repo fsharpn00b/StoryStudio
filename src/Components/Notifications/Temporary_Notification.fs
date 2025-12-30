@@ -46,6 +46,9 @@ let min_temporary_notification_display_time = 1<seconds>
 let max_temporary_notification_transition_time = 5<seconds>
 let min_temporary_notification_transition_time = 0<seconds>
 
+let private notify_fade_in_complete = 0<runner_queue_item_id>
+let private notify_fade_out_complete = 1<runner_queue_item_id>
+
 (* Main functions - rendering *)
 
 let private view_idle_visible
@@ -137,14 +140,15 @@ let private notify_fade_in_or_fade_out_complete
 (* This is not a valid Runner_Queue item ID. A component that supports fade transitions typically notifies Runner_Queue when a transition is complete, so Runner_Queue can run the next command. In this case, we have the Temporary_Notification component notify the Temporary_Notifications_Queue instead. *)
     (fade_in_or_fade_out : int<runner_queue_item_id>)
     : unit =
-    if 0<runner_queue_item_id> = fade_in_or_fade_out then
+
+    if notify_fade_in_complete = fade_in_or_fade_out then
         window.setTimeout ((fun () ->
             dispatch.current (Fade_Out {
                 transition_time = configuration.current.transition_time
-                command_queue_item_id = 1<runner_queue_item_id>
+                command_queue_item_id = notify_fade_out_complete
             })
         ), int configuration.current.display_time * 1000) |> ignore
-    elif 1<runner_queue_item_id> = fade_in_or_fade_out then
+    elif notify_fade_out_complete = fade_in_or_fade_out then
         notify_queue ()
 
     else error "notify_fade_in_or_fade_out_complete" "Unexpected fade in/fade out notification. Expected 0 (fade in) or 1 (fade out)." ["fade_in_or_fade_out", int fade_in_or_fade_out] |> invalidOp
@@ -189,7 +193,7 @@ let Temporary_Notification_Component
                         new_data = data
                         transition_time = configuration_ref.current.transition_time
 (* See comments in notify_fade_in_or_fade_out_complete (). *)
-                        command_queue_item_id = 0<runner_queue_item_id>
+                        command_queue_item_id = notify_fade_in_complete
                     })
                 member _.set_configuration (configuration : Temporary_Notifications_Configuration) : unit =
                     do configuration_ref.current <- configuration
