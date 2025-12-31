@@ -39,11 +39,11 @@ type Runner_Configuration = {
     temporary_notifications_configuration : Temporary_Notifications_Configuration
 }
 
-type Configuration_State = {
+type private Configuration_State = {
     is_visible : bool
 }
 
-type Configuration_Message =
+type private Configuration_Message =
     | Show
     | Hide
 

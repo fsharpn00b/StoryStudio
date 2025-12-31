@@ -13,11 +13,15 @@ open Command_Types
 open Configuration
 open Dialogue_Box_Types
 open Image_Map
+(* TODO1 #dynamic_load Temporary. This is a demonstration of how to import a React component dynamically. *)
+(* Note We import this component dynamically. We only import this module to get the interface definition. *)
+open Inventory
 open Log
 open Menu
 open Music
-open Temporary_Notification
 open Notifications
+(* TODO1 #dynamic_load Temporary. This is a demonstration of how to import a React component dynamically. *)
+open Plugins
 open Runner_Configuration
 open Runner_History
 open Runner_Notify
@@ -27,7 +31,6 @@ open Runner_Types
 open Runner_UI
 open Save_Load
 open Save_Load_Types
-open Units_Of_Measure
 
 // TODO1 Need to see how well this renders on mobile.
 
@@ -216,6 +219,13 @@ TODO2 It should be, though?
             fun () -> notifications_2.current.show_game_paused_notification ()
         )
 
+(* TODO1 #dynamic_load Temporary. This is a demonstration of how to import a React component dynamically. *)
+// TODO1 #dynamic_load Move import path to a config file.
+    let interface_component_path = "../Components/Inventory/Inventory.fs.js"
+// TODO1 #dynamic_load How to import interface definition? The client might simply have to copy it from the component definition file.
+    let inventory_interface_ref = React.useRef<I_Inventory> Unchecked.defaultof<_>
+    let inventory_component = DynamicComponentLoader<I_Inventory> inventory_interface_ref interface_component_path
+
 (* Setup *)
 
     React.useEffectOnce(fun () ->
@@ -260,6 +270,11 @@ TODO2 It should be, though?
             member _.show_characters () : unit = do characters_2.current.get_character_data ()
             member _.show_background () : unit = do background_2.current.get_background ()
             member _.show_menu_variables () : unit = do debug "show_menu_variables" String.Empty <| ["menu_variables", get_menu_variables queue]
+(* TODO1 #dynamic_load Temporary. This is a demonstration of how to import a React component dynamically. *)
+            member _.show_plugin () : unit =
+                do
+                    if inventory_interface_ref.current.is_visible () then inventory_interface_ref.current.hide ()
+                    else inventory_interface_ref.current.show () 
         }
     )
 
@@ -277,6 +292,8 @@ TODO2 It should be, though?
             music_1
             notifications_1
             save_load_1
+(* TODO1 #dynamic_load Temporary. This is a demonstration of how to import a React component dynamically. *)
+            inventory_component
         }
 
     React.fragment children
