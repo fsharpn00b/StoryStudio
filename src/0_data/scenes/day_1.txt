@@ -1,6 +1,5 @@
 // Play music.
-// TODO1 Use aliases like backgrounds and characters.
-//play /0_assets/music/whispers-of-autumn-love-stocktune.mp3
+play autumn
 
 // Fade in daytime background over 2 seconds.
 fadein day 2.0
@@ -19,10 +18,12 @@ endif
 // JS interpolation in dialogue.
 l Which way should we go? (Lost: {window.state.player_state.is_lost})
 
-// TODO1 #dynamic_load This shows how to use the interface of a dynamically loaded React component.
+// This shows how to use the interface of a dynamically loaded React component.
+/*
 js
 window.Interfaces.Inventory.current.show ()
 endjs
+*/
 
 /*
 // Create a menu whose result is stored in a variable named direction.

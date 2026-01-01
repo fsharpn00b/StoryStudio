@@ -13,9 +13,6 @@ open Command_Types
 open Configuration
 open Dialogue_Box_Types
 open Image_Map
-(* TODO1 #dynamic_load Temporary. This is a demonstration of how to import a React component dynamically. *)
-(* Note We import this component dynamically. We only import this module to get the interface definition. *)
-//open Inventory
 open Log
 open Menu
 open Music
@@ -267,17 +264,6 @@ TODO2 It should be, though?
             member _.show_characters () : unit = do characters_2.current.get_character_data ()
             member _.show_background () : unit = do background_2.current.get_background ()
             member _.show_menu_variables () : unit = do debug "show_menu_variables" String.Empty <| ["menu_variables", get_menu_variables queue]
-(* TODO1 #dynamic_load Temporary. This is a demonstration of how to import a React component dynamically. *)
-(*
-            member _.show_plugin () : unit =
-                do
-                    match plugins.TryFind "Inventory" with
-                    | Some result ->
-                        let inventory_interface = result.interface_ref.current :?> I_Inventory
-                        if inventory_interface.is_visible () then inventory_interface.hide ()
-                        else inventory_interface.show ()
-                    | None -> error "show_plugin" "Failed to get I_Inventory interface from plugins." ["plugins", plugins] |> invalidOp
-*)
         }
     )
 

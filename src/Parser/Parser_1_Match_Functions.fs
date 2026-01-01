@@ -135,11 +135,12 @@ let private match_command
     (command : string)
     (backgrounds : Map<string, string>)
     (characters : Character_Input_Map)
+    (music : Map<string, string>)
     (scenes : Script list)
     : Command_Pre_Parse =
     let attempts = seq {
 (* We handle menus and JavaScript blocks separately. *)
-        match_music_play command
+        match_music_play command music
         match_music_stop command
         match_background_fade_in command backgrounds
         match_background_fade_out command
@@ -167,6 +168,7 @@ let private match_command
 let match_commands
     (backgrounds : Map<string, string>)
     (characters : Character_Input_Map)
+    (music : Map<string, string>)
     (scenes : Script list)
     (commands : string list)
     : Command_Pre_Parse list =
@@ -202,6 +204,6 @@ let match_commands
                 helper (Command_Pre_Parse.End_Image_Map (match_image_map_end head).Value :: command_acc) tail
 (* Otherwise, determine what kind of command this is. *)
             else
-                helper ((match_command head backgrounds characters scenes) :: command_acc) tail
+                helper ((match_command head backgrounds characters music scenes) :: command_acc) tail
 
     commands |> prepare_commands |> helper [] |> snd

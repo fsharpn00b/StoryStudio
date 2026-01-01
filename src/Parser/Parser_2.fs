@@ -171,13 +171,14 @@ let get_scene_map_and_javascript
     (scripts : Script list)
     (backgrounds : Map<string, string>)
     (characters : Character_Input_Map)
+    (music : Map<string, string>)
     : Scene_Map =
 
     scripts
         |> List.map (fun script ->
             script.id, script.content.Split Environment.NewLine
                 |> Array.toList
-                |> match_commands backgrounds characters scripts
+                |> match_commands backgrounds characters music scripts
                 |> parse_commands
         )
         |> Map.ofList

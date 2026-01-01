@@ -23,6 +23,8 @@ let types_path = "../0_data/ts/*"
 let backgrounds_path = "../0_data/bgs.txt?raw"
 [<Literal>]
 let characters_path = "../0_data/chars.txt?raw"
+[<Literal>]
+let music_path = "../0_data/music.txt?raw"
 
 let entry_script_name = "start.txt"
 let entry_scene_name = "start"
@@ -49,6 +51,9 @@ let private backgrounds_1 : string = jsNative
 
 [<ImportDefault(characters_path)>]
 let private characters_1 : string = jsNative
+
+[<ImportDefault(music_path)>]
+let private music_1 : string = jsNative
 
 [<Emit("import.meta.globEager($0, { as: 'raw' })")>]
 let private vite_glob_eager_raw (pattern: string) : obj = jsNative
@@ -83,6 +88,12 @@ let get_character_inputs () : Character_Input_Map =
     match Decode.fromString characters_decoder characters_1 with
     | Ok characters_2 -> characters_2 |> List.map (fun character -> character.short_name, character) |> Map.ofList
     | _ -> error "get_character_inputs" "Failed to deserialize characters." ["characters", characters_1] |> invalidOp
+
+let get_music () : Map<string, string> =
+    match Decode.Auto.fromString<{| name : string; url : string |} list> music_1 with
+    | Ok music_2 ->
+        music_2 |> List.map (fun entry -> entry.name, entry.url) |> Map.ofList
+    | _ -> error "get_music" "Failed to deserialize music." ["music", music_1] |> invalidOp
 
 let get_scripts () : Script list =
     let scripts_1 =

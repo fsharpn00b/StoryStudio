@@ -85,9 +85,12 @@ let private convert_string_to_use_javascript_interpolation (text_1 : string) : s
 
 (* Helper functions - matching *)
 
-let match_music_play (text : string) : Command_Pre_Parse option =
+let match_music_play (text : string) (music : Map<string, string>) : Command_Pre_Parse option =
     let m = music_play_regex.Match text
-    if m.Success then Command_Types.Music_Play m.Groups.[1].Value |> Command_Pre_Parse.Command |> Some
+    if m.Success then
+        match music.TryFind m.Groups.[1].Value with
+        | Some url -> Command_Types.Music_Play url |> Command_Pre_Parse.Command |> Some
+        | None -> error "match_music_play" "Unknown music name." ["music name", m.Groups[1].Value; "known music names", music] |> invalidOp
     else None
 
 let match_music_stop (text : string) : Command_Pre_Parse option =
@@ -107,7 +110,7 @@ let match_background_fade_in (text : string) (backgrounds : Map<string, string>)
                     new_url = url
                     transition_time = LanguagePrimitives.FloatWithMeasure transition_time
                 } |> Command_Pre_Parse.Command |> Some
-            | None -> error "match_background_fade_in" "Unknown background." ["background", background; "backgrounds", backgrounds] |> invalidOp
+            | None -> error "match_background_fade_in" "Unknown background." ["background", background; "known backgrounds", backgrounds] |> invalidOp
         | _ -> error "match_background_fade_in" "Failed to parse transition time." ["transition_time", m.Groups[2].Value] |> invalidOp
     else None
 
@@ -134,7 +137,7 @@ let match_background_cross_fade (text : string) (backgrounds : Map<string, strin
                     new_url = url
                     transition_time = LanguagePrimitives.FloatWithMeasure transition_time
                 } |> Command_Pre_Parse.Command |> Some
-            | None -> error "match_background_cross_fade" "Unknown background." ["background", background; "backgrounds", backgrounds] |> invalidOp
+            | None -> error "match_background_cross_fade" "Unknown background." ["background", background; "known backgrounds", backgrounds] |> invalidOp
         | _ -> error "match_background_cross_fade" "Failed to parse transition time." ["transition_time", m.Groups[2].Value] |> invalidOp
     else None
 
@@ -156,8 +159,8 @@ let match_character_fade_in (text : string) (characters : Character_Input_Map) :
                             position = LanguagePrimitives.Int32WithMeasure position
                             transition_time = LanguagePrimitives.FloatWithMeasure transition_time
                         } |> Command_Pre_Parse.Command |> Some
-                    | None -> error "match_character_fade_in" "Unknown sprite." ["character_full_name", character.full_name; "character", character; "sprite", sprite] |> invalidOp
-                | None -> error "match_character_fade_in" "Unknown character." ["character_short_name", character_short_name; "characters", characters] |> invalidOp
+                    | None -> error "match_character_fade_in" "Unknown character sprite." ["character_full_name", character.full_name; "character", character; "sprite", sprite; "known sprites for this character", character.sprites] |> invalidOp
+                | None -> error "match_character_fade_in" "Unknown character." ["character_short_name", character_short_name; "known characters", characters] |> invalidOp
             | _ -> error "match_character_fade_in" "Failed to parse transition time." ["transition_time", m.Groups[4].Value] |> invalidOp
         | _ -> error "match_character_fade_in" "Failed to parse position." ["position", m.Groups[3].Value] |> invalidOp
     else None
@@ -173,7 +176,7 @@ let match_character_fade_out (text : string) (characters : Character_Input_Map):
                     character_short_name = character_short_name
                     transition_time = LanguagePrimitives.FloatWithMeasure transition_time
                 } |> Command_Pre_Parse.Command |> Some
-            else error "match_character_fade_out" "Unknown character." ["character_short_name", character_short_name; "characters", characters] |> invalidOp
+            else error "match_character_fade_out" "Unknown character." ["character_short_name", character_short_name; "known characters", characters] |> invalidOp
         | _ -> error "match_character_fade_out" "Failed to parse transition time." ["transition_time", m.Groups[2].Value] |> invalidOp
     else None
 
@@ -192,8 +195,8 @@ let match_character_cross_fade (text : string) (characters : Character_Input_Map
                         url = url
                         transition_time = LanguagePrimitives.FloatWithMeasure transition_time
                     } |> Command_Pre_Parse.Command |> Some
-                | None -> error "match_character_cross_fade" "Unknown sprite." ["character_full_name", character.full_name; "character", character; "sprite", sprite] |> invalidOp
-            | None -> error "match_character_cross_fade" "Unknown character." ["character_short_name", character_short_name; "characters", characters] |> invalidOp
+                | None -> error "match_character_cross_fade" "Unknown character sprite." ["character_full_name", character.full_name; "character", character; "sprite", sprite; "known sprites for this character", character.sprites] |> invalidOp
+            | None -> error "match_character_cross_fade" "Unknown character." ["character_short_name", character_short_name; "known characters", characters] |> invalidOp
         | _ -> error "match_character_cross_fade" "Failed to parse transition time." ["transition_time", m.Groups[3].Value] |> invalidOp
     else None
 
@@ -320,7 +323,7 @@ let match_image_map_start (text : string) (backgrounds : Map<string, string>) : 
                     items = []
                     transition_time = transition_time |> LanguagePrimitives.FloatWithMeasure
                 } |> Some
-            | None -> error "match_image_map_start" "Unknown background." ["background", background; "backgrounds", backgrounds] |> invalidOp
+            | None -> error "match_image_map_start" "Unknown image map background." ["background", background; "known backgrounds", backgrounds] |> invalidOp
         | _ -> error "match_image_map_start" "Failed to parse transition time." ["transition_time", m.Groups[3].Value] |> invalidOp
     else None
 

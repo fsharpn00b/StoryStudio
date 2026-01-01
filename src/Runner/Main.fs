@@ -34,7 +34,7 @@ let private error : error_function = error debug_module_name
 *)
 
 let character_inputs= get_character_inputs ()
-let scenes = get_scene_map_and_javascript (get_scripts ()) (get_backgrounds ()) character_inputs
+let scenes = get_scene_map_and_javascript (get_scripts ()) (get_backgrounds ()) character_inputs (get_music ())
 
 (* Component *)
 

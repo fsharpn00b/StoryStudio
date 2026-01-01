@@ -17,7 +17,7 @@ open Utilities
 
 (* Note This file is in the project only so Fable will compile it to .js, which we can then import to dynamically load the component. *)
 
-// TODO1 #dynamic_load Add separate css file.
+// TODO1 Add separate css file.
 
 (* Types *)
 
@@ -100,5 +100,5 @@ let private Inventory
 
     view state_ref dispatch
 
-// TODO1 #dynamic_load plugins_registry_name won't work for plugins written outside the framework.
+(* Note plugins_registry_name won't work for plugins written outside the framework. *)
 window?(plugins_registry_name)?Inventory <- Inventory
