@@ -1,0 +1,6 @@
+[
+    {
+        "name" : "Inventory",
+        "path" : "/Components/Inventory/Inventory.fs.js"
+    }
+]

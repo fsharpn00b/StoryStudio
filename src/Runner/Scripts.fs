@@ -77,12 +77,12 @@ let get_backgrounds () : Map<string, string> =
     match Decode.Auto.fromString<{| name : string; url : string |} list> backgrounds_1 with
     | Ok backgrounds_2 ->
         backgrounds_2 |> List.map (fun entry -> entry.name, entry.url) |> Map.ofList
-    | _ -> error "load_background_data" "Failed to deserialize backgrounds." ["backgrounds", backgrounds_1] |> invalidOp
+    | _ -> error "get_backgrounds" "Failed to deserialize backgrounds." ["backgrounds", backgrounds_1] |> invalidOp
 
 let get_character_inputs () : Character_Input_Map =
     match Decode.fromString characters_decoder characters_1 with
     | Ok characters_2 -> characters_2 |> List.map (fun character -> character.short_name, character) |> Map.ofList
-    | _ -> error "load_character_data" "Failed to deserialize characters." ["characters", characters_1] |> invalidOp
+    | _ -> error "get_character_inputs" "Failed to deserialize characters." ["characters", characters_1] |> invalidOp
 
 let get_scripts () : Script list =
     let scripts_1 =

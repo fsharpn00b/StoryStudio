@@ -88,7 +88,7 @@ let private Inventory
             new I_Inventory with
                 member _.show () = dispatch <| Show
                 member _.hide () = dispatch <| Hide
-                member _.is_visible (): bool = state_ref.current.is_visible
+                member _.is_visible () : bool = state_ref.current.is_visible
         }
     )
 

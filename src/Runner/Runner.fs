@@ -20,7 +20,6 @@ open Log
 open Menu
 open Music
 open Notifications
-(* TODO1 #dynamic_load Temporary. This is a demonstration of how to import a React component dynamically. *)
 open Plugins
 open Runner_Configuration
 open Runner_History
@@ -219,12 +218,22 @@ TODO2 It should be, though?
             fun () -> notifications_2.current.show_game_paused_notification ()
         )
 
-(* TODO1 #dynamic_load Temporary. This is a demonstration of how to import a React component dynamically. *)
-// TODO1 #dynamic_load Move import path to a config file.
-    let interface_component_path = "../Components/Inventory/Inventory.fs.js"
-// TODO1 #dynamic_load How to import interface definition? The client might simply have to copy it from the component definition file.
-    let inventory_interface_ref = React.useRef<I_Inventory> Unchecked.defaultof<_>
-    let inventory_component = DynamicComponentLoader<I_Inventory> inventory_interface_ref interface_component_path
+// TODO0 #dynamic_load Might need to move this to Scripts.fs to expose the interfaces to JS.
+    let plugins = get_plugins ()
+
+(* TODO1 #dynamic_load So how does an author use this without modifying the framework?
+
+- They need to be able to write JS code in their script that calls the component interface.
+
+We should
+x Read in a list of paths to plugins.
+x Add all components to Runner children so they are rendered.
+x Store plugins in a map of name to component/interface.
+- Expose a map of name to interface to JS.
+- The author's JS can also import the component file (for example Inventory.fs.js) and the interface definition with it. Then they can cast the interface from the map to, for example, I_Inventory. Alternately, they could simply copy it from the component file? To see what this looks like, we could write it in F# and compile it with Fable. Or just look at our existing compiled code.
+- Next, test calling the I_Inventory interface directly from JS.
+- How do we cast to an interface in JS? See compiled code.
+*)
 
 (* Setup *)
 
@@ -273,8 +282,12 @@ TODO2 It should be, though?
 (* TODO1 #dynamic_load Temporary. This is a demonstration of how to import a React component dynamically. *)
             member _.show_plugin () : unit =
                 do
-                    if inventory_interface_ref.current.is_visible () then inventory_interface_ref.current.hide ()
-                    else inventory_interface_ref.current.show () 
+                    match plugins.TryFind "Inventory" with
+                    | Some result ->
+                        let inventory_interface = result.interface_ref.current :?> I_Inventory
+                        if inventory_interface.is_visible () then inventory_interface.hide ()
+                        else inventory_interface.show ()
+                    | None -> error "show_plugin" "Failed to get I_Inventory interface from plugins." ["plugins", plugins] |> invalidOp
         }
     )
 
@@ -292,8 +305,7 @@ TODO2 It should be, though?
             music_1
             notifications_1
             save_load_1
-(* TODO1 #dynamic_load Temporary. This is a demonstration of how to import a React component dynamically. *)
-            inventory_component
+            yield! plugins |> Seq.map (fun kv -> kv.Value.component_)
         }
 
     React.fragment children
