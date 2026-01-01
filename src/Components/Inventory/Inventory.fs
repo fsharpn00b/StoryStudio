@@ -2,6 +2,8 @@ module Inventory
 
 open System
 
+// window
+open Browser.Dom
 // Cmd
 open Elmish
 // exportDefault
@@ -10,6 +12,8 @@ open Fable.Core.JsInterop
 open Feliz
 // useElmish
 open Feliz.UseElmish
+
+open Utilities
 
 (* Note This file is in the project only so Fable will compile it to .js, which we can then import to dynamically load the component. *)
 
@@ -96,4 +100,5 @@ let private Inventory
 
     view state_ref dispatch
 
-Browser.Dom.window?Plugins?Inventory <- Inventory
+// TODO1 #dynamic_load plugins_registry_name won't work for plugins written outside the framework.
+window?(plugins_registry_name)?Inventory <- Inventory

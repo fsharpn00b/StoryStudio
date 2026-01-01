@@ -310,5 +310,5 @@ The --save-dev means you are installing the package only for dev purposes, not t
         show_js_state ()
         runner.current.show_menu_variables ()
 (* TODO1 #dynamic_load Temporary. This is a demonstration of how to import a React component dynamically. *)
-    | "X" -> runner.current.show_plugin ()
+//    | "X" -> runner.current.show_plugin ()
     | _ -> ()

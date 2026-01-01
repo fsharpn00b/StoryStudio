@@ -26,6 +26,9 @@ let configuration_z_index = 7
 let save_load_screen_z_index = 7
 let command_menu_z_index = 8
 
+let plugins_registry_name = "Plugins"
+let interface_registry_name = "Interfaces"
+
 (* Interfaces *)
 
 type I_Transitionable =

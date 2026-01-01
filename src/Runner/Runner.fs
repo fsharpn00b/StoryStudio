@@ -15,7 +15,7 @@ open Dialogue_Box_Types
 open Image_Map
 (* TODO1 #dynamic_load Temporary. This is a demonstration of how to import a React component dynamically. *)
 (* Note We import this component dynamically. We only import this module to get the interface definition. *)
-open Inventory
+//open Inventory
 open Log
 open Menu
 open Music
@@ -218,26 +218,14 @@ TODO2 It should be, though?
             fun () -> notifications_2.current.show_game_paused_notification ()
         )
 
-// TODO0 #dynamic_load Might need to move this to Scripts.fs to expose the interfaces to JS.
+(* We cannot call this inside React.useEffectOnce (), as it calls React.useRef (). *)
     let plugins = get_plugins ()
-
-(* TODO1 #dynamic_load So how does an author use this without modifying the framework?
-
-- They need to be able to write JS code in their script that calls the component interface.
-
-We should
-x Read in a list of paths to plugins.
-x Add all components to Runner children so they are rendered.
-x Store plugins in a map of name to component/interface.
-- Expose a map of name to interface to JS.
-- The author's JS can also import the component file (for example Inventory.fs.js) and the interface definition with it. Then they can cast the interface from the map to, for example, I_Inventory. Alternately, they could simply copy it from the component file? To see what this looks like, we could write it in F# and compile it with Fable. Or just look at our existing compiled code.
-- Next, test calling the I_Inventory interface directly from JS.
-- How do we cast to an interface in JS? See compiled code.
-*)
+(* This emits the interface for each plugin. Later, we add the component for each plugin to the children for the Runner component. *)
+    emit_plugin_interfaces plugins
 
 (* Setup *)
 
-    React.useEffectOnce(fun () ->
+    React.useEffectOnce (fun () ->
         runner_components.current <- {
             background = background_2
             characters = characters_2
@@ -280,6 +268,7 @@ x Store plugins in a map of name to component/interface.
             member _.show_background () : unit = do background_2.current.get_background ()
             member _.show_menu_variables () : unit = do debug "show_menu_variables" String.Empty <| ["menu_variables", get_menu_variables queue]
 (* TODO1 #dynamic_load Temporary. This is a demonstration of how to import a React component dynamically. *)
+(*
             member _.show_plugin () : unit =
                 do
                     match plugins.TryFind "Inventory" with
@@ -288,8 +277,10 @@ x Store plugins in a map of name to component/interface.
                         if inventory_interface.is_visible () then inventory_interface.hide ()
                         else inventory_interface.show ()
                     | None -> error "show_plugin" "Failed to get I_Inventory interface from plugins." ["plugins", plugins] |> invalidOp
+*)
         }
     )
+
 
 (* Render *)
 

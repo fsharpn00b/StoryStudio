@@ -172,4 +172,4 @@ type I_Runner =
     abstract member show_background : unit -> unit
     abstract member show_menu_variables : unit -> unit
 (* TODO1 #dynamic_load Temporary. This is a demonstration of how to import a React component dynamically. *)
-    abstract member show_plugin : unit -> unit
+//    abstract member show_plugin : unit -> unit

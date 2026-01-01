@@ -1,5 +1,7 @@
 module Plugins
 
+// document, window
+open Browser.Dom
 // jsNative
 open Fable.Core
 // ? operator, createObj
@@ -10,12 +12,13 @@ open Feliz
 open Thoth.Json
 
 open Log
+open Utilities
 
 (* Types *)
 
 type Plugin_Data = {
     component_ : ReactElement
-// TODO1 #dynamic_load Explain the obj must be cast to the interface later.
+// TODO1 #dynamic_load Explain the obj must be cast to the interface later. Actually, JS does not need to. However, enforcing correctness with TS would be nice.
     interface_ref : IRefValue<obj>
 }
 
@@ -45,14 +48,18 @@ let private get_plugin_paths () : Map<string, string> =
     | _ -> error "get_plugins" "Failed to deserialize plugins." ["plugins", plugins_1] |> invalidOp
 
 let private ensure_plugin_registry () =
-    if isNull (Browser.Dom.window?Plugins) then
-        Browser.Dom.window?Plugins <- createObj []
+    if isNull (window?(plugins_registry_name)) then
+        window?(plugins_registry_name) <- createObj []
+
+let private ensure_interface_registry () =
+    if isNull (window?(interface_registry_name)) then
+        window?(interface_registry_name) <- createObj []
 
 (* Functions - main *)
 
 let private load_script (path : string) =
     promise {
-        let script = Browser.Dom.document.createElement "script"
+        let script = document.createElement "script"
         script?src <- path
         script?``type`` <- "module"
 
@@ -60,7 +67,7 @@ let private load_script (path : string) =
             Promise.create(fun resolve reject ->
                 script?onload <- resolve
                 script?onerror <- reject
-                Browser.Dom.document.body.appendChild script |> ignore
+                document.body.appendChild script |> ignore
             )
 
         return ()
@@ -82,7 +89,7 @@ let private Dynamic_Component_Loader (name : string) (path : string) (interface_
     )
 
     if is_loaded then
-        let component_ = Browser.Dom.window?Plugins?(name)
+        let component_ = window?(plugins_registry_name)?(name)
         Feliz.Interop.reactApi.createElement(component_, {| expose = interface_ref |})
     else Html.none
 
@@ -94,3 +101,14 @@ let get_plugins () : Plugins_Data =
             kv.Key, { component_ = component_; interface_ref = interface_ref }
         )
         |> Map.ofSeq
+
+let emit_plugin_interfaces (plugins : Plugins_Data) : unit =
+(* This prevents us from re-emitting the plugin interfaces on every render. *)
+    React.useEffectOnce (fun () ->
+        do
+            ensure_interface_registry ()
+            plugins |> Seq.iter (fun kv ->
+(* We must emit a reference to the interface, rather than the interface itself, because the interface is null until Runner renders the component. *)
+                window?(interface_registry_name)?(kv.Key) <- kv.Value.interface_ref
+            )
+    )
