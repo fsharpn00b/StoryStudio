@@ -54,19 +54,37 @@ let clear_history
 
 let can_undo
     (history : IRefValue<Runner_History>)
+    (runner_components : IRefValue<Runner_Components>)
     : bool =
 
-    match history.current.current_index with
-    | Some current_index_1 -> current_index_1 > 0
-    | None -> false
+(* It seems this function can be called before Configuration or Save_Load is initialized. *)
+    if
+        Unchecked.defaultof<_> = runner_components.current.configuration.current ||
+        Unchecked.defaultof<_> = runner_components.current.save_load.current then false
+    elif runner_components.current.configuration.current.is_visible () ||
+        runner_components.current.save_load.current.is_visible () then
+        false
+    else
+        match history.current.current_index with
+        | Some current_index_1 -> current_index_1 > 0
+        | None -> false
 
 let can_redo
     (history : IRefValue<Runner_History>)
+    (runner_components : IRefValue<Runner_Components>)
     : bool =
 
-    match history.current.current_index with
-    | Some current_index_1 -> current_index_1 < history.current.history.Length - 1
-    | None -> false
+(* It seems this function can be called before Configuration or Save_Load is initialized. *)
+    if
+        Unchecked.defaultof<_> = runner_components.current.configuration.current ||
+        Unchecked.defaultof<_> = runner_components.current.save_load.current then false
+    elif runner_components.current.configuration.current.is_visible () ||
+        runner_components.current.save_load.current.is_visible () then
+        false
+    else
+        match history.current.current_index with
+        | Some current_index_1 -> current_index_1 < history.current.history.Length - 1
+        | None -> false
 
 (* TODO2 We have not tried to redo during a transition. That is possible, as we only truncate the history when we add to it. In other words, we could:
 1 Run a command (a) that uses a transition.

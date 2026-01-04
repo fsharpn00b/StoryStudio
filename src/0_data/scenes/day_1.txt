@@ -1,5 +1,5 @@
 // Play music.
-play autumn
+//play autumn
 
 // Fade in daytime background over 2 seconds.
 fadein day 2.0

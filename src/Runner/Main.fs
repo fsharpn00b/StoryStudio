@@ -44,6 +44,7 @@ let Main () : ReactElement =
     let runner_2 = React.useRef<I_Runner> Unchecked.defaultof<_>
 
     do React.useEffectOnce(fun () ->
+
         do runner_2.current.run Initial_Run
 
 (* TODO2 Need to write test suite for parser. Which is what this should be. The code in here with the component etc should be in a file called Runner_Test.

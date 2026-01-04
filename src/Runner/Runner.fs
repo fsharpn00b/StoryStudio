@@ -13,6 +13,7 @@ open Command_Types
 open Configuration
 open Dialogue_Box_Types
 open Image_Map
+open Key_Bindings
 open Log
 open Menu
 open Music
@@ -124,7 +125,18 @@ TODO2 We could use option with .Value.
     let notifications_2 = React.useRef<I_Notifications> Unchecked.defaultof<_>
     let save_load_2 = React.useRef<I_Save_Load> Unchecked.defaultof<_>
 
-    let runner_components = React.useRef<Runner_Components> Unchecked.defaultof<_>
+    let runner_components = React.useRef<Runner_Components> {
+        background = background_2
+        characters = characters_2
+        command_menu = command_menu_2
+        configuration = configuration_component_2
+        dialogue_box = dialogue_box_2
+        image_map = image_map_2
+        menu = menu_2
+        music = music_2
+        notifications = notifications_2
+        save_load = save_load_2
+    }
 
 (* History is part of state, but must be declared after runner_components. *)
     let history = React.useRef<Runner_History> {
@@ -161,19 +173,21 @@ When you need to trigger events from [an embedded] Elmish component, use React p
                 show_or_hide_configuration_screen = fun () -> Runner_UI.show_or_hide_configuration_screen queue runner_components
                 show_save_game_screen = fun () -> Runner_UI.show_saved_game_screen queue runner_components Save_Game
                 show_load_game_screen = fun () -> Runner_UI.show_saved_game_screen queue runner_components Load_Game
-                can_undo = fun () -> can_undo history
-                can_redo = fun () -> can_redo history
+                can_undo = fun () -> can_undo history runner_components
+                can_redo = fun () -> can_redo history runner_components
                 undo = fun () -> Runner_UI.undo queue runner_components history
                 redo = fun () -> Runner_UI.redo queue runner_components history
             }
         )
 
-    let configuration_component_1 = Configuration (
-        {| expose = configuration_component_2 |},
-        configuration_1,
-        set_configuration runner_components configuration_1,
-(* We must delay this because the Notifications component is not ready yet. *)
-        fun () -> notifications_2.current.show_game_paused_notification ()
+    let configuration_component_1 =
+        Configuration (
+            {| expose = configuration_component_2 |},
+            configuration_1,
+            set_configuration runner_components configuration_1,
+(* We must delay these calls because the Notifications and Command_Menu components are not ready yet. *)
+            (fun () -> notifications_2.current.show_game_paused_notification ()),
+            (fun () -> command_menu_2.current.redraw ())
         )
 
     let dialogue_box_1 =
@@ -209,10 +223,9 @@ When you need to trigger events from [an embedded] Elmish component, use React p
         Save_Load (
             {| expose = save_load_2 |},
             get_load_game runner_components history queue,
-(* As with get_load_game, we must delay this because the Notifications component is not ready yet.
-TODO2 It should be, though?
-*)
-            fun () -> notifications_2.current.show_game_paused_notification ()
+(* We must delay these calls because the Notifications and Command_Menu components are not ready yet. *)
+            (fun () -> notifications_2.current.show_game_paused_notification ()),
+            (fun () -> command_menu_2.current.redraw ())
         )
 
 (* We cannot call this inside React.useEffectOnce (), as it calls React.useRef (). *)
@@ -220,28 +233,12 @@ TODO2 It should be, though?
 (* This emits the interface for each plugin. Later, we add the component for each plugin to the children for the Runner component. *)
     emit_plugin_interfaces plugins
 
-(* Setup *)
-
-    React.useEffectOnce (fun () ->
-        runner_components.current <- {
-            background = background_2
-            characters = characters_2
-            command_menu = command_menu_2
-            configuration = configuration_component_2
-            dialogue_box = dialogue_box_2
-            image_map = image_map_2
-            menu = menu_2
-            music = music_2
-            notifications = notifications_2
-            save_load = save_load_2
-        }
-    )
-
 (* Interface *)
 
     React.useImperativeHandle(props.expose, fun () ->
         { new I_Runner with
-            member _.run (reason : Run_Reason) : unit = Runner_UI.run scenes queue runner_components reason
+            member _.run (reason : Run_Reason) : unit = Runner_UI.run queue scenes runner_components reason
+            member _.get_key_bindings () : Key_To_Key_Binding_Name = configuration_1.current.key_bindings_configuration.key_to_name
             member _.show_or_hide_configuration_screen () : unit = Runner_UI.show_or_hide_configuration_screen queue runner_components
 // We do not use this for now.
 //            member _.hide_configuration_screen (): unit = Runner_UI.hide_configuration_screen runner_components

@@ -5,7 +5,8 @@ open System
 
 // window
 open Browser
-
+// HTMLElement
+open Browser.Types
 open Feliz
 
 open Save_Load_Storage
@@ -104,6 +105,7 @@ let private view_saved_game_grid
 (* Main functions - public *)
 
 let view
+    (element_ref : IRefValue<HTMLElement option>)
     (state_1 : IRefValue<Save_Load_State>)
     (dispatch : Save_Load_Message -> unit)
     : ReactElement =
@@ -114,13 +116,22 @@ let view
 
     | Visible state_2 ->
         Html.div [
-            prop.className "save_load_screen"
-            prop.style [style.zIndex save_load_screen_z_index]
-(* Prevent a mouse click from calling Runner.run (). *)
+(* Make sure this screen can receive focus. This is not strictly needed if we are not stopping propagation of key down events, but we are leaving it here for now in case it is useful later. *)
+            prop.ref element_ref
+            prop.tabIndex 0
+(* Unlike in the configuration screen, we do not stop the propagation of key down events.
+window.prompt () seems to intercept key down events before window receives them, so we do not have to worry about the player triggering key down events while entering a save game name.
+*)
+(* Prevent a mouse click from calling Runner.run (). This does not prevent the player from selecting a saved game to load, save over, or delete. *)
             prop.onClick (fun event -> do event.stopPropagation ())
+(* Prevent a mouse wheel scroll event from calling Runner.undo ()/redo (). *)
+            prop.onWheel (fun event -> do event.stopPropagation ())
+
+            prop.id "save_load_screen"
+            prop.style [style.zIndex save_load_screen_z_index]
             prop.children [
                 Html.div [
-                    prop.className "save_load_header"
+                    prop.id "save_load_header"
                     prop.children [
                         Html.h3 [
                             let text =
@@ -136,7 +147,7 @@ let view
                     ]
                 ]
                 Html.div [
-                    prop.className "save_load_grid"
+                    prop.id "save_load_grid"
                     prop.children (view_saved_game_grid state_2 dispatch)
                 ]
                 Html.div [

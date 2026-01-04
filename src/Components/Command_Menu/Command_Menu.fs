@@ -112,7 +112,7 @@ let private view
                             prop.style <| [style.color color]
                         ]
                         Html.label [
-                            prop.text "..."
+                            prop.text "Configuration"
                             prop.onClick (fun event ->
                                 do
                                     event.stopPropagation ()

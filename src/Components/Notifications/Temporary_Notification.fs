@@ -28,15 +28,21 @@ type Temporary_Notifications_Configuration = {
     transition_time : Fade_Transition_Time
 }
 
-type Temporary_Notification_Data = {
+type Notification_Data_1 = {
     text : string
     javascript_interpolations : string list
 }
 
+(* This is after we have applied JavaScript interpolations to the text field. *)
+type Notification_Data_2 = {
+    text : string
+}
+
+
 (* Interfaces *)
 
 type I_Temporary_Notification =
-    abstract member show : Temporary_Notification_Data -> unit
+    abstract member show : Notification_Data_2 -> unit
     abstract member set_configuration : Temporary_Notifications_Configuration -> unit
 
 (* Consts *)
@@ -52,7 +58,7 @@ let private notify_fade_out_complete = 1<runner_queue_item_id>
 (* Main functions - rendering *)
 
 let private view_idle_visible
-    (data : Temporary_Notification_Data)
+    (data : Notification_Data_2)
     : ReactElement =
 
     Html.label [
@@ -64,7 +70,7 @@ let private view_idle_visible
 let private view_fade_in_out
     (is_pre_transition : bool)
     (is_fade_in : bool)
-    (data : Temporary_Notification_Data)
+    (data : Notification_Data_2)
     (transition_time : Fade_Transition_Time)
     : ReactElement =
 
@@ -87,8 +93,8 @@ let private view_fade_in_out
 
 let private view_cross_fade
     (is_pre_transition : bool)
-    (old_data : Temporary_Notification_Data)
-    (new_data : Temporary_Notification_Data)
+    (old_data : Notification_Data_2)
+    (new_data : Notification_Data_2)
     (transition_time : Fade_Transition_Time)
     : ReactElement seq =
 
@@ -114,7 +120,7 @@ let private view_cross_fade
     ]
 
 let private view
-    (fade_state : IRefValue<Fade_State<Temporary_Notification_Data>>)
+    (fade_state : IRefValue<Fade_State<Notification_Data_2>>)
     : ReactElement =
 
     Html.div [
@@ -134,7 +140,7 @@ let private view
 (* Main functions - state *)
 
 let private notify_fade_in_or_fade_out_complete
-    (dispatch : IRefValue<Fade_Message<Temporary_Notification_Data> -> unit>)
+    (dispatch : IRefValue<Fade_Message<Notification_Data_2> -> unit>)
     (configuration : IRefValue<Temporary_Notifications_Configuration>)
     (notify_queue : unit -> unit)
 (* This is not a valid Runner_Queue item ID. A component that supports fade transitions typically notifies Runner_Queue when a transition is complete, so Runner_Queue can run the next command. In this case, we have the Temporary_Notification component notify the Temporary_Notifications_Queue instead. *)
@@ -187,7 +193,7 @@ let Temporary_Notification_Component
         {
             new I_Temporary_Notification with
                 member _.show
-                    (data : Temporary_Notification_Data)
+                    (data : Notification_Data_2)
                     : unit =
                     do dispatch (Fade_In {
                         new_data = data

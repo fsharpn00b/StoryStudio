@@ -2,7 +2,7 @@
 - Clean up.
 */
 
-.save_load_screen {
+#save_load_screen {
   position: absolute;
   top: 0;
   left: 0;
@@ -19,11 +19,15 @@
   overflow-x: hidden;
 }
 
-.save_load_header {
+#save_load_screen:focus {
+  outline: none;
+}
+
+#save_load_header {
   padding-left: 1rem;
 }
 
-.save_load_grid {
+#save_load_grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
   gap: 1rem;

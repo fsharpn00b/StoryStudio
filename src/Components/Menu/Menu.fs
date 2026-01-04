@@ -5,7 +5,11 @@ open System
 
 // window
 open Browser.Dom
+// HTMLElement
+open Browser.Types
 open Elmish
+// ? operator
+open Fable.Core.JsInterop
 open Feliz
 open Feliz.UseElmish
 
@@ -15,22 +19,35 @@ open Utilities
 
 (* Types - public *)
 
-type Menu_Item_Data = {
+type Menu_Item_Data_1 = {
     value : int
     text : string
     javascript_interpolations : string list
     conditional : string option
 }
 
-type Menu_Data = {
+(* This is after we have applied JavaScript interpolations to the text field. *)
+type Menu_Item_Data_2 = {
+    value : int
+    text : string
+}
+
+type Menu_Data_1 = {
     name : string
     description : string
     javascript_interpolations : string list
-    items : Menu_Item_Data list
+    items : Menu_Item_Data_1 list
+}
+
+(* This is after we have applied JavaScript interpolations to the description field and menu item text fields. *)
+type Menu_Data_2 = {
+    name : string
+    description : string
+    items : Menu_Item_Data_2 list
 }
 
 type Show_Menu_Data = {
-    data : Menu_Data
+    data : Menu_Data_2
     is_notify_transition_complete : bool
     command_queue_item_id : int<runner_queue_item_id> option
 }
@@ -52,13 +69,13 @@ type Menu_Message =
     | Menu_Item_Selected of Menu_Item_Selected_Data
 
 type Menu_Saveable_State =
-    | Visible of Menu_Data
+    | Visible of Menu_Data_2
     | Hidden
 
 (* Interfaces *)
 
 type I_Menu =
-    abstract member show : Menu_Data -> bool -> int<runner_queue_item_id> option -> unit
+    abstract member show : Menu_Data_2 -> bool -> int<runner_queue_item_id> option -> unit
     abstract member hide : bool -> int<runner_queue_item_id> option -> unit
     abstract member is_visible : unit -> bool
     abstract member get_state : unit -> Menu_Saveable_State
@@ -75,8 +92,9 @@ let private error : error_function = error debug_module_name
 (* Main functions - rendering *)
 
 let private view
+    (element_ref : IRefValue<HTMLElement option>)
     (visible : IRefValue<bool>)
-    (menu_data_1 : IRefValue<Menu_Data option>)
+    (menu_data_1 : IRefValue<Menu_Data_2 option>)
     (dispatch : Menu_Message -> unit)
     : ReactElement =
 
@@ -85,10 +103,15 @@ let private view
         | None -> error "view" "visible is true, but menu_data is missing." [] |> invalidOp
         | Some menu_data_2 ->
             Html.div [
-                prop.id "menu_container"
-                prop.style [style.zIndex menu_z_index]
+(* Make sure this screen can receive focus. This is not strictly needed if we are not stopping propagation of key down events, but we are leaving it here for now in case it is useful later. *)
+                prop.ref element_ref
+                prop.tabIndex 0
+(* Unlike in the configuration screen, we do not stop the propagation of key down events. *)
 (* Prevent a mouse click from calling Runner.run (). *)
                 prop.onClick (fun event -> do event.stopPropagation ())
+
+                prop.id "menu_container"
+                prop.style [style.zIndex menu_z_index]
                 prop.children [
                     Html.div [
                         prop.id "menu_description"
@@ -119,8 +142,7 @@ let private view
 
 let private get_state
     (is_visible : IRefValue<bool>)
-//    (command_queue_item_id : IRefValue<int<command_queue_item_id> option>)
-    (menu_data_1 : IRefValue<Menu_Data option>)
+    (menu_data_1 : IRefValue<Menu_Data_2 option>)
     : Menu_Saveable_State =
     match is_visible.current, menu_data_1.current with
     | true, Some menu_data_2 ->
@@ -144,7 +166,7 @@ let private set_state
 let private update
     (notify_transition_complete : int<runner_queue_item_id> -> unit)
     (notify_menu_selection : string -> int -> unit)
-    (menu_data : IRefValue<Menu_Data option>)
+    (menu_data : IRefValue<Menu_Data_2 option>)
     (message : Menu_Message)
     (is_visible : bool)
     : bool * Cmd<Menu_Message> =
@@ -203,16 +225,22 @@ let Menu
     notify_menu_selection : string -> int -> unit)
     : ReactElement =
 
+(* State *)
+
     let menu_data_1 = React.useRef None
     let is_visible, dispatch = React.useElmish ((false, Cmd.none), update notify_transition_complete notify_menu_selection menu_data_1, [||])
     let is_visible_ref = React.useRef is_visible
     do is_visible_ref.current <- is_visible
 
+(* Give focus to this component when it is visible. This is so we can prevent mouse click and key down events leaking to the game. *)
+    let element_ref = React.useRef None
+    React.useEffect((fun () -> if is_visible then element_ref.current?focus()), [| box is_visible |])
+
     React.useImperativeHandle(props.expose, fun () ->
         {
             new I_Menu with
                 member _.show
-                    (menu_data_2 : Menu_Data)
+                    (menu_data_2 : Menu_Data_2)
                     (is_notify_transition_complete : bool)
                     (command_queue_item_id_2 : int<runner_queue_item_id> option)
                     : unit =
@@ -244,4 +272,4 @@ let Menu
 
 (* Render *)
 
-    view is_visible_ref menu_data_1 dispatch
+    view element_ref is_visible_ref menu_data_1 dispatch

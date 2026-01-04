@@ -30,8 +30,8 @@ type Command =
     | Dialogue_Box_Show
     | Dialogue_Box_Hide
     | Dialogue of Dialogue_Data
-    | Temporary_Notification of Temporary_Notification_Data
-    | Permanent_Notification of Permanent_Notification_Data
+    | Temporary_Notification of Notification_Data_1
+    | Permanent_Notification of Notification_Data_1
     | JavaScript_Inline of string
     | JavaScript_Block of string
     | Jump of int<scene_id>
@@ -69,7 +69,7 @@ type Command_Pre_Parse =
     | Else_If of string
     | Else
     | End_If
-    | Menu of Menu_Data
+    | Menu of Menu_Data_1
     | Image_Map of Image_Map_Data
     | End_Image_Map of Fade_Transition_Time
 
@@ -91,7 +91,7 @@ type Command_Post_Parse_Type =
     | Command of Command
     | If of If_Block
     | End_If
-    | Menu of Menu_Data
+    | Menu of Menu_Data_1
     | Image_Map of Image_Map_Data
     | End_Image_Map of Fade_Transition_Time
 

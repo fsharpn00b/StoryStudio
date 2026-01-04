@@ -281,7 +281,7 @@ let match_else (text : string) : Command_Pre_Parse option =
     if m.Success then Command_Pre_Parse.Else |> Some
     else None
 
-let match_menu_start (text : string) : Menu_Data option =
+let match_menu_start (text : string) : Menu_Data_1 option =
     let m = menu_start_regex.Match text
     if m.Success then
         let description = m.Groups[2].Value
@@ -293,7 +293,7 @@ let match_menu_start (text : string) : Menu_Data option =
         } |> Some
     else None
 
-let match_menu_item (text : string) : Menu_Item_Data option =
+let match_menu_item (text : string) : Menu_Item_Data_1 option =
     let m = menu_item_regex.Match text
     if m.Success then
         match Int32.TryParse m.Groups[1].Value with

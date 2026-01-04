@@ -11,6 +11,7 @@ open Configuration
 open Dialogue_Box_Types
 open Image_Map
 open JavaScript_Interop
+open Key_Bindings
 open Menu
 open Music
 open Notifications
@@ -150,6 +151,7 @@ type Runner_Queue =
 
 type I_Runner =
     abstract member run : Run_Reason -> unit
+    abstract member get_key_bindings : unit -> Key_To_Key_Binding_Name
     abstract member show_or_hide_configuration_screen : unit -> unit
 // We do not use this for now.
 //    abstract member hide_configuration_screen : unit -> unit

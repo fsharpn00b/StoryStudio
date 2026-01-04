@@ -5,7 +5,11 @@ open System
 
 // window
 open Browser.Dom
+// HTMLElement
+open Browser.Types
 open Elmish
+// ? operator
+open Fable.Core.JsInterop
 open Feliz
 open Feliz.UseElmish
 
@@ -74,18 +78,24 @@ We could use fade_out_all for the background, characters, and dialogue box, the 
 *)
 
 let private view_idle_visible
+    (element_ref : IRefValue<HTMLElement option>)
     (data : Image_Map_Data)
     (notify_image_map_selection : string -> int -> unit)
     : ReactElement =
 
     Html.div [
-        prop.id "image_map_container"
-        prop.style [style.zIndex image_map_z_index]
+(* Make sure this screen can receive focus. This is not strictly needed if we are not stopping propagation of key down events, but we are leaving it here for now in case it is useful later. *)
+        prop.ref element_ref
+        prop.tabIndex 0
+(* Unlike in the configuration screen, we do not stop the propagation of key down events. *)
 (* Prevent a mouse click from calling Runner.run (). *)
         prop.onClick (fun event -> do event.stopPropagation ())
+
+        prop.id "image_map_container"
+        prop.style [style.zIndex image_map_z_index]
         prop.children [
             Html.img [
-                prop.className "image_map_image"
+                prop.id "image_map_image"
                 prop.key data.url
                 prop.src data.url
             ]
@@ -115,6 +125,7 @@ let private view_idle_visible
     ]
 
 let private view_fade_in_out
+    (element_ref : IRefValue<HTMLElement option>)
     (is_pre_transition : bool)
     (is_fade_in : bool)
     (url : string)
@@ -133,13 +144,18 @@ let private view_fade_in_out
         | false, false -> 0.0
 
     Html.div [
-        prop.id "image_map_container"
-        prop.style [style.zIndex image_map_z_index]
+(* Make sure this screen can receive focus. This is not strictly needed if we are not stopping propagation of key down events, but we are leaving it here for now in case it is useful later. *)
+        prop.ref element_ref
+        prop.tabIndex 0
+(* Unlike in the configuration screen, we do not stop the propagation of key down events. *)
 (* Prevent a mouse click from calling Runner.run (). *)
         prop.onClick (fun event -> do event.stopPropagation ())
+
+        prop.id "image_map_container"
+        prop.style [style.zIndex image_map_z_index]
         prop.children [
             Html.img [
-                prop.className "image_map_image"
+                prop.id "image_map_image"
                 prop.key url
                 prop.src url
                 prop.style [
@@ -151,6 +167,7 @@ let private view_fade_in_out
     ]
 
 let private view
+    (element_ref : IRefValue<HTMLElement option>)
     (state : IRefValue<Fade_State<Image_Map_Data>>)
     (notify_image_map_selection : string -> int -> unit)
     : ReactElement =
@@ -159,15 +176,15 @@ let private view
 
     | Idle_Hidden -> Html.none
 
-    | Idle_Visible data -> view_idle_visible data notify_image_map_selection
+    | Idle_Visible data -> view_idle_visible element_ref data notify_image_map_selection
 
-    | Fade_In_Pre_Transition data -> view_fade_in_out true true data.new_data.url data.transition_time
+    | Fade_In_Pre_Transition data -> view_fade_in_out element_ref true true data.new_data.url data.transition_time
 
-    | Fade_In_Transition data -> view_fade_in_out false true data.new_data.url data.transition_time
+    | Fade_In_Transition data -> view_fade_in_out element_ref false true data.new_data.url data.transition_time
 
-    | Fade_Out_Pre_Transition data -> view_fade_in_out true false data.old_data.url data.transition_time
+    | Fade_Out_Pre_Transition data -> view_fade_in_out element_ref true false data.old_data.url data.transition_time
 
-    | Fade_Out_Transition data -> view_fade_in_out false false data.old_data.url data.transition_time
+    | Fade_Out_Transition data -> view_fade_in_out element_ref false false data.old_data.url data.transition_time
 
     | _ -> error "view" "Unexpected state." ["state", state.current] |> invalidOp
 
@@ -216,12 +233,25 @@ let Image_Map
     notify_image_map_selection : string -> int -> unit)
     : ReactElement =
 
+(* State *)
+
     let fade_transition_timeout_function_handle = React.useRef None
     let fade_configuration : Fade_Configuration = ()
     let state, dispatch = React.useElmish((Idle_Hidden, Cmd.none), update fade_configuration fade_transition_timeout_function_handle notify_transition_complete, [||])
 
     let state_ref = React.useRef state
     do state_ref.current <- state
+
+(* Give focus to this component when it is visible. This is so we can prevent mouse click and key down events leaking to the game. *)
+    let element_ref = React.useRef None
+    React.useEffect(
+        (fun () ->
+            match state with
+            | Idle_Hidden -> ()
+            | _ -> element_ref.current?focus()
+        ), [| box state |])
+
+(* Interface *)
 
     React.useImperativeHandle(props.expose, fun () ->
         {
@@ -266,4 +296,4 @@ The other three components with is_visible () methods (Menu, Save_Load, Configur
 
 (* Render *)
 
-    view state_ref notify_image_map_selection
+    view element_ref state_ref notify_image_map_selection

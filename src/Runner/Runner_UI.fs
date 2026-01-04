@@ -26,38 +26,48 @@ open Save_Load_Types
 The player can do the following inputs.
 1 Mouse click (calls run ()).
 2 Mouse wheel scroll (calls undo ()/redo()).
-3 Key press (calls handle_key_down ()).
+3 Command menu
+4 Key press (calls handle_key_down ()).
 
 We should allow/deny input as follows.
 M = Menu
-P = Image map
+I = Image map
 S = Save/load screen
 C = Configuration screen
 
 Action
-S = Switch
+S = Switch between save/load/delete modes.
 H = Hide
+N = Ignore
 
-        M   P   S   C
+        M   I   S   C
 1       N   N   N   N
 2       Y   Y   N   N
+
 3
-s       Y   Y   S   H
+save    Y   Y   S   Y
+load    Y   Y   S   Y
+undo    Y   Y   N   N
+redo    Y   Y   N   N
+config  Y   Y   Y   H
+
+4
+<space> N   N   N   N
+s       Y   Y   S   N
 l       Same
 d       Same
-Esc     1   1   2   3
-q       Y   Y   H   H
-e       Y   Y   Y   Y
-i       Y   Y   Y   Y
-x       Y   Y   H   H
-f       Y   Y   Y   Y
-c       Y   Y   H   1
-g       Y   Y   Y   Y
-u       Y   Y   Y   Y
+Esc     1   1   H   H
+q       Y   Y   H   N
+e       Y   Y   Y   N
+i       Y   Y   Y   N
+x       Y   Y   H   N
+f       Y   Y   H   N
+c       Y   Y   2   N
+g       Y   Y   Y   N
+u       Y   Y   N   N
 
 1 Show configuration screen.
 2 Hide save/load screen and show configuration screen.
-3 Hide configuration screen.
 *)
 
 (* Debug *)
@@ -84,13 +94,19 @@ let get_menu_variables
 (* These functions centralize the logic of showing/hiding UI elements as needed before proceeding. *)
 
 let run
-    (scenes : Scene_Map)
     (queue : IRefValue<Runner_Queue>)
+    (scenes : Scene_Map)
     (runner_components : IRefValue<Runner_Components>)
     (reason : Run_Reason)
     : unit =
 
-(* When a menu or the save/load screen or configuration screen is visible, we do not want to run the next command. We could simply ignore mouse clicks except for those handled by the menu or save/load screen or configuration, but this is safer, in case this method is called for some other reason. *)
+(* We do not want to run the next command when any of the following are visible.
+- Menu
+- Image map
+- Save/load screen
+- Configuration screen
+(end)
+*)
     if not <| runner_components.current.menu.current.is_visible () &&
         not <| runner_components.current.image_map.current.is_visible () &&
         not <| runner_components.current.save_load.current.is_visible () &&
@@ -113,15 +129,6 @@ let show_or_hide_configuration_screen
             force_complete_transitions runner_components queue true (fun () ->
                 do runner_components.current.configuration.current.show ()
             )
-
-// We do not use this for now.
-(*
-let hide_configuration_screen
-    (runner_components : IRefValue<Runner_Components>)
-    : unit =
-    if runner_components.current.configuration.current.is_visible () then
-        do runner_components.current.configuration.current.hide ()
-*)
 
 let handle_escape_key
     (queue : IRefValue<Runner_Queue>)
@@ -148,48 +155,39 @@ let show_saved_game_screen
         if runner_components.current.save_load.current.is_visible () then
             runner_components.current.save_load.current.switch action
         else
-(* The save/load and configuration screens cannot be open at the same time. *)
+(* The save/load and configuration screens cannot be open at the same time. The player cannot switch from the configuration screen to the save/load game screen using the keyboard, but they can do so using the command menu. *)
             if runner_components.current.configuration.current.is_visible () then
                 runner_components.current.configuration.current.hide ()
             show_saved_game_screen queue runner_components action
-
-// We do not use this for now.
-(*
-let hide_saved_game_screen
-    (runner_components : IRefValue<Runner_Components>)
-    : unit =
-    if runner_components.current.save_load.current.is_visible () then
-        do runner_components.current.save_load.current.hide ()
-*)
 
 let show_or_hide_ui
     (runner_components : IRefValue<Runner_Components>)
     : unit =
 
-    do
+(* If the save/load screen is visible, ignore this. *)
+    if not <| runner_components.current.save_load.current.is_visible () then
+        do
 (* We do not request notification when the transition completes, or provide a command queue item ID, because this is an internal command. *)
-        if runner_components.current.dialogue_box.current.is_visible () ||
-            runner_components.current.command_menu.current.is_visible () ||
-            runner_components.current.notifications.current.is_visible () then
-            runner_components.current.dialogue_box.current.hide false None
-            runner_components.current.command_menu.current.hide ()
-            runner_components.current.notifications.current.hide ()
-        else
-            runner_components.current.dialogue_box.current.show false None
-            runner_components.current.command_menu.current.show ()
-            runner_components.current.notifications.current.show ()
+            if runner_components.current.dialogue_box.current.is_visible () ||
+                runner_components.current.command_menu.current.is_visible () ||
+                runner_components.current.notifications.current.is_visible () then
+                runner_components.current.dialogue_box.current.hide false None
+                runner_components.current.command_menu.current.hide ()
+                runner_components.current.notifications.current.hide ()
+            else
+                runner_components.current.dialogue_box.current.show false None
+                runner_components.current.command_menu.current.show ()
+                runner_components.current.notifications.current.show ()
 
 let quicksave
     (queue : IRefValue<Runner_Queue>)
     (runner_components : IRefValue<Runner_Components>)
     : unit =
 
-(* If the save/load or configuration screen is visible, hide it so we can get an accurate screenshot of the player's game. *)
+(* If the save/load screen is visible, hide it so we can get an accurate screenshot of the player's game. *)
     do
         if runner_components.current.save_load.current.is_visible () then
             runner_components.current.save_load.current.hide ()
-        elif runner_components.current.configuration.current.is_visible () then
-            runner_components.current.configuration.current.hide ()
         quicksave_or_autosave queue runner_components Quicksave
         runner_components.current.notifications.current.show_game_paused_notification ()
 
@@ -198,13 +196,11 @@ let export_current_game_to_file
     (runner_components : IRefValue<Runner_Components>)
     : unit =
 
-(* If the save/load or configuration screen is visible, hide it so we can get an accurate screenshot of the player's game. *)
+(* If the save/load screen is visible, hide it so we can get an accurate screenshot of the player's game. *)
     do
         if runner_components.current.save_load.current.is_visible () then
             runner_components.current.save_load.current.hide ()
-        elif runner_components.current.configuration.current.is_visible () then
-            runner_components.current.configuration.current.hide ()
-        export_current_game_to_file queue runner_components
+        Runner_Save_Load.export_current_game_to_file queue runner_components
 (* TODO2 #pause There is no way to detect when the player closes the save file dialogue, and therefore no way to delay this notification. We could have a temporary notification that is dismissed by a click instead of using a timer. That should be separate from timed notifications, so it doesn't hide them. *)
         runner_components.current.notifications.current.show_game_paused_notification ()
 
@@ -213,11 +209,15 @@ let import_current_game_from_file
     (runner_components : IRefValue<Runner_Components>)
     : unit =
 
+(* If the save/load screen is visible, hide it. *)
     do
+        if runner_components.current.save_load.current.is_visible () then
+            runner_components.current.save_load.current.hide ()
 (* See comments for export_current_game_to_file (). We have the same issue with the open file dialogue. *)
         Runner_Save_Load.import_current_game_from_file queue runner_components
         runner_components.current.notifications.current.show_game_paused_notification ()
 
+(* We do not hide the save/load screen for this, as it does not affect the current game. *)
 let export_saved_games_from_storage_to_file
     (queue : IRefValue<Runner_Queue>)
     (runner_components : IRefValue<Runner_Components>)
@@ -228,6 +228,7 @@ let export_saved_games_from_storage_to_file
         Runner_Save_Load.export_saved_games_from_storage_to_file queue runner_components
         runner_components.current.notifications.current.show_game_paused_notification ()
 
+(* We do not hide the save/load screen for this, as it does not affect the current game. *)
 let import_saved_games_from_file_to_storage
     (queue : IRefValue<Runner_Queue>)
     (runner_components : IRefValue<Runner_Components>)
@@ -244,7 +245,8 @@ let undo
     (history : IRefValue<Runner_History>)
     : unit =
 
-(* When the save/load or configuration screen is visible, we do not want to undo or redo. *)
+(* When the save/load or configuration screen is visible, we do not want to undo or redo. The save/load and configuration screens also prevent mouse wheel scroll events from propagating, and disable the undo/redo buttons in the command menu, but we are leaving this check here to be safe.
+*)
     if not <| runner_components.current.save_load.current.is_visible () &&
         not <| runner_components.current.configuration.current.is_visible () then
         do undo_redo history queue runner_components true
@@ -268,35 +270,37 @@ let handle_key_down
     (event : Event)
     : unit =
 
+    let key_bindings = runner.current.get_key_bindings ()
+
     let event_2 = event :?> KeyboardEvent
-    match event_2.key with
-// TODO1 Replace these with literals or configuration values.
-    | "s" -> runner.current.show_saved_game_screen Save_Game
-    | "l" -> runner.current.show_saved_game_screen Load_Game
-    | "d" -> runner.current.show_saved_game_screen Delete_Game
-    | "Escape" -> runner.current.handle_escape_key ()
-    | "q" -> runner.current.quicksave ()
-    | "e" -> runner.current.export_saved_games_from_storage_to_file ()
-    | "i" -> runner.current.import_saved_games_from_file_to_storage ()
-    | Save_Load_Types.export_current_game_key -> runner.current.export_current_game_to_file ()
-    | "f" ->
-        do
-            runner.current.import_current_game_from_file ()
+    match key_bindings.TryFind event_2.key with
+    | None -> ()
+    | Some name ->
+        match name with
+        | "continue" -> runner.current.run Run_Reason.Player_Run
+        | "undo" -> runner.current.undo ()
+        | "redo" -> runner.current.redo ()
+        | "save_game" -> runner.current.show_saved_game_screen Save_Game
+        | "load_game" -> runner.current.show_saved_game_screen Load_Game
+        | "delete_game" -> runner.current.show_saved_game_screen Delete_Game
+        | "escape" -> runner.current.handle_escape_key ()
+        | "quicksave" -> runner.current.quicksave ()
+        | "export_saved_games" -> runner.current.export_saved_games_from_storage_to_file ()
+        | "import_saved_games" -> runner.current.import_saved_games_from_file_to_storage ()
+        | "export_current_game" -> runner.current.export_current_game_to_file ()
+        | "import_current_game" ->
+            do
+                runner.current.import_current_game_from_file ()
 (* For some reason, the "f" key has the same effect as clicking. *)
-            event.stopPropagation ()
-    | "c" -> runner.current.show_or_hide_configuration_screen ()
-    | "g" -> runner.current.download_screenshot ()
-    | "u" -> runner.current.show_or_hide_ui ()
-    | _ -> ()
-(* These are for debugging.
-TODO1 Also add key handlers for
-- h help
-(end)
-*)
-    match event_2.key with
-    | "Q" -> runner.current.show_queue ()
-    | "C" -> runner.current.show_characters ()
-    | "B" -> runner.current.show_background ()
+                event.stopPropagation ()
+        | "configuration" -> runner.current.show_or_hide_configuration_screen ()
+        | "get_screenshot" -> runner.current.download_screenshot ()
+        | "ui" -> runner.current.show_or_hide_ui ()
+
+(* These are for debugging. *)
+        | "queue" -> runner.current.show_queue ()
+        | "characters" -> runner.current.show_characters ()
+        | "background" -> runner.current.show_background ()
 (* After dumping the JavaScript to the browser console, copy it to a .ts file and run
 npx tsc --noEmit --strict <file>
 (end)
@@ -305,8 +309,9 @@ npm install typescript --save-dev
 (end)
 The --save-dev means you are installing the package only for dev purposes, not to be deployed with the application.
 *)
-    | "J" -> scenes |> check_javascript
-    | "T" ->
-        show_js_state ()
-        runner.current.show_menu_variables ()
-    | _ -> ()
+        | "javascript" -> scenes |> check_javascript
+        | "state" ->
+            do
+                show_js_state ()
+                runner.current.show_menu_variables ()
+        | _ -> warn "handle_key_down" true "Unrecognized key binding." ["key", event_2.key; "binding", name]

@@ -42,11 +42,10 @@ type I_Transitionable =
 let replace_non_alphanumeric_with_underscore (input : string) : string =
     Regex.Replace(input, "[^a-zA-Z0-9]", "_")
 
-let duplicates_by (f : 'a -> 'b) (xs : 'a list) : 'b list =
-    let already_seen = HashSet<_> ()
-    let duplicates = HashSet<_> ()
-    for x in xs do
-        let key = f x
-        if not (already_seen.Add key) then
-            duplicates.Add key |> ignore
-    duplicates |> Seq.toList
+let duplicates_by (f : 'a -> 'b) (xs : 'a list) : ('b * 'a) list =
+    xs
+        |> List.groupBy f
+        |> List.filter (fun (_, values) -> values.Length > 1)
+        |> List.collect (fun (key, values) ->
+            values |> List.map (fun value -> key, value)
+        )

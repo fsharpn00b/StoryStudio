@@ -11,6 +11,10 @@
     flex-direction: column;
 }
 
+#menu_container:focus {
+  outline: none;
+}
+
 #menu_description {
     margin-bottom: 20px;
     font-size: 1.2em;

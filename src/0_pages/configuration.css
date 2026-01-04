@@ -2,7 +2,7 @@
 - Clean up.
 */
 
-.configuration_screen {
+#configuration_screen {
   position: absolute;
   top: 0;
   left: 0;
@@ -15,12 +15,25 @@
   -webkit-backdrop-filter: blur(10px);  /* Safari support */
   color: white;
   font-family: sans-serif;
+/* Enables vertical scrolling if needed. */
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+#configuration_screen:focus {
+  outline: none;
 }
 
 .configuration_header {
   padding-left: 1rem;
 }
 
-.configuration_dialogue {
+.configuration_items {
   padding-left: 1rem;
+}
+
+.configuration_grid {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.5rem 1rem; /* row-gap, column-gap */
 }

@@ -9,7 +9,11 @@
   overflow: hidden;
 }
 
-.image_map_image {
+#image_map_container:focus {
+  outline: none;
+}
+
+#image_map_image {
   position: absolute;
   top: 0;
   left: 0;

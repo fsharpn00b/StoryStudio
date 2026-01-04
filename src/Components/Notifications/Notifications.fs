@@ -22,9 +22,7 @@ let private error : error_function = error log_module_name
 
 (* Types *)
 
-type Temporary_Notifications_Queue = Temporary_Notification_Data list
-(* For now, these types contain the same data. *)
-type Permanent_Notification_Data = Temporary_Notification_Data
+type Temporary_Notifications_Queue = Notification_Data_2 list
 
 (* TODO2 For now, we only worry about permanent notifications.
 If we decide to handle temporary notifications:
@@ -39,7 +37,7 @@ type Notifications_Saveable_State = {
 (* Interfaces *)
 
 type I_Notifications =
-    abstract member add_temporary_notification : Temporary_Notification_Data -> unit
+    abstract member add_temporary_notification : Notification_Data_2 -> unit
     abstract member get_permanent_notification_before_eval_js : unit -> string
     abstract member set_permanent_notification_before_eval_js : string -> unit
     abstract member set_permanent_notification_after_eval_js : string -> unit
@@ -100,7 +98,7 @@ let view
 
 let notify_remove_temporary_notification_from_queue
     (queue : IRefValue<Temporary_Notifications_Queue>)
-    (show : Temporary_Notification_Data -> unit)
+    (show : Notification_Data_2 -> unit)
     : unit =
 
     do lock (temporary_notification_queue_lock :> obj) (fun () ->
@@ -117,8 +115,8 @@ let notify_remove_temporary_notification_from_queue
 
 let add_temporary_notification
     (queue : IRefValue<Temporary_Notifications_Queue>)
-    (show : Temporary_Notification_Data -> unit)
-    (data : Temporary_Notification_Data)
+    (show : Notification_Data_2 -> unit)
+    (data : Notification_Data_2)
     : unit =
 
     do lock (temporary_notification_queue_lock :> obj) (fun () ->
@@ -147,6 +145,7 @@ let Notifications (
 
     let queue : IRefValue<Temporary_Notifications_Queue> = React.useRef []
 
+(* When we define JavaScript functions in start.txt, we might not be able to define all values or functions used by JavaScript expressions in the permanent notification text right away. As a result, trying to evaluate these expressions might fail at first. *)
     let permanent_notification_data_before_eval_js = React.useRef String.Empty
 (* We use useState because we want this component to redraw itself whenever this value changes. *)
     let permanent_notification_data_after_eval_js, set_permanent_notification_data_after_js_eval = React.useState String.Empty
@@ -160,7 +159,7 @@ let Notifications (
     do React.useImperativeHandle (props.expose, fun () ->
         {
             new I_Notifications with
-                member _.add_temporary_notification (data : Temporary_Notification_Data) : unit = add_temporary_notification queue temporary_notification_interface.current.show data
+                member _.add_temporary_notification (data : Notification_Data_2) : unit = add_temporary_notification queue temporary_notification_interface.current.show data
                 member _.get_permanent_notification_before_eval_js () : string = permanent_notification_data_before_eval_js.current
                 member _.set_permanent_notification_before_eval_js (data : string) : unit = do permanent_notification_data_before_eval_js.current <- data
                 member _.set_permanent_notification_after_eval_js (data : string) : unit = do set_permanent_notification_data_after_js_eval data
@@ -182,7 +181,7 @@ let Notifications (
                 member _.is_visible () : bool = is_visible
                 member _.show () : unit = set_is_visible true
                 member _.hide () : unit = set_is_visible false
-                member _.show_game_paused_notification () : unit = add_temporary_notification queue temporary_notification_interface.current.show { text = game_paused_notification; javascript_interpolations = [] }
+                member _.show_game_paused_notification () : unit = add_temporary_notification queue temporary_notification_interface.current.show { text = game_paused_notification }
         }
     )
 (* This component does not implement I_Transitionable. *)

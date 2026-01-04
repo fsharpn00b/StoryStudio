@@ -62,10 +62,10 @@ let rec private collect_javascript
         else collect_javascript (head :: javascript_acc) tail
 
 let rec private collect_menu
-    (menu_1_acc : Menu_Data)
+    (menu_1_acc : Menu_Data_1)
     (remaining_commands : string list)
     : {|
-        menu_data : Menu_Data
+        menu_data : Menu_Data_1
         remaining_commands : string list
     |} =
     match remaining_commands with

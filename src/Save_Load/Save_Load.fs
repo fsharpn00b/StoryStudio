@@ -5,8 +5,9 @@ open System
 
 // window
 open Browser
-
 open Elmish
+// ? operator
+open Fable.Core.JsInterop
 open Feliz
 open Feliz.UseElmish
 
@@ -62,6 +63,11 @@ let download_screenshot_1 () : unit =
     )
 
 (* Main functions - state *)
+
+let is_visible (state_ref : IRefValue<Save_Load_State>) : bool =
+    match state_ref.current with
+    | Visible _ -> true
+    | Hidden -> false
 
 let private update
 (* load_game is Runner_State.load_game (), closed over runner_components, history, and queue. All it needs is the saved game state. *)
@@ -146,13 +152,26 @@ let private update
 let Save_Load
     (props : {| expose : IRefValue<I_Save_Load> |},
     load_game : string -> unit,
-    show_game_paused_notification : unit -> unit
+    show_game_paused_notification : unit -> unit,
+    redraw_command_menu : unit -> unit
     )
     : ReactElement =
+
+(* State *)
 
     let state, dispatch = React.useElmish ((initial_state, Cmd.none), update load_game show_game_paused_notification, [||])
     let state_ref = React.useRef state
     do state_ref.current <- state
+
+(* Give focus to this component when it is visible. This is so we can prevent mouse click and key down events leaking to the game. *)
+    let element_ref = React.useRef None
+    React.useEffect((fun () -> match state with | Visible _ -> element_ref.current?focus() | _ -> ()), [| box state |])
+
+(* Notify the command menu when this screen shows or hides itself, so the command menu can enable or disable the appropriate commands.
+Unlike Configuration_State, Save_Load_State does not have a simple is_visible flag. Save_Load_State has states Visible and Hidden because it needs to store additional data in the Visible state. As a result we have to depend on the entire Save_Load_State. If we add other fields to Save_Load_State, we might need to add a separate is_visible flag that we can depend on instead, so we do not trigger unneeded redraws of the command menu. *)
+    React.useEffect ((fun () -> redraw_command_menu ()), [| box state |])
+
+(* Interface *)
 
     React.useImperativeHandle(props.expose, fun () ->
         {
@@ -170,10 +189,10 @@ The caller must send the current game state, and we must take a screenshot, in c
                 member _.quicksave_or_autosave (current_game_state : string) (quicksave_or_autosave : Quicksave_Or_Autosave) = add_quicksave_or_autosave_to_storage_1 current_game_state quicksave_or_autosave
                 member _.hide () = dispatch <| Hide
                 member _.switch (action : Saved_Game_Action) = dispatch <| Switch action
-                member _.is_visible (): bool = match state_ref.current with | Visible _ -> true | Hidden -> false
+                member _.is_visible (): bool = is_visible state_ref
         }
     )
 
 (* Render *)
 
-    view state_ref dispatch
+    view element_ref state_ref dispatch

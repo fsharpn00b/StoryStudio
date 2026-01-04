@@ -5,9 +5,11 @@ open System
 
 // navigator, Types
 open Browser
-// a, Element, HTMLCanvasElement
+// a, Element, HTMLCanvasElement, HTMLElement, HTMLTextAreaElement
 open Browser.Types
 open Elmish
+// ? operator
+open Fable.Core.JsInterop
 open Feliz
 open Feliz.UseElmish
 // Decode, Encode
@@ -16,6 +18,7 @@ open Thoth.Json
 open Background
 open Character_Types
 open Dialogue_Box_Types
+open Key_Bindings
 open Log
 open Temporary_Notification
 open Units_Of_Measure
@@ -37,6 +40,7 @@ type Runner_Configuration = {
     characters_configuration : Characters_Configuration
     dialogue_box_configuration : Dialogue_Box_Configuration
     temporary_notifications_configuration : Temporary_Notifications_Configuration
+    key_bindings_configuration : Key_Bindings_Configuration
 }
 
 type private Configuration_State = {
@@ -94,6 +98,7 @@ let private update_configuration
     (new_typing_speed_value_1 : HTMLTextAreaElement)
     (new_notification_display_time_value_1 : HTMLTextAreaElement)
     (new_notification_transition_time_value_1 : HTMLTextAreaElement)
+    (new_key_bindings_configuration : Key_Bindings_Configuration)
     : unit =
 
     match Int32.TryParse new_typing_speed_value_1.value with
@@ -125,6 +130,8 @@ let private update_configuration
         do configuration.current <- { configuration.current with temporary_notifications_configuration = { configuration.current.temporary_notifications_configuration with transition_time = new_value_3 |> float |> LanguagePrimitives.FloatWithMeasure } }
     | _ -> ()
 
+    do configuration.current <- { configuration.current with key_bindings_configuration = new_key_bindings_configuration }
+
     set_configuration configuration.current
     set_configuration_in_local_storage configuration
 
@@ -133,16 +140,30 @@ let private update_configuration
 let private view
     (configuration : IRefValue<Runner_Configuration>)
     (set_configuration : Runner_Configuration -> unit)
+    (element_ref : IRefValue<HTMLElement option>)
     (state : IRefValue<Configuration_State>)
     (dispatch : Configuration_Message -> unit)
     : ReactElement =
 
     if state.current.is_visible then
         Html.div [
-            prop.className "configuration_screen"
-            prop.style [style.zIndex configuration_z_index]
+(* Make sure this screen can receive focus. *)
+            prop.ref element_ref
+            prop.tabIndex 0
+            prop.onKeyDown (fun event ->
+                do event.stopPropagation ()
+(* This is only if we want to block default browser behavior. *)
+//                event.preventDefault ()
+(* Ignore all key down events except Escape, which cannot be re-bound anyway. We do not want the player to mistakenly exit this screen while trying to enter a key binding. *)
+                if 0 = String.Compare ("Escape", event.key) then do dispatch Hide 
+            )
 (* Prevent a mouse click from calling Runner.run (). *)
             prop.onClick (fun event -> do event.stopPropagation ())
+(* Prevent a mouse wheel scroll event from calling Runner.undo ()/redo (). *)
+            prop.onWheel (fun event -> do event.stopPropagation ())
+
+            prop.id "configuration_screen"
+            prop.style [style.zIndex configuration_z_index]
             prop.children [
                 Html.div [
                     prop.className "configuration_header"
@@ -153,8 +174,9 @@ let private view
                     ]
                 ]
                 Html.div [
-                    prop.className "configuration_dialogue"
+                    prop.className "configuration_items"
                     prop.children [
+                        Html.h4 "Dialogue"
                         Html.label [
                             prop.text "Dialogue typing speed (characters per second, 0 = show all at once): "
                         ]
@@ -166,27 +188,39 @@ let private view
                             prop.style [style.width (length.em 4)]
                             prop.defaultValue (configuration.current.dialogue_box_configuration.typing_speed |> int |> delay_between_characters_to_characters_per_second)
                         ]
-                        Html.br []
-                        Html.label [
-                            prop.text $"Notification display time (seconds, minimum {int min_temporary_notification_display_time}, maximim {int max_temporary_notification_display_time})"
+                        Html.h4 "Notifications"
+                        Html.div [
+                            prop.className "configuration_grid"
+                            prop.children [
+                                Html.label [
+                                    prop.text $"Notification display time (seconds, minimum {int min_temporary_notification_display_time}, maximum {int max_temporary_notification_display_time}): "
+                                ]
+                                Html.input [
+                                    prop.id "txt_notification_display_time"
+                                    prop.type' "text"
+                                    prop.maxLength 2
+                                    prop.style [style.width (length.em 3)]
+                                    prop.defaultValue (configuration.current.temporary_notifications_configuration.display_time |> int)
+                                ]
+
+                                Html.label [
+                                    prop.text $"Notification fade in/fade out time (seconds, minimum {int min_temporary_notification_transition_time}, maximium {int max_temporary_notification_transition_time}): "
+                                ]
+                                Html.input [
+                                    prop.id "txt_notification_transition_time"
+                                    prop.type' "text"
+                                    prop.maxLength 2
+                                    prop.style [style.width (length.em 3)]
+                                    prop.defaultValue (configuration.current.temporary_notifications_configuration.transition_time |> int)
+                                ]
+                            ]
                         ]
-                        Html.input [
-                            prop.id "txt_notification_display_time"
-                            prop.type' "text"
-                            prop.maxLength 2
-                            prop.style [style.width (length.em 3)]
-                            prop.defaultValue (configuration.current.temporary_notifications_configuration.display_time |> int)
-                        ]
-                        Html.br []
-                        Html.label [
-                            prop.text $"Notification fade in/fade out time (seconds, minimum {int min_temporary_notification_transition_time}, maximium {int max_temporary_notification_transition_time})"
-                        ]
-                        Html.input [
-                            prop.id "txt_notification_transition_time"
-                            prop.type' "text"
-                            prop.maxLength 2
-                            prop.style [style.width (length.em 3)]
-                            prop.defaultValue (configuration.current.temporary_notifications_configuration.transition_time |> int)
+                        Html.h4 "Key bindings"
+                        Html.div [
+                            prop.className "configuration_grid"
+                            prop.children [
+                                yield! get_key_binding_elements configuration.current.key_bindings_configuration
+                            ]
                         ]
                     ]
                 ]
@@ -198,8 +232,11 @@ let private view
                             prop.onClick (fun event ->
                                 do
                                     event.stopPropagation ()
-                                    update_configuration configuration set_configuration (document.getElementById "txt_typing_speed" :?> HTMLTextAreaElement) (document.getElementById "txt_notification_display_time" :?> HTMLTextAreaElement) (document.getElementById "txt_notification_transition_time" :?> HTMLTextAreaElement)
-                                    dispatch Hide
+                                    match get_key_bindings_configuration () with
+                                    | None -> ()
+                                    | Some key_bindings_configuration ->
+                                        update_configuration configuration set_configuration (document.getElementById "txt_typing_speed" :?> HTMLTextAreaElement) (document.getElementById "txt_notification_display_time" :?> HTMLTextAreaElement) (document.getElementById "txt_notification_transition_time" :?> HTMLTextAreaElement) key_bindings_configuration
+                                        dispatch Hide
                             )
                         ]
                         Html.button [
@@ -245,13 +282,25 @@ let Configuration
 (* We cannot simply change the configuration here. We must propagate the changes to the individual components, which is what set_configuration () does. The configuration cannot contain references to individual components because we must serialize and deserialize it, and we would have to serialize and deserialize the individual component configurations.
 *)
     set_configuration : Runner_Configuration -> unit,
-    show_game_paused_notification : unit -> unit
+    show_game_paused_notification : unit -> unit,
+    redraw_command_menu : unit -> unit
     )
     : ReactElement =
+
+(* State *)
 
     let state, dispatch = React.useElmish ((initial_state, Cmd.none), update show_game_paused_notification, [||])
     let state_ref = React.useRef state
     do state_ref.current <- state
+
+(* Give focus to this component when it is visible. This is so we can prevent mouse click and key down events leaking to the game. *)
+    let element_ref = React.useRef None
+    React.useEffect ((fun () -> if state.is_visible then element_ref.current?focus()), [| box state.is_visible |])
+
+(* Notify the command menu when this screen shows or hides itself, so the command menu can enable or disable the appropriate commands. *)
+    React.useEffect ((fun () -> redraw_command_menu ()), [| box state.is_visible |])
+
+(* Interface *)
 
     React.useImperativeHandle(props.expose, fun () ->
         {
@@ -266,4 +315,4 @@ let Configuration
 
 (* Render *)
 
-    view configuration set_configuration state_ref dispatch
+    view configuration set_configuration element_ref state_ref dispatch

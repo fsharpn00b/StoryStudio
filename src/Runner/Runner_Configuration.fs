@@ -10,6 +10,7 @@ open Background
 open Character_Types
 open Configuration
 open Dialogue_Box_Types
+open Key_Bindings
 open Log
 open Runner_Types
 open Temporary_Notification
@@ -44,6 +45,7 @@ let default_configuration = {
     characters_configuration = default_characters_configuration
     dialogue_box_configuration = default_dialogue_box_configuration
     temporary_notifications_configuration = default_temporary_notifications_configuration
+    key_bindings_configuration = get_default_key_bindings_configuration ()
 }
 
 (* Main functions *)
@@ -59,4 +61,3 @@ let set_configuration
         runner_components.current.dialogue_box.current.set_configuration new_configuration.dialogue_box_configuration
         runner_components.current.notifications.current.set_configuration new_configuration.temporary_notifications_configuration
         old_configuration.current <- new_configuration
-

@@ -104,8 +104,7 @@ let private handle_command
             Some <| fun _ -> do runner_components.current.music.current.stop ()
 
         | Temporary_Notification command_2 ->
-// TODO1 There is no way to see whether we have applied JS interpolation to the text field yet. Use separate types? This applies to other commands that use JS interpolation also.
-            Some <| fun _ -> do runner_components.current.notifications.current.add_temporary_notification { command_2 with text = eval_js_string_with_menu_variables command_2.text menu_variables }
+            Some <| fun _ -> do runner_components.current.notifications.current.add_temporary_notification { text = eval_js_string_with_menu_variables command_2.text menu_variables }
 
         | Permanent_Notification command_2 ->
             Some <| fun _ ->
@@ -220,7 +219,7 @@ let private handle_menu
     (runner_components : IRefValue<Runner_Components>)
     (current_scene_id : int<scene_id>)
     (next_command_id : int<command_id> option)
-    (menu_data_1 : Menu_Data)
+    (menu_data_1 : Menu_Data_1)
     (menu_variables : Menu_Variables)
     : Runner_Command_Data =
 
@@ -228,17 +227,20 @@ let private handle_menu
     let command = fun (command_queue_item_id : int<runner_queue_item_id>) ->
 
         let menu_data_2 = {
-            menu_data_1 with
-                description = eval_js_string_with_menu_variables menu_data_1.description menu_variables
-                items = menu_data_1.items |> List.choose (fun item_1 ->
+            name = menu_data_1.name
+            description = eval_js_string_with_menu_variables menu_data_1.description menu_variables
+            items = menu_data_1.items |> List.choose (fun item_1 ->
 (* TODO2 We do not remember why we needed to delay eval of menu item text. Presumably because otherwise we evaluate the JavaScript too soon. *)
-                    let item_2 = lazy { item_1 with text = eval_js_string_with_menu_variables item_1.text menu_variables }
-                    match item_1.conditional with
-                        | Some conditional ->
-                            if eval_js_boolean_with_menu_variables conditional menu_variables then Some item_2.Value
-                            else None
-                        | None -> Some item_2.Value
-                )
+                let item_2 = lazy {
+                    value = item_1.value
+                    text = eval_js_string_with_menu_variables item_1.text menu_variables
+                }
+                match item_1.conditional with
+                    | Some conditional ->
+                        if eval_js_boolean_with_menu_variables conditional menu_variables then Some item_2.Value
+                        else None
+                    | None -> Some item_2.Value
+            )
         }
         runner_components.current.menu.current.show menu_data_2 true (Some command_queue_item_id)
 

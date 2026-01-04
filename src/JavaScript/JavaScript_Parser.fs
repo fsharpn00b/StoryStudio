@@ -67,7 +67,7 @@ let private handle_command_javascript (command_1 : Command) : string option =
     | Permanent_Notification command_2 -> combine_javascript_interpolations command_2.javascript_interpolations |> Some
     | _ -> None
 
-let private handle_menu_javascript (menu : Menu_Data) : string =
+let private handle_menu_javascript (menu : Menu_Data_1) : string =
     String.concat String.Empty [
         combine_javascript_interpolations menu.javascript_interpolations
         combine_javascript_interpolations (menu.items |> List.collect (fun menu_item -> menu_item.javascript_interpolations))
