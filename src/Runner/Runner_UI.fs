@@ -11,6 +11,7 @@ open Feliz
 open Command_Types
 open JavaScript_Interop
 open JavaScript_Parser
+open Key_Bindings
 open Log
 open Runner_History
 open Runner_Queue
@@ -270,7 +271,9 @@ let handle_key_down
     (event : Event)
     : unit =
 
-    let key_bindings = runner.current.get_key_bindings ()
+    let key_bindings =
+        (runner.current.get_key_bindings (), permanent_key_to_key_binding_names)
+            ||> Seq.fold (fun acc item -> acc.Add (item.Key, item.Value))
 
     let event_2 = event :?> KeyboardEvent
     match key_bindings.TryFind event_2.key with
