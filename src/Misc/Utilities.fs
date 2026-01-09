@@ -49,3 +49,12 @@ let duplicates_by (f : 'a -> 'b) (xs : 'a list) : ('b * 'a) list =
         |> List.collect (fun (key, values) ->
             values |> List.map (fun value -> key, value)
         )
+
+let try_fold (eval : 'acc -> 'item -> Result<'acc, 'error>) (acc_1 : 'acc) (xs_1 : 'item list) : Result<'acc, 'error> =
+    let rec loop acc_2 = function
+        | [] -> Ok acc_2
+        | x :: xs_2 ->
+            match eval acc_2 x with
+            | Ok acc_3 -> loop acc_3 xs_2
+            | Error e -> Error e
+    loop acc_1 xs_1

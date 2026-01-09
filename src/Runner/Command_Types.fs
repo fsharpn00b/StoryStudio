@@ -1,14 +1,76 @@
 module Command_Types
 
+open System.Text.RegularExpressions
+
 open Character_Types
-open Fade_Types
 open Background
 open Image_Map
 open Menu
-open Notifications
 open Temporary_Notification
 open Units_Of_Measure
-open Utilities
+
+(* The CN_ prefix is to prevent collisions with type Command. *)
+type Command_Name =
+    | CN_Music_Play
+    | CN_Music_Stop
+    | CN_Background_Fade_In
+    | CN_Background_Fade_Out
+    | CN_Background_Cross_Fade
+    | CN_Character_Fade_In
+    | CN_Character_Fade_Out
+    | CN_Character_Cross_Fade
+    | CN_Fade_Out_All
+    | CN_Dialogue_Box_Show
+    | CN_Dialogue_Box_Hide
+    | CN_Temporary_Notification
+    | CN_Permanent_Notification
+    | CN_JavaScript_Inline
+    | CN_If
+    | CN_Else_If
+    | CN_Else
+    | CN_End_If
+    | CN_Jump
+    | CN_Menu
+    | CN_End_Menu
+    | CN_Image_Map
+    | CN_End_Image_Map
+
+type Command_Parameter_Type =
+    | Any_Min_Length_0
+    | Any_Min_Length_1
+    | Word
+    | Int
+    | Float
+(* We do not use this for now. *)
+//    | Other of {| pattern : string |}
+
+type Command_Parameter = {
+    name : string
+    description : string
+    type' : Command_Parameter_Type
+}
+
+type Command_Pattern_1 = {
+    name : Command_Name
+    pattern : string
+    parameters : Command_Parameter list
+}
+
+type Command_Pattern_2 = {
+    name : Command_Name
+    pattern : string
+    parameters : Map<string, Command_Parameter_Type>
+    parameters_regex : Regex option
+}
+
+type Command_Parameters = {
+    ints : Map<string, int>
+    floats : Map<string, float>
+    strings : Map<string, string>
+}
+
+(* This is passed to the debug, warn, or error function. *)
+type Parser_Error = string * ((string * obj) list)
 
 type Dialogue_Data = {
     character_short_name : string
@@ -63,6 +125,7 @@ type Command_Behavior =
 // TODO2 We should also have an auto-play setting (say, continue after x seconds instead of immediately after finishing.) A setting of 0 could mean continue manually.
     | Continue_Immediately of Continue_Immediately_Behavior
 
+(* This is after we have matched a command but before we have parsed it. Parsing mostly means to assign command IDs and deal with If/Else_If/Else/End_If statements. *)
 type Command_Pre_Parse =
     | Command of Command
     | If of string

@@ -5,10 +5,8 @@ open System
 
 open Character_Types
 open Command_Types
-open Image_Map
-open Menu
 open Log
-open Parser_1_Match_Functions
+open Parser_1
 open Parser_2_Helpers
 open Units_Of_Measure
 
@@ -21,6 +19,15 @@ let private warn : warn_function = warn debug_module_name
 let private error : error_function = error debug_module_name
 
 (* Main functions - parsing *)
+
+let private prepare_commands (commands_1 : string list) : string list =
+    let commands_2 =
+        commands_1
+            |> List.map (fun command -> command.Trim ())
+            |> List.filter (fun command -> command.Length > 0)
+    if List.isEmpty commands_2 then
+        error "prepare_commands" "Command list is empty after removing zero-length commands." ["commands_1", "commands_1"] |> invalidOp
+    else commands_2
 
 let private handle_command (acc : Parser_Accumulator) (command : Command_Post_Parse_Type) (next_token : Command_Pre_Parse) : Parser_Accumulator =
     let next_id_for_command, next_available_id = get_next_command_id next_token acc.parent_command_ids acc.current_command_id
@@ -178,7 +185,9 @@ let get_scene_map_and_javascript
         |> List.map (fun script ->
             script.id, script.content.Split Environment.NewLine
                 |> Array.toList
-                |> match_commands backgrounds characters music scripts
+// TODO1 #parsing Add line numbers to command list so we can include them in error messages in match_commands.
+                |> prepare_commands
+                |> match_commands backgrounds characters music scripts script.name
                 |> parse_commands
         )
         |> Map.ofList

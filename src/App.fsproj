@@ -41,8 +41,10 @@
     <Compile Include="Runner/Scripts.fs" />
     <Compile Include="JavaScript/JavaScript_Parser.fs" />
     <Compile Include="JavaScript/JavaScript_Interop.fs" />
-    <Compile Include="Parser/Parser_1_Match_Patterns.fs" />
-    <Compile Include="Parser/Parser_1_Match_Functions.fs" />
+    <Compile Include="Parser/Parser_Patterns.fs" />
+    <Compile Include="Parser/Parser_Command_Data.fs" />
+    <Compile Include="Parser/Parser_1_Helpers.fs" />
+    <Compile Include="Parser/Parser_1.fs" />
     <Compile Include="Parser/Parser_2_Helpers.fs" />
     <Compile Include="Parser/Parser_2.fs" />
     <Compile Include="Runner/Runner_Types.fs" />
