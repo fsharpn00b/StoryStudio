@@ -20,11 +20,11 @@ let private error : error_function = error debug_module_name
 
 (* Main functions - parsing *)
 
-let private prepare_commands (commands_1 : string list) : string list =
+let private prepare_commands (commands_1 : string list) : (int * string) list =
     let commands_2 =
         commands_1
-            |> List.map (fun command -> command.Trim ())
-            |> List.filter (fun command -> command.Length > 0)
+            |> List.mapi (fun i command -> i + 1, command.Trim ())
+            |> List.filter (fun (_, command) -> command.Length > 0)
     if List.isEmpty commands_2 then
         error "prepare_commands" "Command list is empty after removing zero-length commands." ["commands_1", "commands_1"] |> invalidOp
     else commands_2
@@ -185,7 +185,6 @@ let get_scene_map_and_javascript
         |> List.map (fun script ->
             script.id, script.content.Split Environment.NewLine
                 |> Array.toList
-// TODO1 #parsing Add line numbers to command list so we can include them in error messages in match_commands.
                 |> prepare_commands
                 |> match_commands backgrounds characters music scripts script.name
                 |> parse_commands

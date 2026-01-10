@@ -78,6 +78,7 @@ let private match_command_parameters_for_single_overload
 
 let private match_command_and_parameters
     (command_patterns : Command_Pattern_2 list)
+    (line_number : int)
     (command : string)
     (parameters : string)
     : Result<(Command_Name * Command_Parameters), Parser_Error> =
@@ -87,7 +88,10 @@ let private match_command_and_parameters
             |> List.filter (fun command_pattern -> 0 = String.Compare (command_pattern.pattern, command))
 
     if List.isEmpty matching_command_patterns then
-        Error ("No matching commands found. This might also be due to a dialogue command with an unrecognized character.", ["command", command; "parameters", parameters])
+        Error ("No matching commands found. This might also be due to a dialogue command with an unrecognized character.", [
+            "line_number", line_number
+            "line", $"{command} {parameters}"
+        ])
     else
         let result_1 =
             matching_command_patterns |> List.tryPick (fun pattern ->
@@ -98,10 +102,9 @@ let private match_command_and_parameters
         match result_1 with
         | Some result_2 -> Ok result_2
         | None -> Error ("Matching commands found, but the parameters provided do not match the signatures of any of these commands.", [
-            "command", command
-            "parameters", parameters
-// TODO1 #parsing For each matching command, make a formatted string to show expected parameters.
-            "matching commands", matching_command_patterns |> List.map (fun pattern -> pattern.name) :> obj
+            "line_number", line_number
+            "line", $"{command} {parameters}"
+            "matching commands", matching_command_patterns |> List.map command_pattern_2_to_signature :> obj // |> List.reduce (fun acc item -> $"{acc}{Environment.NewLine}{item}") :> obj
         ])
 
 let private matched_command_to_pre_parse_command
@@ -203,7 +206,7 @@ let match_commands
     (scenes : Script list)
 (* This is for error reporting. *)
     (scene_name : string)
-    (commands : string list)
+    (commands : (int * string) list)
     : Command_Pre_Parse list =
 
     let get_command_and_parameters (text : string) : string * string =
@@ -214,34 +217,35 @@ let match_commands
     let rec helper
         (command_acc : Command_Pre_Parse list)
         (errors_acc : Parser_Error list)
-        (commands : string list)
+        (commands : (int * string) list)
         : (Command_Pre_Parse list) * (Parser_Error list) =
 
         match commands with
 
-(* We append each command to the accumulator, so reverse the accumulator before returning it. *)
-        | [] -> command_acc |> List.rev, errors_acc
+(* We append each command and error to its respective accumulator, so reverse the accumulators before returning them. *)
+        | [] -> command_acc |> List.rev, errors_acc |> List.rev
 
-        | head :: tail ->
+        | (line_number, line) :: tail ->
 
             #if debug
-            debug "match_commands" "Trying to match command." ["command", head]
+            debug "match_commands" "Trying to match command." ["command", line]
             #endif
 
-            match match_dialogue head characters with
+            match match_dialogue line characters with
             | Some result -> helper (result :: command_acc) errors_acc tail
             | None ->
 
-                let command, parameters = get_command_and_parameters head
+                let command, parameters = get_command_and_parameters line
 
-// TODO1 #parsing Break this function up and remove double matching on menu start, image map start, image map end.
+(* TODO1 #parsing Remove double matching on menu start, image map start, image map end.
+Again, we want to re-use the match command/parameters code, so we can for instance get better error reporting.
+*)
 
 (* Discard single-line comments. *)
                 if command |> single_line_comment_regex.IsMatch then
                     helper command_acc errors_acc tail
 (* Discard multi-line comments. *)
                 elif command |> multi_line_comment_start_regex.IsMatch then
-// TODO1 #parsing Have these collect functions return error lists, rather than failing, if possible.
                     let remaining_commands = collect_multi_line_comment tail
                     helper command_acc errors_acc remaining_commands
 (* If we encounter a javascript block, collect the statements in the block. *)
@@ -250,21 +254,21 @@ let match_commands
                     helper (Command_Pre_Parse.Command result.command :: command_acc) errors_acc result.remaining_commands
 (* If we encounter a menu block, collect the statements in the block. *)
                 elif command |> menu_start_regex.IsMatch then
-                    let menu_data = (match_menu_start head).Value
+                    let menu_data = (match_menu_start line).Value
                     let result = collect_menu menu_data tail
                     helper (Command_Pre_Parse.Menu result.menu_data :: command_acc) errors_acc result.remaining_commands
 (* If we encounter an image map block, collect the statements in the block. *)
                 elif command |> image_map_start_regex.IsMatch then
-                    let image_map_data = (match_image_map_start head backgrounds).Value
+                    let image_map_data = (match_image_map_start line backgrounds).Value
                     let result = collect_image_map image_map_data tail
                     helper (Command_Pre_Parse.Image_Map result.image_map_data :: command_acc) errors_acc result.remaining_commands
 (* We handle end_image_map separately and use it to fade out the image map. *)
                 elif command |> end_image_map_regex.IsMatch then 
-                    helper (Command_Pre_Parse.End_Image_Map (match_image_map_end head).Value :: command_acc) errors_acc tail
+                    helper (Command_Pre_Parse.End_Image_Map (match_image_map_end line).Value :: command_acc) errors_acc tail
 (* Otherwise, determine what kind of command this is. *)
                 else
                     let result_1 =
-                        match match_command_and_parameters command_patterns_2 command parameters with
+                        match match_command_and_parameters command_patterns_2 line_number command parameters with
                         | Error e -> Error e
                         | Ok (name, parameters) ->
                             matched_command_to_pre_parse_command name parameters scenes music_tracks backgrounds characters
@@ -275,8 +279,7 @@ let match_commands
     let command_acc, errors_acc = commands |> helper [] []
     if List.isEmpty errors_acc then command_acc
     else
-        error "match_commands" "Failed to match one or more commands." [
+        error "match_commands" "Failed to match one or more commands in a scene script." [
             "scene_name", scene_name
             "errors", errors_acc
         ] |> invalidOp
-

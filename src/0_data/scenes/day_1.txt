@@ -15,6 +15,10 @@ else
     fadein l happy 25 1.0
 endif
 
+// These are to test the error reporting.
+//test no_such_command
+//fadein no_such_signature
+
 // JS interpolation in dialogue.
 l Which way should we go? (Lost: {window.state.player_state.is_lost})
 

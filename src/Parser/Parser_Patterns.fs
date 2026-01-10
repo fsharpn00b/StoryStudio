@@ -20,7 +20,7 @@ let float_pattern = @"[0-9]+(\.[0-9]+)?"
 let multi_line_comment_start_regex = @"^/\*.*$" |> get_compiled_regex
 let multi_line_comment_end_regex = @".*?\*/$" |> get_compiled_regex
 
-// TODO1 #parsing Reuse word/int/float patterns in these where applicable.
+// TODO2 #parsing Consider reusing word/int/float patterns in these where applicable.
 
 let dialogue_regex = @"^(?<character>\w+)\s+(?<dialogue>.+)$" |> get_compiled_regex
 
@@ -29,7 +29,7 @@ function (x) { return x; }
 (end)
 They will need to define functions elsewhere, but they can call them here.
 *)
-let javascript_interpolation_regex = @"\{([^}]+)\}" |> get_compiled_regex
+let javascript_interpolation_regex = @"\{(?<interpolation>[^}]+)\}" |> get_compiled_regex
 
 let single_line_comment_regex = @"^//.*$" |> get_compiled_regex
 
@@ -39,10 +39,10 @@ let menu_item_regex = @"^(?<value>\d+)\s+(?<description>[^\$]+?)(?:\s+(\$if\s+(?
 let end_menu_regex = @"^endmenu$" |> get_compiled_regex
 
 let image_map_start_regex = @"^imagemap$" |> get_compiled_regex
-let image_map_start_with_parameters_regex = @$"^imagemap\s+(\w+)\s+(\w+)\s+({float_pattern})$" |> get_compiled_regex
+let image_map_start_with_parameters_regex = @$"^imagemap\s+(?<name>\w+)\s+(?<background>\w+)\s+(?<transition_time>{float_pattern})$" |> get_compiled_regex
 let image_map_item_regex = @"^(?<value>\d+)\s+(?<x1>\d+)\s+(?<y1>\d+)\s+(?<x2>\d+)\s+(?<y2>\d+)(?:\s+(\$if\s+(?<conditional>.+)))?$" |> get_compiled_regex
 let end_image_map_regex = "^endimagemap$" |> get_compiled_regex
-let end_image_map_with_parameters_regex = @$"^endimagemap\s+({float_pattern})$" |> get_compiled_regex
+let end_image_map_with_parameters_regex = @$"^endimagemap\s+(?<transition_time>{float_pattern})$" |> get_compiled_regex
 
 let javascript_start_regex = @"^js$" |> get_compiled_regex
 let javascript_end_regex = @"^endjs$" |> get_compiled_regex

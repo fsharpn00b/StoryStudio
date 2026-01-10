@@ -52,4 +52,6 @@ let warn (module_name : string) (function_name : string) (alert : bool) (message
     do console.log (log module_name function_name Warning message data)
 
 let error (module_name : string) (function_name : string) (message : string) (data : (string * obj) list) : string =
+(* Given that an error stops the program, we always alert the player. *)
+    do window.alert $"{message}{Environment.NewLine}See browser console for more information."
     log module_name function_name Error message data

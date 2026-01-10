@@ -12,8 +12,7 @@ let private command_patterns_1 = [
         parameters = [
             {
                 name = "name"
-// TODO1 #parsing Mention these music/background/sprite names are linked to URLs in configuration files.
-                description = "The name of the music track."
+                description = "The name of the music track. Music track names are linked to URLs in the music configuration file."
                 type' = Word
             }
         ]
@@ -31,7 +30,7 @@ let private command_patterns_1 = [
         parameters = [
             {
                 name = "name"
-                description = "The name of the background image."
+                description = "The name of the background image. Background names are linked to URLs in the background configuration file."
                 type' = Word
             }
             {
@@ -58,7 +57,7 @@ let private command_patterns_1 = [
         parameters = [
             {
                 name = "name"
-                description = "The name of the background image."
+                description = "The name of the background image. Background names are linked to URLs in the background configuration file."
                 type' = Word
             }
             {
@@ -74,12 +73,12 @@ let private command_patterns_1 = [
         parameters = [
             {
                 name = "name"
-                description = "The character name."
+                description = "The character name. Character names are defined in the character configuration file."
                 type' = Word
             }
             {
                 name = "sprite"
-                description = "The character sprite name."
+                description = "The character sprite name. Character sprite names are linked to URLs in the character configuration file."
                 type' = Word
             }
             {
@@ -100,7 +99,7 @@ let private command_patterns_1 = [
         parameters = [
             {
                 name = "name"
-                description = "The character name."
+                description = "The character name. Character names are defined in the character configuration file."
                 type' = Word
             }
             {
@@ -116,12 +115,12 @@ let private command_patterns_1 = [
         parameters = [
             {
                 name = "name"
-                description = "The character name."
+                description = "The character name. Character names are defined in the character configuration file."
                 type' = Word
             }
             {
                 name = "sprite"
-                description = "The character sprite name."
+                description = "The character sprite name. Character sprite names are linked to URLs in the character configuration file."
                 type' = Word
             }
             {

@@ -23,12 +23,24 @@ let private error : error_function = error debug_module_name
 
 let extract_javascript_interpolations (input : string) : string list =
     let matches = javascript_interpolation_regex.Matches input
-    [ for m in matches -> m.Groups.[1].Value ]
+    [ for m in matches -> m.Groups.["interpolation"].Value ]
 
 // TODO2 Consider just letting authors use ${} for JS interpolation. Then we can use {} for other purposes.
 let convert_string_to_use_javascript_interpolation (text_1 : string) : string =
     let text_2 = text_1.Replace ("{", "${")
     $"`{text_2}`"
+
+(* Helper functions - error reporting *)
+
+let command_pattern_2_to_signature (command : Command_Pattern_2) : string =
+    let signature =
+        command.parameters
+            |> Seq.map (fun kv ->
+                $"({kv.Key} : {kv.Value.ToString()})"
+            )
+            |> Seq.reduce (fun acc item -> $@"{acc} {item}")
+
+    $"Command: {command.name.ToString ()}. Signature: {command.pattern} {signature}"
 
 (* Helper functions - matched_command_to_pre_parse_command *)
 
@@ -83,28 +95,32 @@ let get_script_id
 
 (* Helper functions - match_commands *)
 
+// TODO1 #parsing Have these collect functions return error lists, rather than failing, if possible.
+
+// TODO1 #parsing Have these report line numbers/lines on failure.
+
 let rec collect_multi_line_comment
-    (remaining_commands : string list)
-    : string list =
+    (remaining_commands : (int * string) list)
+    : (int * string) list =
     match remaining_commands with
     | [] -> error "collect_multi_line_comment" "Comment block never terminates." [] |> invalidOp
-    | head :: tail ->
-        if head |> multi_line_comment_end_regex.IsMatch then tail
+    | (line_number, line) :: tail ->
+        if line |> multi_line_comment_end_regex.IsMatch then tail
         else collect_multi_line_comment tail
 
 (* We handle JavaScript blocks here, rather than in pre_nesting_commands_to_post_nesting_commands, because JavaScript statements do not conform to any pattern. When we find a JavaScript start command, we simply record the following commands and add them to the JavaScript block, until we find a JavaScript end command. *)
 (* We do not need to discard comments in JavaScript blocks. The browser will handle those when we eval the JavaScript. *)
 let rec collect_javascript
     (javascript_acc : string list)
-    (remaining_commands : string list)
+    (remaining_commands : (int * string) list)
     : {|
         command : Command
-        remaining_commands : string list
+        remaining_commands : (int * string) list
     |} =
     match remaining_commands with
     | [] -> error "collect_javascript" "JavaScript block never terminates." ["acc", javascript_acc] |> invalidOp
-    | head :: tail ->
-        if head |> javascript_end_regex.IsMatch then
+    | (line_number, line) :: tail ->
+        if line |> javascript_end_regex.IsMatch then
             match javascript_acc with
             | [] -> error "collect_javascript" "JavaScript block is empty." [] |> invalidOp
             | _ ->
@@ -113,42 +129,42 @@ let rec collect_javascript
                     command = javascript_acc |> List.rev |> String.concat Environment.NewLine |> JavaScript_Block                    
                     remaining_commands = tail
                 |}
-        else collect_javascript (head :: javascript_acc) tail
+        else collect_javascript (line :: javascript_acc) tail
 
 let match_menu_item (text : string) : Menu_Item_Data_1 option =
     let m = menu_item_regex.Match text
     if m.Success then
-        match Int32.TryParse m.Groups[1].Value with
+        match Int32.TryParse m.Groups["value"].Value with
         | true, value ->
-            let text = m.Groups[2].Value
+            let text = m.Groups["description"].Value
             {
                 value = value
                 text = text |> convert_string_to_use_javascript_interpolation
                 javascript_interpolations = extract_javascript_interpolations text
 (* If the pattern defines an optional group, that group is present in m.Groups even if it was not matched in the input text. *)
-                conditional = if m.Groups[4].Success then m.Groups[4].Value |> Some else None
+                conditional = if m.Groups["conditional"].Success then m.Groups["conditional"].Value |> Some else None
             } |> Some
-        | _ -> error "match_menu_item" "Failed to parse menu item index." ["menu item index", m.Groups[1].Value] |> invalidOp
+        | _ -> error "match_menu_item" "Failed to parse menu item index." ["menu item index", m.Groups["value"].Value] |> invalidOp
     else None
 
 let rec collect_menu
     (menu_1_acc : Menu_Data_1)
-    (remaining_commands : string list)
+    (remaining_commands : (int * string) list)
     : {|
         menu_data : Menu_Data_1
-        remaining_commands : string list
+        remaining_commands : (int * string) list
     |} =
     match remaining_commands with
     | [] -> error "collect_menu" "Menu block never terminates." ["menu", menu_1_acc] |> invalidOp
-    | head :: tail ->
+    | (line_number, line) :: tail ->
 (* Discard single-line comments. *)
-        if head |> single_line_comment_regex.IsMatch then
+        if line |> single_line_comment_regex.IsMatch then
             collect_menu menu_1_acc tail
 (* Discard multi-line comments. *)
-        elif head |> multi_line_comment_start_regex.IsMatch then
+        elif line |> multi_line_comment_start_regex.IsMatch then
             let remaining_commands = collect_multi_line_comment tail
             collect_menu menu_1_acc remaining_commands
-        elif head |> end_menu_regex.IsMatch then
+        elif line |> end_menu_regex.IsMatch then
             if 0 = List.length menu_1_acc.items then
                 error "collect_menu" "Menu contains no items." ["menu", menu_1_acc] |> invalidOp
             elif menu_1_acc.items |> List.forall (fun item -> item.conditional.IsSome) then
@@ -158,22 +174,22 @@ let rec collect_menu
                 menu_data = { menu_1_acc with items = menu_1_acc.items |> List.rev }
                 remaining_commands = tail
             |}
-        elif head |> menu_item_regex.IsMatch then
-            let menu_item = (match_menu_item head).Value
+        elif line |> menu_item_regex.IsMatch then
+            let menu_item = (match_menu_item line).Value
             let menu_2 = { menu_1_acc with items = menu_item :: menu_1_acc.items }
             collect_menu menu_2 tail
-        else error "collect_menu" "While parsing menu block, encountered line that is neither menu item nor EndMenu." ["line", head; "menu", menu_1_acc] |> invalidOp
+        else error "collect_menu" "While parsing menu block, encountered line that is neither menu item nor EndMenu." ["line", line; "menu", menu_1_acc] |> invalidOp
 
 let match_image_map_item (text : string) : Image_Map_Item_Data option =
     let m = image_map_item_regex.Match text
     if m.Success then
-        match Int32.TryParse m.Groups[1].Value with
+        match Int32.TryParse m.Groups["value"].Value with
         | true, value ->
             match
-                Int32.TryParse m.Groups[2].Value,
-                Int32.TryParse m.Groups[3].Value,
-                Int32.TryParse m.Groups[4].Value,
-                Int32.TryParse m.Groups[5].Value
+                Int32.TryParse m.Groups["x1"].Value,
+                Int32.TryParse m.Groups["y1"].Value,
+                Int32.TryParse m.Groups["x2"].Value,
+                Int32.TryParse m.Groups["y2"].Value
             with
             | (true, x1), (true, y1), (true, x2), (true, y2) ->
                 {
@@ -185,30 +201,30 @@ let match_image_map_item (text : string) : Image_Map_Item_Data option =
 // TODO2 Why would an image map item have a JS interpolation? There is no text. It can have a conditional, but not an interpolation. We think this was copied over from menu item. We could leave it in here for the author to show alt text (that can include JS interpolation).
                     javascript_interpolations = extract_javascript_interpolations text
 (* If the pattern defines an optional group, that group is present in m.Groups even if it was not matched in the input text. *)
-                    conditional = if m.Groups[7].Success then m.Groups[7].Value |> Some else None
+                    conditional = if m.Groups["conditional"].Success then m.Groups["conditional"].Value |> Some else None
                 } |> Some
-            | _ -> error "match_image_map_item" "Failed to parse one or more coordinates." ["x1", m.Groups[2].Value; "y1", m.Groups[3].Value; "x2", m.Groups[4].Value; "y2", m.Groups[5].Value] |> invalidOp
-        | _ -> error "match_image_map_item" "Failed to parse image map item index." ["image map item index", m.Groups[1].Value] |> invalidOp
+            | _ -> error "match_image_map_item" "Failed to parse one or more coordinates." ["x1", m.Groups["x1"].Value; "y1", m.Groups["y1"].Value; "x2", m.Groups["x2"].Value; "y2", m.Groups["y2"].Value] |> invalidOp
+        | _ -> error "match_image_map_item" "Failed to parse image map item index." ["image map item index", m.Groups["value"].Value] |> invalidOp
     else None
 
 let rec collect_image_map
     (image_map_1_acc : Image_Map_Data)
-    (remaining_commands : string list)
+    (remaining_commands : (int * string) list)
     : {|
         image_map_data : Image_Map_Data
-        remaining_commands : string list
+        remaining_commands : (int * string) list
     |} =
     match remaining_commands with
     | [] -> error "collect_image_map" "ImageMap block never terminates." ["image_map", image_map_1_acc] |> invalidOp
-    | head :: tail ->
+    | (line_number, line) :: tail ->
 (* Discard single-line comments. *)
-        if head |> single_line_comment_regex.IsMatch then
+        if line |> single_line_comment_regex.IsMatch then
             collect_image_map image_map_1_acc tail
 (* Discard multi-line comments. *)
-        elif head |> multi_line_comment_start_regex.IsMatch then
+        elif line |> multi_line_comment_start_regex.IsMatch then
             let remaining_commands = collect_multi_line_comment tail
             collect_image_map image_map_1_acc remaining_commands
-        elif head |> end_image_map_with_parameters_regex.IsMatch then
+        elif line |> end_image_map_with_parameters_regex.IsMatch then
             if 0 = List.length image_map_1_acc.items then
                 error "collect_image_map" "ImageMap contains no items." ["image_map", image_map_1_acc] |> invalidOp
             elif image_map_1_acc.items |> List.forall (fun item -> item.conditional.IsSome) then
@@ -219,11 +235,11 @@ let rec collect_image_map
 (* Leave end_image_map in the list of remaining commands. We handle it separately and use it to fade out the image map. *)
                 remaining_commands = remaining_commands
             |}
-        elif head |> image_map_item_regex.IsMatch then
-            let image_map_item = (match_image_map_item head).Value
+        elif line |> image_map_item_regex.IsMatch then
+            let image_map_item = (match_image_map_item line).Value
             let image_map_2 = { image_map_1_acc with items = image_map_item :: image_map_1_acc.items }
             collect_image_map image_map_2 tail
-        else error "collect_image_map" "While parsing image_map block, encountered line that is neither image map item nor EndImageMap." ["line", head; "image_map", image_map_1_acc] |> invalidOp
+        else error "collect_image_map" "While parsing image_map block, encountered line that is neither image map item nor EndImageMap." ["line", line; "image_map", image_map_1_acc] |> invalidOp
 
 (* TODO1 #parsing Simplify these using the new functions, including match_command_parameters_for_single_overload. That will need to be moved here if we do that.
 - Move the menu/etc parameters to the command data block, and call convert_parameters with the pattern for menu, etc. Or just have the menu etc command pattern be a separate block outside the command data array. No need to look it up since this is a special case and we know what the command is.
@@ -249,9 +265,9 @@ let match_dialogue (text : string) (characters : Character_Input_Map) : Command_
 let match_menu_start (text : string) : Menu_Data_1 option =
     let m = menu_start_with_parameters_regex.Match text
     if m.Success then
-        let description = m.Groups[2].Value
+        let description = m.Groups["description"].Value
         {
-            name = m.Groups[1].Value
+            name = m.Groups["name"].Value
             description = description |> convert_string_to_use_javascript_interpolation
             items = []
             javascript_interpolations = extract_javascript_interpolations description
@@ -261,25 +277,25 @@ let match_menu_start (text : string) : Menu_Data_1 option =
 let match_image_map_start (text : string) (backgrounds : Map<string, string>) : Image_Map_Data option =
     let m = image_map_start_with_parameters_regex.Match text
     if m.Success then
-        match Double.TryParse m.Groups[3].Value with
+        match Double.TryParse m.Groups["transition_time"].Value with
         | true, transition_time ->
-            let background = m.Groups[2].Value
+            let background = m.Groups["background"].Value
             match backgrounds.TryFind background with
             | Some url ->
                 {
-                    name = m.Groups[1].Value
+                    name = m.Groups["name"].Value
                     url = url
                     items = []
                     transition_time = transition_time |> LanguagePrimitives.FloatWithMeasure
                 } |> Some
             | None -> error "match_image_map_start" "Unknown image map background." ["background", background; "known backgrounds", backgrounds] |> invalidOp
-        | _ -> error "match_image_map_start" "Failed to parse transition time." ["transition_time", m.Groups[3].Value] |> invalidOp
+        | _ -> error "match_image_map_start" "Failed to parse transition time." ["transition_time", m.Groups["transition_time"].Value] |> invalidOp
     else None
 
 let match_image_map_end (text : string) : Fade_Transition_Time option =
     let m = end_image_map_with_parameters_regex.Match text
     if m.Success then
-        match Double.TryParse m.Groups[1].Value with
+        match Double.TryParse m.Groups["transition_time"].Value with
         | true, transition_time -> transition_time |> LanguagePrimitives.FloatWithMeasure |> Some
-        | _ -> error "match_image_map_end" "Failed to parse transition time." ["transition_time", m.Groups[1].Value] |> invalidOp
+        | _ -> error "match_image_map_end" "Failed to parse transition time." ["transition_time", m.Groups["transition_time"].Value] |> invalidOp
     else None
