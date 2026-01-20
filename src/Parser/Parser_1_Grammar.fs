@@ -42,16 +42,14 @@ Script {
         empty_line
         | non_empty_line
     empty_line = sp* nl
-/* TODO1 #parsing
-- Allow zero or one single line comment at the end of a statement.
-- Consider to just use regex to remove empty lines, comments, and whitespace at the start and end of each line from the script before parsing it with ohm.js. That would make the grammar simpler and less error-prone.
+/* TODO2 #parsing Consider just using regex to remove empty lines, comments, and whitespace at the start and end of each line from the script before parsing it with ohm.js. That would make the grammar simpler and less error-prone.
 */
     non_empty_line =
-        sp* statement sp* nl
-        | sp* statement sp* end
+        sp* statement sp* single_line_comment? nl
+        | sp* statement sp* single_line_comment? end
 /* Menu and image map require the player to make a choice, so they should not go at the end of a script. */
-        | sp* menu sp* nl
-        | sp* image_map sp* nl
+        | sp* menu sp* single_line_comment? nl
+        | sp* image_map sp* single_line_comment? nl
 
 /* Miscellaneous patterns. */
     string_param = (alnum | "_") +
@@ -93,7 +91,7 @@ Script {
 
 /* Single-line patterns. */
 
-// TODO1 #parsing Allow aliases for these commands.
+// TODO2 #parsing Allow aliases for these commands.
     fade_in_background = "fadein" sp+ string_param sp+ float_param
     fade_out_background = "fadeout" sp+ float_param
     cross_fade_background = "fadeto" sp+ string_param sp+ float_param
@@ -128,7 +126,7 @@ Script {
 /* Note nl gets its own parameter in the semantics even though it is part of a group. */
     menu_items = ((menu_item | comment | menu_empty_line) nl)+
     menu_empty_line = sp*
-    menu_item = int_param sp+ (~nl ~(sp+ "/") any)+ menu_item_conditional?
+    menu_item = int_param sp+ (~nl ~(sp+ "/") any)+ menu_item_conditional? single_line_comment?
     menu_item_conditional = sp+ "/" sp+ (~nl any)+
     end_menu = sp* "endmenu"
 
@@ -139,7 +137,7 @@ Script {
     image_map = "imagemap" sp+ string_param sp+ string_param sp+ float_param nl image_map_items end_image_map
     image_map_items = ((image_map_item | comment | image_map_empty_line) nl)+
     image_map_empty_line = sp*
-    image_map_item = int_param sp+ int_param sp+ int_param sp+ int_param sp+ int_param image_map_item_conditional?
+    image_map_item = int_param sp+ int_param sp+ int_param sp+ int_param sp+ int_param image_map_item_conditional? single_line_comment?
     image_map_item_conditional = sp+ "/" sp+ (~nl any)+
     end_image_map = sp* "endimagemap"
 

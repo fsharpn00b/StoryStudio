@@ -179,10 +179,9 @@ let get_scene_map_and_javascript
 
     scripts
         |> List.map (fun script ->
-            script.id,
-                parse_script_1 scripts music_tracks backgrounds characters script.name script.content
-// TODO1 #parsing Report error if the result of parse_script_1 is empty (for example, it contains only comments.)
-                |> parse_commands
+            match parse_script_1 scripts music_tracks backgrounds characters script.name script.content with
+            | [] -> error "get_scene_map_and_javascript" "Script is empty or contains only comments." ["script name", script.name] |> invalidOp
+            | commands -> script.id, commands |> parse_commands
         )
         |> Map.ofList
 

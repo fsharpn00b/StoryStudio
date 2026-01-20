@@ -1,5 +1,8 @@
 module Runner_Queue
 
+// String
+open System
+
 // console, window
 open Browser.Dom
 // IRefValue
@@ -185,10 +188,11 @@ and private add_commands_to_queue
 
 let private run_commands
     (queue : IRefValue<Runner_Queue>)
+    (reason : Run_Reason)
     : unit =
 
     #if debug
-    do debug "run_commands" String.Empty ["queue", queue.current]
+    do debug "run_commands" String.Empty ["reason", reason; "queue", queue.current]
     #endif
 
     match queue.current with
@@ -250,7 +254,10 @@ let run
     | Queue_Idle _ ->
         do
             add_commands_to_queue queue scenes runner_components
-            run_commands queue
+(* If there are no more commands, add_commands_to_queue sets the queue state to Queue_Done. Otherwise, it sets it to Queue_Running. *)
+            match queue.current with
+            | Queue_Running _ -> run_commands queue reason
+            | _ -> ()
     | Queue_Loading _ -> do error "run" "Unexpected queue state (Queue_Loading)." [] |> invalidOp
     | Queue_Running _ ->
         do force_complete_transitions runner_components queue false

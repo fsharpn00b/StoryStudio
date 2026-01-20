@@ -1,5 +1,8 @@
 module Parser_1_Helpers
 
+// Environment.NewLine, String
+open System
+// Regex
 open System.Text.RegularExpressions
 
 // console, window
@@ -7,7 +10,9 @@ open Browser.Dom
 
 open Character_Types
 open Command_Types
+open Image_Map
 open Log
+open Menu
 open Units_Of_Measure
 
 (* Debug *)
@@ -20,9 +25,9 @@ let private error : error_function = error debug_module_name
 
 (* Helper functions - javascript. These are used to parse all commands that allow javascript interpolation. *)
 
-let get_compiled_regex (pattern : string) = Regex (pattern, RegexOptions.Compiled ||| RegexOptions.IgnoreCase)
+let private get_compiled_regex (pattern : string) = Regex (pattern, RegexOptions.Compiled ||| RegexOptions.IgnoreCase)
 
-let javascript_interpolation_regex = @"\$\{(?<interpolation>[^}]+)\}" |> get_compiled_regex
+let private javascript_interpolation_regex = @"\$\{(?<interpolation>[^}]+)\}" |> get_compiled_regex
 
 let extract_javascript_interpolations (input : string) : string list =
     let matches = javascript_interpolation_regex.Matches input
@@ -30,52 +35,115 @@ let extract_javascript_interpolations (input : string) : string list =
 
 let convert_string_to_use_javascript_interpolation (text : string) : string = $"`{text}`"
 
-(* Helper functions - matched_command_to_pre_parse_command *)
+(* Helper functions *)
 
-// TODO1 #parsing For each of these, add a line_number parameter.
-let get_music
+let private get_line_number (text : string) (index : int) : int =
+    Regex.Matches(text.Substring (0, index), Regex.Escape Environment.NewLine).Count
+
+// TODO1 #parsing We should throw these errors instead. Then they will be caught by parse_script_1.
+
+let get_music_track_url
     (music_tracks : Map<string, string>)
     (track_name : string)
+    (script_text : string)
+    (script_text_index : int)
     : string =
 
     match music_tracks.TryFind track_name with
     | Some url -> url
-    | None -> error "get_music" "Unknown music track name." ["music track name", track_name; "known music tracks", music_tracks] |> invalidOp
+    | None ->
+(* We defer this calculation until we need to report an error. *)
+        let line_number = get_line_number script_text script_text_index
+        error "get_music" "Unknown music track name." ["music track name", track_name; "known music tracks", music_tracks; "line_number", line_number] |> invalidOp
 
-let get_background
+let get_background_url
     (backgrounds : Map<string, string>)
     (background_name : string)
+    (script_text : string)
+    (script_text_index : int)
     : string =
 
     match backgrounds.TryFind background_name with
     | Some url -> url
-    | None -> error "get_background" "Unknown background name." ["background name", background_name; "known backgrounds", backgrounds] |> invalidOp
+    | None ->
+        let line_number = get_line_number script_text script_text_index
+        error "get_background" "Unknown background name." ["background name", background_name; "known backgrounds", backgrounds; "line_number", line_number] |> invalidOp
 
-let get_character
+let get_character_input_data
     (characters : Character_Input_Map)
     (character_short_name : string)
+    (script_text : string)
+    (script_text_index : int)
     : Character_Input =
 
     match characters.TryFind character_short_name with
     | Some character -> character
-    | None -> error "get_character" "Unknown character." ["character_short_name", character_short_name; "known characters", characters] |> invalidOp
+    | None ->
+        let line_number = get_line_number script_text script_text_index
+        error "get_character" "Unknown character." ["character_short_name", character_short_name; "known characters", characters; "line_number", line_number] |> invalidOp
 
-let get_character_sprite
+let get_character_sprite_url
     (characters : Character_Input_Map)
     (character_short_name : string)
     (character_sprite_name : string)
+    (script_text : string)
+    (script_text_index : int)
     : string =
 
-    let character = get_character characters character_short_name
+    let character = get_character_input_data characters character_short_name script_text script_text_index
     match character.sprites.TryFind character_sprite_name with
     | Some url -> url
-    | None -> error "get_character_sprite" "Unknown character sprite." ["sprite", character_sprite_name; "character data", character] |> invalidOp
+    | None ->
+        let line_number = get_line_number script_text script_text_index
+        error "get_character_sprite" "Unknown character sprite." ["sprite", character_sprite_name; "character data", character; "line_number", line_number] |> invalidOp
 
 let get_script_id
     (scripts : Script list)
     (destination : string)
+    (script_text : string)
+    (script_text_index : int)
     : int<scene_id> =
 
     match scripts |> List.tryFind (fun script -> script.name = destination) with
     | Some script -> script.id
-    | None -> error "get_script_id" "Jump destination not found." ["destination", destination; "scripts", scripts] |> invalidOp
+    | None ->
+        let line_number = get_line_number script_text script_text_index
+        error "get_script_id" "Jump destination not found." ["destination", destination; "scripts", scripts; "line_number", line_number] |> invalidOp
+
+let check_menu_items
+    (script_name : string)
+    (menu_name : string)
+    (items_1 : Menu_Item_Data_1 list)
+    (script_text : string)
+    (script_text_index : int)
+    : unit =
+
+    let error_data = ["script_name", script_name; "menu_name", menu_name] |> List.map (fun (name, data) -> name, data :> obj)
+
+    if Seq.isEmpty items_1 then
+        let line_number = get_line_number script_text script_text_index
+        error "check_menu_items" "Menu must contain at least one menu item." (error_data @ ["menu_line_number", line_number]) |> invalidOp
+    else
+        let items_2 = items_1 |> Seq.filter (fun item -> item.conditional.IsNone)
+        if Seq.isEmpty items_2 then
+            let line_number = get_line_number script_text script_text_index
+            error "check_menu_items" "Menu must contain at least one menu item with no conditional." (error_data @ ["menu_line_number", line_number]) |> invalidOp
+
+let check_image_map_items
+    (script_name : string)
+    (image_map_name : string)
+    (items_1 : Image_Map_Item_Data list)
+    (script_text : string)
+    (script_text_index : int)
+    : unit =
+    
+    let error_data = ["script_name", script_name; "image_map_name", image_map_name] |> List.map (fun (name, data) -> name, data :> obj)
+
+    if Seq.isEmpty items_1 then
+        let line_number = get_line_number script_text script_text_index
+        error "check_image_map_items" "Image map must contain at least one image_map item." (error_data @ ["image_map_line_number", line_number]) |> invalidOp
+    else
+        let items_2 = items_1 |> Seq.filter (fun item -> item.conditional.IsNone)
+        if Seq.isEmpty items_2 then
+            let line_number = get_line_number script_text script_text_index
+            error "check_image_map_items" "Image map must contain at least one image_map item with no conditional." (error_data @ ["image_map_line_number", line_number]) |> invalidOp

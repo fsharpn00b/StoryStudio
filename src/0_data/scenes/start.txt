@@ -1,6 +1,6 @@
 // Starting script is always named start.txt.
 
-// TODO1 #parsing window.state is hardcoded into the framework logic and must be defined. Maybe it should be hardcoded or given a default definition of {}?
+// TODO1 #parsing window.state is hardcoded into the framework logic and must be defined. Maybe we should call eval_js () and give it a default definition of {}?
 // Set up initial state.
 js
 window.state = {

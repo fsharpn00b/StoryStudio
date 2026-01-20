@@ -2,6 +2,8 @@ module Parser_1_Semantics
 
 // Double, Int32
 open System
+// Regex
+open System.Text.RegularExpressions
 
 // console, window
 open Browser.Dom
@@ -42,29 +44,6 @@ let private get_children (node : obj) : obj array =
         |> Seq.filter (fun x -> not (isNull x))
         |> Seq.toArray
 
-(* Functions - error checking *)
-
-let private check_menu_items (script_name : string) (menu_name : string) (items_1 : Menu_Item_Data_1 list) : unit =
-    let error_data = ["script_name", script_name; "menu_name", menu_name] |> List.map (fun (name, data) -> name, data :> obj)
-
-    if Seq.isEmpty items_1 then
-// TODO1 #parsing Report what line was being parsed.
-        error "check_menu_items" "Menu must contain at least one menu item." error_data |> invalidOp
-    else
-        let items_2 = items_1 |> Seq.filter (fun item -> item.conditional.IsNone)
-        if Seq.isEmpty items_2 then
-            error "check_menu_items" "Menu must contain at least one menu item with no conditional." error_data |> invalidOp
-
-let private check_image_map_items (script_name : string) (image_map_name : string) (items_1 : Image_Map_Item_Data list) : unit =
-    let error_data = ["script_name", script_name; "image_map_name", image_map_name] |> List.map (fun (name, data) -> name, data :> obj)
-
-    if Seq.isEmpty items_1 then
-        error "check_image_map_items" "Image map must contain at least one image_map item." error_data |> invalidOp
-    else
-        let items_2 = items_1 |> Seq.filter (fun item -> item.conditional.IsNone)
-        if Seq.isEmpty items_2 then
-            error "check_image_map_items" "Image map must contain at least one image_map item with no conditional." error_data |> invalidOp
-
 (* Semantics *)
 
 let private get_semantics
@@ -73,6 +52,7 @@ let private get_semantics
     (backgrounds : Map<string, string>)
     (characters : Character_Input_Map)
     (script_name : string)
+    (script_text : string)
     : obj =
 
     let semantics = createObj []
@@ -84,9 +64,10 @@ TODO2 If we use this again, add a null element filter. *)
 (* _iter must have a JS rest parameter, which Fable cannot create, so we must emit a JS function. *)
 //    semantics?_iter <- emitJsExpr () "(function(...xs) { return xs.map (x => x.ast()); })"
 
-// TODO1 #parsing Where is this used?
+(* We think this is called automatically if a semantic handler simply returns an object instead of returning the value of its sourceString property or the result of calling ast() on it.
+We do not currently use this. *)
 (* We think Fable cannot create the this reference. *)
-    semantics?_terminal <- emitJsExpr () "(function() { return this.sourceString; })"
+//    semantics?_terminal <- emitJsExpr () "(function() { return this.sourceString; })"
 
 (* Miscellaneous patterns *)
 
@@ -106,8 +87,8 @@ TODO2 If we use this again, add a null element filter. *)
     semantics?line <- fun x -> x?ast()
 (* Ignore empty lines. *)
     semantics?empty_line <- fun _ _ -> null
-(* For a non-empty line, extract the statement and ignore leading and trailing whitespace and the newline or end. *)
-    semantics?non_empty_line <- fun _ statement _ _ -> statement?ast()
+(* For a non-empty line, extract the statement, menu, or image map, and ignore leading and trailing whitespace and the newline or end. *)
+    semantics?non_empty_line <- fun _ x _ _ _ -> x?ast()
 (* Apply the appropriate semantic for this statement. *)
     semantics?statement <- fun statement -> statement?ast()
 
@@ -115,7 +96,7 @@ TODO2 If we use this again, add a null element filter. *)
 
     semantics?fade_in_background <- fun _ _ background_name _ transition_time ->
         {
-            Background_Fade_In_Data.new_url = get_background backgrounds background_name?sourceString
+            Background_Fade_In_Data.new_url = get_background_url backgrounds background_name?sourceString script_text background_name?source?startIdx
             transition_time = transition_time?ast()
         } |> Background_Fade_In |> Command_Pre_Parse.Command
     semantics?fade_out_background <- fun _ _ transition_time ->
@@ -124,13 +105,13 @@ TODO2 If we use this again, add a null element filter. *)
         } |> Background_Fade_Out |> Command_Pre_Parse.Command
     semantics?cross_fade_background <- fun _ _ background_name _ transition_time ->
         {
-            Background_Cross_Fade_Data.new_url = get_background backgrounds background_name?sourceString
+            Background_Cross_Fade_Data.new_url = get_background_url backgrounds background_name?sourceString script_text background_name?source?startIdx
             transition_time = transition_time?ast()
         } |> Background_Cross_Fade |> Command_Pre_Parse.Command
     semantics?fade_in_character <- fun _ _ character_short_name _ character_sprite_name _ position _ transition_time ->
         {
             Character_Fade_In_Data.character_short_name = character_short_name?sourceString
-            url = get_character_sprite characters character_short_name?sourceString character_sprite_name?sourceString
+            url = get_character_sprite_url characters character_short_name?sourceString character_sprite_name?sourceString script_text character_short_name?source?startIdx
             position = position?ast()
             transition_time = transition_time?ast()
         } |> Character_Fade_In |> Command_Pre_Parse.Command
@@ -142,13 +123,14 @@ TODO2 If we use this again, add a null element filter. *)
     semantics?cross_fade_character <- fun _ _ character_short_name _ character_sprite_name _ transition_time ->
         {
             Character_Cross_Fade_Data.character_short_name = character_short_name?sourceString
-            url = get_character_sprite characters character_short_name?sourceString character_sprite_name?sourceString
+            url = get_character_sprite_url characters character_short_name?sourceString character_sprite_name?sourceString script_text character_short_name?source?startIdx
             transition_time = transition_time?ast()
         } |> Character_Cross_Fade  |> Command_Pre_Parse.Command
     semantics?fade_out_all <- fun _ _ transition_time ->
         transition_time?ast() |> Fade_Out_All |> Command_Pre_Parse.Command
     semantics?play_music <- fun _ _ music_track_name ->
-        music_track_name?sourceString |> get_music music_tracks |> Music_Play |> Command_Pre_Parse.Command
+        let music_track_url = get_music_track_url music_tracks music_track_name?sourceString script_text music_track_name?source?startIdx
+        music_track_url |> Music_Play |> Command_Pre_Parse.Command
     semantics?stop_music <- fun _ -> Music_Stop |> Command_Pre_Parse.Command
     semantics?show_dialogue_box <- fun _ -> Dialogue_Box_Show |> Command_Pre_Parse.Command
     semantics?hide_dialogue_box <- fun _ -> Dialogue_Box_Hide |> Command_Pre_Parse.Command
@@ -158,7 +140,8 @@ TODO2 If we use this again, add a null element filter. *)
     semantics?``else`` <- fun _ -> Command_Pre_Parse.Else
     semantics?end_if <- fun _ -> Command_Pre_Parse.End_If
     semantics?jump <- fun _ _ destination ->
-        destination?sourceString |> get_script_id scripts |> Command.Jump |> Command_Pre_Parse.Command
+        let script_id = get_script_id scripts destination?sourceString script_text destination?source?startIdx
+        script_id |> Command.Jump |> Command_Pre_Parse.Command
     semantics?hide_image_map <- fun _ _ transition_time ->
         transition_time?ast() |> Command_Pre_Parse.End_Image_Map
 
@@ -166,7 +149,7 @@ TODO2 If we use this again, add a null element filter. *)
         {
             Dialogue_Data.character_short_name = character_short_name?sourceString
             character_full_name =
-                let character = get_character characters character_short_name?sourceString
+                let character = get_character_input_data characters character_short_name?sourceString script_text character_short_name?source?startIdx
                 character.full_name
             text = text?sourceString |> convert_string_to_use_javascript_interpolation
             javascript_interpolations = extract_javascript_interpolations text?sourceString
@@ -188,13 +171,13 @@ TODO2 If we use this again, add a null element filter. *)
 Therefore, this is not the place to see whether menu_item_conditional is present or not, nor to convert it to Some/None. The only purpose of this semantic is to extract the conditional clause itself and discard the excess parameters.
 *)
     semantics?menu_item_conditional <- fun _ _ _ conditional -> conditional?sourceString
-    semantics?menu_item <- fun value _ text conditional_1 ->
+    semantics?menu_item <- fun value _ text conditional_1 _ ->
         {
             Menu_Item_Data_1.value = value?ast()
             text = text?sourceString |> convert_string_to_use_javascript_interpolation
             javascript_interpolations = extract_javascript_interpolations text?sourceString
             conditional =
-// TODO1 #parsing It seems using ?ast() overrides type checking on the result. We can assign the result to a value or field of any type, including to an option field without using Some or None.
+// TODO1 #parsing It seems using ?ast() overrides type checking on the result. We can assign the result to a value or field of any type, including to an option field without using Some or None. See if we can get better type safety here.
 (* If menu_item_conditional? is not matched, the sourceString of the corresponding parameter is empty. *)
                 if String.IsNullOrEmpty conditional_1?sourceString then None
 (* Note It seems zero or one (?) is treated as an iterable. *)
@@ -211,17 +194,18 @@ Therefore, this is not the place to see whether menu_item_conditional is present
             text = text?sourceString |> convert_string_to_use_javascript_interpolation
             javascript_interpolations = extract_javascript_interpolations text?sourceString
             items =
+                // TODO0 Why are we not just calling get_children?
                 let menu_items_2 =
                     menu_items_1?ast()
                         |> unbox<Menu_Item_Data_1 array>
                         |> Array.toList
-                do check_menu_items script_name name menu_items_2
+                do check_menu_items script_name name?sourceString menu_items_2 script_text menu_items_1?source?startIdx
                 menu_items_2
 
         } |> Command_Pre_Parse.Menu
 
     semantics?image_map_item_conditional <- fun _ _ _ conditional -> conditional?sourceString
-    semantics?image_map_item <- fun value _ x1 _ y1 _ x2 _ y2 conditional_1 ->
+    semantics?image_map_item <- fun value _ x1 _ y1 _ x2 _ y2 conditional_1 _ ->
         {
             Image_Map_Item_Data.value = value?ast()
             x1 = x1?ast()
@@ -241,16 +225,16 @@ Therefore, this is not the place to see whether menu_item_conditional is present
     semantics?image_map_empty_line <- fun _ -> null
 (* Convert the image map items to a sequence, convert comments to null, and remove them. *)
     semantics?image_map_items <- fun items _ -> get_children items
-    semantics?image_map <- fun _ _ name _ background _ transition_time _ image_map_items_1 _ ->
+    semantics?image_map <- fun _ _ name _ background_name _ transition_time _ image_map_items_1 _ ->
         {
             Image_Map_Data.name = name?sourceString
-            url = get_background backgrounds background?sourceString
+            url = get_background_url backgrounds background_name?sourceString script_text background_name?source?startIdx
             items =
                 let image_map_items_2 =
                     image_map_items_1?ast()
                         |> unbox<Image_Map_Item_Data array>
                         |> Array.toList
-                do check_image_map_items script_name name image_map_items_2
+                do check_image_map_items script_name name?sourceString image_map_items_2 script_text image_map_items_1?source?startIdx
                 image_map_items_2
             transition_time = transition_time?ast()
         } |> Command_Pre_Parse.Image_Map
@@ -283,10 +267,11 @@ let private parse_script_2
     let grammar : obj = ohm?grammar(grammar_text)
     let grammar_match_result : obj = grammar?``match``(script_text)
 
+// TODO1 #parsing We should throw this instead. Then it will be caught by parse_script_1.
     if grammar_match_result?failed() then
         error "parse_ohm" grammar_match_result?message [] |> invalidOp
 
-    let semantics_1 = get_semantics scripts music_tracks backgrounds characters script_name
+    let semantics_1 = get_semantics scripts music_tracks backgrounds characters script_name script_text
     let semantics_2 : obj =
         grammar?createSemantics()?addOperation("ast", semantics_1)
     let semantics_3 : obj =

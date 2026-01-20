@@ -86,7 +86,8 @@ let get_backgrounds () : Map<string, string> =
         backgrounds_2 |> List.map (fun entry -> entry.name, entry.url) |> Map.ofList
     | _ -> error "get_backgrounds" "Failed to deserialize backgrounds." ["backgrounds", backgrounds_1] |> invalidOp
 
-// TODO1 #parsing Keep a list of reserved words so the author cannot name characters after them.
+(* TODO1 #parsing Keep a list of reserved words so the author cannot name characters after them. On the other hand, this might not be a significant issue unless the author not only uses a reserved word as a character name, but also writes dialogue that mimics a correct command that uses that reserved word.
+*)
 let get_character_inputs () : Character_Input_Map =
     match Decode.fromString characters_decoder characters_1 with
     | Ok characters_2 -> characters_2 |> List.map (fun character -> character.short_name, character) |> Map.ofList

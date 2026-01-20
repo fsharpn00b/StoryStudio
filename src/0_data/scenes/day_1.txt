@@ -2,7 +2,7 @@
 //playmusic autumn
 
 // Fade in daytime background over 2 seconds.
-fadein day 2.0
+fadein day 2.0 // Comment after statement.
 
 // Display status (permanent notification).
 status ${window.is_lost ()} endstatus
@@ -34,7 +34,7 @@ endjs
 menu direction Which way?
 // This menu option is dependent on a JS expression.
 // If the player is already lost, they cannot go left.
-1 left / false === window.state.player_state.is_lost
+1 left / false === window.state.player_state.is_lost // Comment after menu item.
 2 right
 endmenu
 */
@@ -43,7 +43,7 @@ endmenu
 That would also let the user put labels or onMouseOver handlers in the hotspot.
 */
 imagemap direction overhead 1.0
-1 0 0 25 25 / false === window.state.player_state.is_lost
+1 0 0 25 25 / false === window.state.player_state.is_lost // Comment after image map item.
 2 25 25 50 50
 endimagemap
 hideimagemap 1.0
@@ -56,7 +56,7 @@ if 1 === direction
 // JS statement to change state.
 // If the player goes left, they get lost.
     js window.state.player_state.is_lost = true;
-/* TODO1 #parsing In case the author forgets to close the notify block, we might warn them (with alert = false) if we find known commands inside it. */
+/* TODO2 #parsing In case the author forgets to close the notify block, we might warn them (with alert = false) if we find known commands inside it. */
     notify You are now lost. endnotify
     notify You can find your way out of the woods by going right instead of left. endnotify
 // Fade out all characters and background over 2 seconds.
@@ -85,5 +85,4 @@ endif
 /* Example of
 multi-line comment. */
 
-// TODO1 #parsing It seems ending with a command that uses a transition results in an unexpected queue state error (queue_done) in Runner_Queue.run_commands ().
 fadeoutall 2.0
