@@ -1,10 +1,12 @@
 module Command_Menu
 
-// DateTime
-open System
-
+// console, window
+open Browser.Dom
+// Cmd
 open Elmish
+// Html, IRefValue, React, React, React, ReactComponent, ReactElement
 open Feliz
+// useElmish
 open Feliz.UseElmish
 
 open Log

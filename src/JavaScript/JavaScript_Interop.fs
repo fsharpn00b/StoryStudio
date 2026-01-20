@@ -3,14 +3,13 @@ module JavaScript_Interop
 // String.Empty
 open System
 
-// console
+// console, window
 open Browser.Dom
 // jsNative
 open Fable.Core
 
 open Log
 open Scripts
-open Units_Of_Measure
 
 (* Debug *)
 
@@ -31,6 +30,7 @@ type Menu_Variables = Map<string, int>
 
 (* Functions - JavaScript *)
 
+// TODO1 We handle errors for these at a higher level so we can show menu variables as well. We should, however, wrap all JS interop functions with error handling if possible, so the app does not silently fail.
 [<Emit("eval($0)")>]
 let private eval_js (code : string) : obj = jsNative
 
@@ -56,19 +56,24 @@ let private emit_menu_variables (menu_variables : Menu_Variables) : string =
     )
 
 let eval_js_with_menu_variables (code : string) (menu_variables : Menu_Variables) =
-    eval_js $"{emit_menu_variables menu_variables}{code}"
+    try eval_js $"{emit_menu_variables menu_variables}{code}"
+    with exn -> error "eval_js_with_menu_variables" exn.Message ["code", code; "menu_variables", menu_variables] |> invalidOp
 
 let eval_js_boolean_with_menu_variables (code : string) (menu_variables : Menu_Variables) =
-    eval_js_boolean $"{emit_menu_variables menu_variables}{code}"
+    try eval_js_boolean $"{emit_menu_variables menu_variables}{code}"
+    with exn -> error "eval_js_boolean_with_menu_variables" exn.Message ["code", code; "menu_variables", menu_variables] |> invalidOp
 
 let eval_js_string_with_menu_variables (code : string) (menu_variables : Menu_Variables) =
-    eval_js_string $"{emit_menu_variables menu_variables}{code}"
+    try eval_js_string $"{emit_menu_variables menu_variables}{code}"
+    with exn -> error "eval_js_string_with_menu_variables" exn.Message ["code", code; "menu_variables", menu_variables] |> invalidOp
 
 (* In some cases we must run JavaScript code that might fail. If the JavaScript code fails, eval_js_string returns null, which is a valid value of System.String. We check for that here and return String.Empty instead. *)
 let try_eval_js_string_with_menu_variables (code : string) (menu_variables : Menu_Variables) =
-    let result = eval_js_string $"{emit_menu_variables menu_variables}{code}"
-    if isNull result then String.Empty
-    else result        
+    try
+        let result = eval_js_string $"{emit_menu_variables menu_variables}{code}"
+        if isNull result then String.Empty
+        else result
+    with exn -> error "try_eval_js_string_with_menu_variables" exn.Message ["code", code; "menu_variables", menu_variables] |> invalidOp
 
 (* This is for debugging. *)
 let show_js_state () : unit =

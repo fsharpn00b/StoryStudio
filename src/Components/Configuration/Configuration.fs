@@ -3,14 +3,17 @@ module Configuration
 // DateTime
 open System
 
-// navigator, Types
+// navigator, Types (also provides console, window)
 open Browser
 // a, Element, HTMLCanvasElement, HTMLElement, HTMLTextAreaElement
 open Browser.Types
+// Cmd
 open Elmish
 // ? operator
 open Fable.Core.JsInterop
+// Html, IRefValue, React, React, ReactComponent, ReactElement
 open Feliz
+// useElmish
 open Feliz.UseElmish
 // Decode, Encode
 open Thoth.Json

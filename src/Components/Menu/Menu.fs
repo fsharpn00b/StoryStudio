@@ -1,16 +1,16 @@
 module Menu
 
-// String.Empty
-open System
-
-// window
+// console, window
 open Browser.Dom
 // HTMLElement
 open Browser.Types
+// Cmd
 open Elmish
 // ? operator
 open Fable.Core.JsInterop
+// Html, IRefValue, React, ReactComponent, ReactElement
 open Feliz
+// useElmish
 open Feliz.UseElmish
 
 open Log
@@ -34,7 +34,7 @@ type Menu_Item_Data_2 = {
 
 type Menu_Data_1 = {
     name : string
-    description : string
+    text : string
     javascript_interpolations : string list
     items : Menu_Item_Data_1 list
 }
@@ -42,7 +42,7 @@ type Menu_Data_1 = {
 (* This is after we have applied JavaScript interpolations to the description field and menu item text fields. *)
 type Menu_Data_2 = {
     name : string
-    description : string
+    text : string
     items : Menu_Item_Data_2 list
 }
 
@@ -115,7 +115,7 @@ let private view
                 prop.children [
                     Html.div [
                         prop.id "menu_description"
-                        prop.text menu_data_2.description
+                        prop.text menu_data_2.text
                     ]
                     Html.ul [
                         prop.id "menu"

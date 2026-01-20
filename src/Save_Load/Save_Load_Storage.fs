@@ -3,14 +3,12 @@ module Save_Load_Storage
 // DateTime
 open System
 
-// document, navigator, FileReader, window
-open Browser
+// console, window
+open Browser.Dom
 // Import, jsNative
 open Fable.Core
 // ? operator
 open Fable.Core.JsInterop
-// IRefValue
-open Feliz
 // Decode, Encode
 open Thoth.Json
 

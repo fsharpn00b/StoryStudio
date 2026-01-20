@@ -3,8 +3,8 @@ module Save_Load_Rendering
 // DateTime
 open System
 
-// window
-open Browser
+// console, window
+open Browser.Dom
 // HTMLElement
 open Browser.Types
 open Feliz

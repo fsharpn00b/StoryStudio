@@ -1,6 +1,6 @@
 module Plugins
 
-// document, window
+// console, document, window
 open Browser.Dom
 // jsNative
 open Fable.Core

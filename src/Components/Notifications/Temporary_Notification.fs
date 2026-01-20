@@ -1,12 +1,12 @@
 module Temporary_Notification
 
-// Environment.NewLine
-open System
-
-// console
+// console, window
 open Browser.Dom
+// Cmd
 open Elmish
+// Html, IRefValue, React, ReactComponent, ReactElement
 open Feliz
+// useElmish
 open Feliz.UseElmish
 
 open Fade_Types

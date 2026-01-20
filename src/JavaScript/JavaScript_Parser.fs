@@ -3,7 +3,7 @@ module JavaScript_Parser
 // Environment.NewLine, String
 open System
 
-// console
+// console, window
 open Browser.Dom
 
 open Command_Types

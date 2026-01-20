@@ -3,8 +3,9 @@ module Characters
 // Environment.NewLine
 open System
 
-// console
+// console, window
 open Browser.Dom
+// Html, IRefValue, React, ReactComponent, ReactElement
 open Feliz
 
 open Character

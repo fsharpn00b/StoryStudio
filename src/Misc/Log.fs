@@ -5,11 +5,10 @@ open System
 // StringBuilder
 open System.Text
 
-// console
+// console, window
 open Browser.Dom
 
-// Encode
-open Thoth.Json
+open Utilities
 
 type log_function = string -> string -> (string * obj) list -> unit
 type warn_function = string -> bool -> string -> (string * obj) list -> unit 
@@ -19,9 +18,6 @@ type private Severity =
     | Debug
     | Warning
     | Error
-
-(* This is to prevent objects from being printed as "[object Object]". *)
-let inline private json_stringify (o : 'a) : string = Encode.Auto.toString (2, o)
 
 let private log
     (module_name : string) 

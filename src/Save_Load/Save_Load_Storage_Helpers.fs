@@ -3,7 +3,7 @@ module Save_Load_Storage_Helpers
 // DateTime
 open System
 
-// Blob, document, FileReader, navigator
+// Blob, navigator (also provides console, document, FileReader, window)
 open Browser
 // Element, HTMLAnchorElement, HTMLCanvasElement
 open Browser.Types

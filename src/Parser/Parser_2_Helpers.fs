@@ -1,5 +1,8 @@
 module Parser_2_Helpers
 
+// console, window
+open Browser.Dom
+
 open Command_Types
 open Log
 open Units_Of_Measure
@@ -14,7 +17,7 @@ let private error : error_function = error debug_module_name
 
 (* Types *)
 
-type Parser_Accumulator = {
+type Parser_2_Accumulator = {
     scene : Scene
     current_command_id : int<command_id>
     parent_command_ids : int<command_id> list
@@ -67,7 +70,7 @@ let get_next_command_id (next_token : Command_Pre_Parse) (parent_command_ids : i
         let parent_command_id =
             match parent_command_ids with
             | head :: _ -> head
-            | _ -> error "get_next_command_id" "The next token is ElseIf, Else, or EndIf, which means we are in a branch, but there is no parent ID." ["next_token", next_token] |> invalidOp
+            | _ -> error "get_next_command_id" "The next token is elseif, else, or endif, which means we are in a branch, but there is no parent ID. This probably means the script has an endif statement with no corresponding if statement. There might be an if statement enclosed in a comment or notify/status block that was not closed correctly." ["next_token", next_token] |> invalidOp
 (* When we encounter If as the current token, we set its ID and also reserve the following ID for the End_If.
 Later, when we encounter Else_If, Else or End_If at the next token, we terminate the branch we are on by setting next_command_id to the ID we reserved for the End_If.
 

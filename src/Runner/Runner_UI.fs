@@ -1,8 +1,7 @@
 module Runner_UI
 
-// String.Empty
-open System
-
+// console, window
+open Browser.Dom
 // Event, KeyboardEvent
 open Browser.Types
 // IRefValue

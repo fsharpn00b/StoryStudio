@@ -1,16 +1,16 @@
 module Image_Map
 
-// String.Empty
-open System
-
-// window
+// console, window
 open Browser.Dom
 // HTMLElement
 open Browser.Types
+// Cmd
 open Elmish
 // ? operator
 open Fable.Core.JsInterop
+// Html, IRefValue, React, ReactComponent, ReactElement
 open Feliz
+// useElmish
 open Feliz.UseElmish
 
 open Fade_Transition

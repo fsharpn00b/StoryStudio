@@ -2,6 +2,7 @@ module Dialogue_Box_Transition
 
 // console, window
 open Browser.Dom
+// IRefValue
 open Feliz
 
 open Dialogue_Box_Types

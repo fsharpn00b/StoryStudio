@@ -1,9 +1,6 @@
 module Runner_Notify
 
-// String
-open System
-
-// window
+// console, window
 open Browser.Dom
 open Feliz
 

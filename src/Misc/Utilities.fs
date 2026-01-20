@@ -1,7 +1,9 @@
 module Utilities
 
-open System.Collections.Generic
 open System.Text.RegularExpressions
+
+// Encode
+open Thoth.Json
 
 open Units_Of_Measure
 
@@ -38,6 +40,9 @@ type I_Transitionable =
     abstract member get_name : unit -> string
 
 (* Functions *)
+
+(* This is to prevent objects from being printed as "[object Object]". *)
+let inline json_stringify (o : 'a) : string = Encode.Auto.toString (2, o)
 
 let replace_non_alphanumeric_with_underscore (input : string) : string =
     Regex.Replace(input, "[^a-zA-Z0-9]", "_")

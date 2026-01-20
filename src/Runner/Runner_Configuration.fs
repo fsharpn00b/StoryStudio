@@ -3,6 +3,8 @@ module Runner_Configuration
 // String.Empty
 open System
 
+// console, window
+open Browser.Dom
 // IRefValue
 open Feliz
 

@@ -1,8 +1,7 @@
 module Runner_History
 
-// String.Empty
-open System
-
+// console, window
+open Browser.Dom
 // IRefValue
 open Feliz
 

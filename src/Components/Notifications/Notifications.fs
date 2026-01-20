@@ -3,11 +3,10 @@ module Notifications
 // Environment.NewLine
 open System
 
-// console
+// console, window
 open Browser.Dom
-open Elmish
+// Html, IRefValue, React, ReactComponent, ReactElement
 open Feliz
-open Feliz.UseElmish
 
 open Log
 open Temporary_Notification

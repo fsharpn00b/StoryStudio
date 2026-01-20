@@ -3,15 +3,18 @@ module Background
 // String.Empty
 open System
 
-// console
+// console, window
 open Browser.Dom
+// Cmd
 open Elmish
 (* 20251001 We are supposed to be using Feliz, not Fable.React. It seems IRefValue is in Fable.React, but can also be provided by Feliz. Using IRefValue only causes an error if we comment out both open Fable.React and open Feliz.
 *)
 (*
 open Fable.React
 *)
+// Html, IRefValue, React, ReactComponent, ReactElement
 open Feliz
+// useElmish
 open Feliz.UseElmish
 
 open Fade_Transition

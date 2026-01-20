@@ -1,12 +1,11 @@
 module Dialogue_Box_State
 
+// IRefValue
 open Feliz
 
 open Dialogue_Box_Types
-open Dialogue_Box_Transition
 open Fade_Types
 open Log
-open Units_Of_Measure
 
 (* Debug *)
 

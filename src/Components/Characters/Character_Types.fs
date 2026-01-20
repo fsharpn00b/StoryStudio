@@ -52,6 +52,7 @@ type Visible_Character_Data = {
 (* These types are used by the parser to create commands. *)
 
 type Character_Fade_In_Data = {
+(* This is for debugging. *)
     character_short_name : string
     url : string
     position : int<percent>

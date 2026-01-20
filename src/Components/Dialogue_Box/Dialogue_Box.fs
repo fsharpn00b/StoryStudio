@@ -1,7 +1,12 @@
 module Dialogue_Box
 
+// console, window
+open Browser.Dom
+// Cmd
 open Elmish
+// Html, IRefValue, React, ReactComponent, ReactElement
 open Feliz
+// useElmish
 open Feliz.UseElmish
 
 open Dialogue_Box_Rendering

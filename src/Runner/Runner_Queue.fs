@@ -1,8 +1,7 @@
 module Runner_Queue
 
-// DateTime, String
-open System
-
+// console, window
+open Browser.Dom
 // IRefValue
 open Feliz
 

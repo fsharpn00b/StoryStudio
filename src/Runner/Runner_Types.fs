@@ -1,5 +1,7 @@
 module Runner_Types
 
+// console, window
+open Browser.Dom
 // IRefValue
 open Feliz
 

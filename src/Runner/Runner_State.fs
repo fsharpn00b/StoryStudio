@@ -1,8 +1,7 @@
 module Runner_State
 
-// String.Empty
-open System
-
+// console, window
+open Browser.Dom
 // IRefValue
 open Feliz
 

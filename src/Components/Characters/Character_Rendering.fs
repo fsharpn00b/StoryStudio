@@ -1,8 +1,8 @@
 module Character_Rendering
 
-// Environment.NewLine
-open System
-
+// console, window
+open Browser.Dom
+// Html, IRefValue, IStyleAttribue, React, ReactComponent, ReactElement
 open Feliz
 
 open Character_Types

@@ -1,8 +1,8 @@
 module Dialogue_Box_Rendering
 
-// String.Empty
-open System
-
+// console, window
+open Browser.Dom
+// Html, IRefValue, ReactElement
 open Feliz
 
 open Dialogue_Box_Types

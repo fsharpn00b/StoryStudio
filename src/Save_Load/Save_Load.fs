@@ -3,8 +3,8 @@ module Save_Load
 // DateTime
 open System
 
-// window
-open Browser
+// console, window
+open Browser.Dom
 open Elmish
 // ? operator
 open Fable.Core.JsInterop

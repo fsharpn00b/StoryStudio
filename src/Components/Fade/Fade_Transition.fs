@@ -1,18 +1,14 @@
 module Fade_Transition
 
-// Environment.NewLine
-open System
-
 // console, window
 open Browser.Dom
+// Cmd
 open Elmish
+// IRefValue
 open Feliz
-(* We do not use this for now. *)
-//open Feliz.UseElmish
 
 open Fade_Types
 open Log
-open Units_Of_Measure
 
 (* Debug *)
 

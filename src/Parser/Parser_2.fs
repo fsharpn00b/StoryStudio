@@ -1,12 +1,12 @@
 module Parser_2
 
-// String
-open System
+// console, window
+open Browser.Dom
 
 open Character_Types
 open Command_Types
 open Log
-open Parser_1
+open Parser_1_Semantics
 open Parser_2_Helpers
 open Units_Of_Measure
 
@@ -20,16 +20,7 @@ let private error : error_function = error debug_module_name
 
 (* Main functions - parsing *)
 
-let private prepare_commands (commands_1 : string list) : (int * string) list =
-    let commands_2 =
-        commands_1
-            |> List.mapi (fun i command -> i + 1, command.Trim ())
-            |> List.filter (fun (_, command) -> command.Length > 0)
-    if List.isEmpty commands_2 then
-        error "prepare_commands" "Command list is empty after removing zero-length commands." ["commands_1", "commands_1"] |> invalidOp
-    else commands_2
-
-let private handle_command (acc : Parser_Accumulator) (command : Command_Post_Parse_Type) (next_token : Command_Pre_Parse) : Parser_Accumulator =
+let private handle_command (acc : Parser_2_Accumulator) (command : Command_Post_Parse_Type) (next_token : Command_Pre_Parse) : Parser_2_Accumulator =
     let next_id_for_command, next_available_id = get_next_command_id next_token acc.parent_command_ids acc.current_command_id
     {
         acc with
@@ -42,7 +33,7 @@ let private handle_command (acc : Parser_Accumulator) (command : Command_Post_Pa
             current_command_id = next_available_id
     }
 
-let private handle_if (acc : Parser_Accumulator) (conditional : string) : Parser_Accumulator =
+let private handle_if (acc : Parser_2_Accumulator) (conditional : string) : Parser_2_Accumulator =
 (* Reserve the next available ID for the End_If token. That way, when we encounter the End_If token, we can assign its ID by getting the ID of its parent, which is this If token, then adding 1. *)
     let next_command_id = acc.current_command_id + 1<command_id>
 (* Use the ID after next_command_id for the first command in the If block. *)
@@ -64,7 +55,7 @@ let private handle_if (acc : Parser_Accumulator) (conditional : string) : Parser
         parent_command_ids = acc.current_command_id :: acc.parent_command_ids
     }
 
-let private handle_else_if (acc : Parser_Accumulator) (conditional : string) : Parser_Accumulator =
+let private handle_else_if (acc : Parser_2_Accumulator) (conditional : string) : Parser_2_Accumulator =
     let child_command_id = acc.current_command_id + 1<command_id>
 (* Get the If block to which this Else_If token belongs. Add the Else_If branch to the If block. *)
     let parent, parent_command_id, if_block = get_parent_if acc.scene acc.parent_command_ids
@@ -80,7 +71,7 @@ let private handle_else_if (acc : Parser_Accumulator) (conditional : string) : P
             current_command_id = child_command_id
     }
 
-let private handle_else (acc : Parser_Accumulator) : Parser_Accumulator = 
+let private handle_else (acc : Parser_2_Accumulator) : Parser_2_Accumulator = 
     let child_command_id = acc.current_command_id + 1<command_id>
 (* Get the If block to which this Else token belongs. Add the Else branch to the If block. *)
     let parent, parent_command_id, if_block = get_parent_if acc.scene acc.parent_command_ids
@@ -98,7 +89,7 @@ let private handle_else (acc : Parser_Accumulator) : Parser_Accumulator =
             current_command_id = child_command_id
     }
 
-let private handle_end_if (acc : Parser_Accumulator) (next_token : Command_Pre_Parse) : Parser_Accumulator =
+let private handle_end_if (acc : Parser_2_Accumulator) (next_token : Command_Pre_Parse) : Parser_2_Accumulator =
 (* Get the ID for the If token to which this End_If token corresponds. Remove the ID from parent_command_ids. *)
     let parent_command_id, parent_command_ids =
         match acc.parent_command_ids with
@@ -130,6 +121,11 @@ let parse_commands
     }
 
     let result = (initial_value, tokens_1 |> List.pairwise) ||> List.fold (fun acc (token, next_token) ->
+
+        #if debug
+        do debug "parse_commands" String.Empty ["current_command_id", acc.current_command_id; "parent_command_ids", acc.parent_command_ids; "token", json_stringify token; "next_token", json_stringify next_token]
+        #endif
+
         do check_current_token_and_next_token token next_token
         match token with
         | Command_Pre_Parse.Command command -> handle_command acc (Command_Post_Parse_Type.Command command) next_token
@@ -178,15 +174,14 @@ let get_scene_map_and_javascript
     (scripts : Script list)
     (backgrounds : Map<string, string>)
     (characters : Character_Input_Map)
-    (music : Map<string, string>)
+    (music_tracks : Map<string, string>)
     : Scene_Map =
 
     scripts
         |> List.map (fun script ->
-            script.id, script.content.Split Environment.NewLine
-                |> Array.toList
-                |> prepare_commands
-                |> match_commands backgrounds characters music scripts script.name
+            script.id,
+                parse_script_1 scripts music_tracks backgrounds characters script.name script.content
+// TODO1 #parsing Report error if the result of parse_script_1 is empty (for example, it contains only comments.)
                 |> parse_commands
         )
         |> Map.ofList

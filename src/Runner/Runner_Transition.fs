@@ -1,9 +1,6 @@
 module Runner_Transition
 
-// String.Empty
-open System
-
-// window
+// console, window
 open Browser.Dom
 // IRefValue
 open Feliz

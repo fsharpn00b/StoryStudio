@@ -1,8 +1,7 @@
 module Runner_Queue_Helpers
 
-// DateTime, String
-open System
-
+// console, window
+open Browser.Dom
 // IRefValue
 open Fable.React
 
@@ -228,7 +227,7 @@ let private handle_menu
 
         let menu_data_2 = {
             name = menu_data_1.name
-            description = eval_js_string_with_menu_variables menu_data_1.description menu_variables
+            text = eval_js_string_with_menu_variables menu_data_1.text menu_variables
             items = menu_data_1.items |> List.choose (fun item_1 ->
 (* TODO2 We do not remember why we needed to delay eval of menu item text. Presumably because otherwise we evaluate the JavaScript too soon. *)
                 let item_2 = lazy {

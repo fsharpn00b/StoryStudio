@@ -1,9 +1,6 @@
 module Key_Bindings
 
-// DateTime
-open System
-
-// document
+// console, document, window
 open Browser.Dom
 // HTMLTextAreaElement
 open Browser.Types

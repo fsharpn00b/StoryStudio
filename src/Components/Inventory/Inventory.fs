@@ -1,14 +1,12 @@
 module Inventory
 
-open System
-
-// window
+// console, window
 open Browser.Dom
 // Cmd
 open Elmish
-// exportDefault
+// ? operator
 open Fable.Core.JsInterop
-// IRefValue
+// Html, IRefValue, React, ReactComponent, ReactElement
 open Feliz
 // useElmish
 open Feliz.UseElmish

@@ -3,8 +3,8 @@ module Save_Load_Types
 // DateTime
 open System
 
-// window
-open Browser
+// console, window
+open Browser.Dom
 // ? operator
 open Fable.Core.JsInterop
 

@@ -5,7 +5,9 @@ open System
 
 // console, window
 open Browser.Dom
+// Cmd
 open Elmish
+// IRefValue
 open Feliz
 
 open Dialogue_Box_Types

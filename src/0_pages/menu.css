@@ -1,5 +1,6 @@
 #menu_container {
-    margin: 20px;
+/* TODO2 We do not know why this was here. It might have been for the command menu before we fixed its z-order? */
+/*    margin: 20px;*/
     position: absolute;
     top: 0;
     left: 0;
@@ -16,6 +17,7 @@
 }
 
 #menu_description {
+/* TODO2 This might be here to separate the description from the menu items. */
     margin-bottom: 20px;
     font-size: 1.2em;
     text-align: center;
@@ -34,7 +36,8 @@
 
 .menu_item {
     display: inline-block;
-    width: 100%;                  /* Will be overridden by parent width */
+/* Will be overridden by parent width */
+    width: 100%;
     text-align: center;
     padding: 12px 24px;
     background-color: #eee;

@@ -3,6 +3,7 @@ module Main
 // String
 open System
 
+// console, window
 open Browser.Dom
 // Event, KeyboardEvent, WheelEvent
 open Browser.Types
