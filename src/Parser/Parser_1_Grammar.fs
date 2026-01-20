@@ -19,12 +19,6 @@ let private error : error_function = error debug_module_name
 
 (* Grammar *)
 
-(* TODO1 #parsing 
-- Allow optional single line comments  at end of statement
-
-- Consider to just strip comments out beforehand using regex. Empty lines too. That would make the grammar simpler and less error-prone.
-*)
-
 (* Note A rule must start with a lower-case letter, or it will allow whitespace. For example, "Int_Param = digit+" would match "1 2".
 See
 https://ohmjs.org/docs/syntax-reference#syntactic-lexical
@@ -48,7 +42,10 @@ Script {
         empty_line
         | non_empty_line
     empty_line = sp* nl
-/* TODO1 #parsing Allow zero or one single line comment at the end of a statement. */
+/* TODO1 #parsing
+- Allow zero or one single line comment at the end of a statement.
+- Consider to just use regex to remove empty lines, comments, and whitespace at the start and end of each line from the script before parsing it with ohm.js. That would make the grammar simpler and less error-prone.
+*/
     non_empty_line =
         sp* statement sp* nl
         | sp* statement sp* end
