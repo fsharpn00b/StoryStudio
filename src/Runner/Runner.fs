@@ -31,7 +31,7 @@ open Runner_UI
 open Save_Load
 open Save_Load_Types
 
-// TODO1 Need to see how well this renders on mobile.
+// TODO1 Need to see how well this renders on mobile. Hopefully that can be handled at CSS level though.
 
 (* Notes *)
 
@@ -127,7 +127,12 @@ TODO2 We could use option with .Value.
     let notifications_2 = React.useRef<I_Notifications> Unchecked.defaultof<_>
     let save_load_2 = React.useRef<I_Save_Load> Unchecked.defaultof<_>
 
-    let runner_components = React.useRef<Runner_Components> {
+(* We cannot call this inside React.useEffectOnce (), as it calls React.useRef (). *)
+    let plugins = get_plugins ()
+(* This emits the interface for each plugin. Later, we add the component for each plugin to the children for the Runner component. *)
+    emit_plugin_interfaces plugins
+
+    let runner_component_interfaces = React.useRef<Runner_Component_Interfaces> {
         background = background_2
         characters = characters_2
         command_menu = command_menu_2
@@ -138,13 +143,14 @@ TODO2 We could use option with .Value.
         music = music_2
         notifications = notifications_2
         save_load = save_load_2
+        plugins = plugins
     }
 
-(* History is part of state, but must be declared after runner_components. *)
+(* History is part of state, but must be declared after runner_component_interfaces. *)
     let history = React.useRef<Runner_History> {
         current_index = None
         history = []
-        notify_history_changed = fun () -> runner_components.current.command_menu.current.redraw ()
+        notify_history_changed = fun () -> runner_component_interfaces.current.command_menu.current.redraw ()
     }
 
 (*
@@ -157,14 +163,14 @@ When you need to trigger events from [an embedded] Elmish component, use React p
         Background.Background (
             {| expose = background_2 |},
             configuration_1.current.background_configuration,
-            (get_notify_transition_complete scenes runner_components queue history Runner_Component_Names.Background)
+            (get_notify_transition_complete scenes runner_component_interfaces queue history Runner_Component_Names.Background)
         )
 
     let characters_1 = 
         Characters.Characters (
             {| expose = characters_2 |},
             configuration_1.current.characters_configuration,
-            (get_notify_transition_complete scenes runner_components queue history Runner_Component_Names.Characters),
+            (get_notify_transition_complete scenes runner_component_interfaces queue history Runner_Component_Names.Characters),
             characters
         )
 
@@ -172,13 +178,13 @@ When you need to trigger events from [an embedded] Elmish component, use React p
         Command_Menu (
             {| expose = command_menu_2 |},
             {
-                show_or_hide_configuration_screen = fun () -> Runner_UI.show_or_hide_configuration_screen queue runner_components
-                show_save_game_screen = fun () -> Runner_UI.show_saved_game_screen queue runner_components Save_Game
-                show_load_game_screen = fun () -> Runner_UI.show_saved_game_screen queue runner_components Load_Game
-                can_undo = fun () -> can_undo history runner_components
-                can_redo = fun () -> can_redo history runner_components
-                undo = fun () -> Runner_UI.undo queue runner_components history
-                redo = fun () -> Runner_UI.redo queue runner_components history
+                show_or_hide_configuration_screen = fun () -> Runner_UI.show_or_hide_configuration_screen queue runner_component_interfaces
+                show_save_game_screen = fun () -> Runner_UI.show_saved_game_screen queue runner_component_interfaces Save_Game
+                show_load_game_screen = fun () -> Runner_UI.show_saved_game_screen queue runner_component_interfaces Load_Game
+                can_undo = fun () -> can_undo history runner_component_interfaces
+                can_redo = fun () -> can_redo history runner_component_interfaces
+                undo = fun () -> Runner_UI.undo queue runner_component_interfaces history
+                redo = fun () -> Runner_UI.redo queue runner_component_interfaces history
             }
         )
 
@@ -186,7 +192,7 @@ When you need to trigger events from [an embedded] Elmish component, use React p
         Configuration (
             {| expose = configuration_component_2 |},
             configuration_1,
-            set_configuration runner_components configuration_1,
+            set_configuration runner_component_interfaces configuration_1,
 (* We must delay these calls because the Notifications and Command_Menu components are not ready yet. *)
             (fun () -> notifications_2.current.show_game_paused_notification ()),
             (fun () -> command_menu_2.current.redraw ())
@@ -196,21 +202,21 @@ When you need to trigger events from [an embedded] Elmish component, use React p
         Dialogue_Box.Dialogue_Box (
             {| expose = dialogue_box_2 |},
             configuration_1.current.dialogue_box_configuration,
-            (get_notify_transition_complete scenes runner_components queue history Runner_Component_Names.Dialogue_Box)
+            (get_notify_transition_complete scenes runner_component_interfaces queue history Runner_Component_Names.Dialogue_Box)
         )
 
     let image_map_1 =
         Image_Map.Image_Map (
             {| expose = image_map_2 |},
-            (get_notify_transition_complete scenes runner_components queue history Runner_Component_Names.Image_Map),
-            (get_notify_image_map_selection scenes queue runner_components)
+            (get_notify_transition_complete scenes runner_component_interfaces queue history Runner_Component_Names.Image_Map),
+            (get_notify_image_map_selection scenes queue runner_component_interfaces)
         )
 
     let menu_1 =
         Menu.Menu (
             {| expose = menu_2 |},
-            (get_notify_transition_complete scenes runner_components queue history Runner_Component_Names.Menu),
-            (get_notify_menu_selection scenes queue runner_components)
+            (get_notify_transition_complete scenes runner_component_interfaces queue history Runner_Component_Names.Menu),
+            (get_notify_menu_selection scenes queue runner_component_interfaces)
         )
 
     let music_1 = Music {| expose = music_2 |}
@@ -224,40 +230,35 @@ When you need to trigger events from [an embedded] Elmish component, use React p
     let save_load_1 =
         Save_Load (
             {| expose = save_load_2 |},
-            get_load_game runner_components history queue,
+            get_load_game runner_component_interfaces history queue,
 (* We must delay these calls because the Notifications and Command_Menu components are not ready yet. *)
             (fun () -> notifications_2.current.show_game_paused_notification ()),
             (fun () -> command_menu_2.current.redraw ())
         )
 
-(* We cannot call this inside React.useEffectOnce (), as it calls React.useRef (). *)
-    let plugins = get_plugins ()
-(* This emits the interface for each plugin. Later, we add the component for each plugin to the children for the Runner component. *)
-    emit_plugin_interfaces plugins
-
 (* Interface *)
 
     React.useImperativeHandle(props.expose, fun () ->
         { new I_Runner with
-            member _.run (reason : Run_Reason) : unit = Runner_UI.run queue scenes runner_components reason
+            member _.run (reason : Run_Reason) : unit = Runner_UI.run queue scenes runner_component_interfaces reason
             member _.get_key_bindings () : Key_To_Key_Binding_Name = configuration_1.current.key_bindings_configuration.key_to_name
-            member _.show_or_hide_configuration_screen () : unit = Runner_UI.show_or_hide_configuration_screen queue runner_components
+            member _.show_or_hide_configuration_screen () : unit = Runner_UI.show_or_hide_configuration_screen queue runner_component_interfaces
 // We do not use this for now.
-//            member _.hide_configuration_screen (): unit = Runner_UI.hide_configuration_screen runner_components
-            member _.handle_escape_key () : unit = Runner_UI.handle_escape_key queue runner_components
+//            member _.hide_configuration_screen (): unit = Runner_UI.hide_configuration_screen runner_component_interfaces
+            member _.handle_escape_key () : unit = Runner_UI.handle_escape_key queue runner_component_interfaces
             member _.show_saved_game_screen (action : Saved_Game_Action) : unit =
-                Runner_UI.show_saved_game_screen queue runner_components action
+                Runner_UI.show_saved_game_screen queue runner_component_interfaces action
 // We do not use this for now.
-//            member _.hide_saved_game_screen () : unit = Runner_UI.hide_saved_game_screen runner_components
-            member _.show_or_hide_ui () : unit = Runner_UI.show_or_hide_ui runner_components
+//            member _.hide_saved_game_screen () : unit = Runner_UI.hide_saved_game_screen runner_component_interfaces
+            member _.show_or_hide_ui () : unit = Runner_UI.show_or_hide_ui runner_component_interfaces
             member _.download_screenshot () : unit = download_screenshot_1 ()
-            member _.quicksave () : unit = Runner_UI.quicksave queue runner_components
-            member _.export_saved_games_from_storage_to_file () : unit = Runner_UI.export_saved_games_from_storage_to_file queue runner_components
-            member _.import_saved_games_from_file_to_storage () : unit = Runner_UI.import_saved_games_from_file_to_storage queue runner_components
-            member _.export_current_game_to_file () : unit = Runner_UI.export_current_game_to_file queue runner_components
-            member _.import_current_game_from_file () : unit = Runner_UI.import_current_game_from_file queue runner_components
-            member _.undo () : unit = Runner_UI.undo queue runner_components history
-            member _.redo () : unit = Runner_UI.redo queue runner_components history
+            member _.quicksave () : unit = Runner_UI.quicksave queue runner_component_interfaces
+            member _.export_saved_games_from_storage_to_file () : unit = Runner_UI.export_saved_games_from_storage_to_file queue runner_component_interfaces
+            member _.import_saved_games_from_file_to_storage () : unit = Runner_UI.import_saved_games_from_file_to_storage queue runner_component_interfaces
+            member _.export_current_game_to_file () : unit = Runner_UI.export_current_game_to_file queue runner_component_interfaces
+            member _.import_current_game_from_file () : unit = Runner_UI.import_current_game_from_file queue runner_component_interfaces
+            member _.undo () : unit = Runner_UI.undo queue runner_component_interfaces history
+            member _.redo () : unit = Runner_UI.redo queue runner_component_interfaces history
 (* These are for debugging. *)
             member _.show_queue () : unit = do debug "show_queue" String.Empty ["queue", queue.current]
             member _.show_characters () : unit = do characters_2.current.get_character_data ()
@@ -265,7 +266,6 @@ When you need to trigger events from [an embedded] Elmish component, use React p
             member _.show_menu_variables () : unit = do debug "show_menu_variables" String.Empty <| ["menu_variables", get_menu_variables queue]
         }
     )
-
 
 (* Render *)
 

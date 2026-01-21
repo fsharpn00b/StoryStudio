@@ -22,7 +22,7 @@ let private error : error_function = error debug_module_name
 
 let add_to_history
     (history : IRefValue<Runner_History>)
-    (runner_components : IRefValue<Runner_Components>)
+    (runner_component_interfaces : IRefValue<Runner_Component_Interfaces>)
     (queue : IRefValue<Runner_Queue>)
     : unit =
 
@@ -33,13 +33,13 @@ let add_to_history
                 {
                     history.current with
                         current_index = Some 0
-                        history = [get_state runner_components queue]
+                        history = [get_state runner_component_interfaces queue]
                 }
             | Some current_index ->
                 {
                     history.current with
                         current_index = Some <| current_index + 1
-                        history = (List.take (current_index + 1) history.current.history) @ [get_state runner_components queue]
+                        history = (List.take (current_index + 1) history.current.history) @ [get_state runner_component_interfaces queue]
                 }
         history.current.notify_history_changed ()
 
@@ -53,15 +53,15 @@ let clear_history
 
 let can_undo
     (history : IRefValue<Runner_History>)
-    (runner_components : IRefValue<Runner_Components>)
+    (runner_component_interfaces : IRefValue<Runner_Component_Interfaces>)
     : bool =
 
 (* It seems this function can be called before Configuration or Save_Load is initialized. *)
     if
-        Unchecked.defaultof<_> = runner_components.current.configuration.current ||
-        Unchecked.defaultof<_> = runner_components.current.save_load.current then false
-    elif runner_components.current.configuration.current.is_visible () ||
-        runner_components.current.save_load.current.is_visible () then
+        Unchecked.defaultof<_> = runner_component_interfaces.current.configuration.current ||
+        Unchecked.defaultof<_> = runner_component_interfaces.current.save_load.current then false
+    elif runner_component_interfaces.current.configuration.current.is_visible () ||
+        runner_component_interfaces.current.save_load.current.is_visible () then
         false
     else
         match history.current.current_index with
@@ -70,15 +70,15 @@ let can_undo
 
 let can_redo
     (history : IRefValue<Runner_History>)
-    (runner_components : IRefValue<Runner_Components>)
+    (runner_component_interfaces : IRefValue<Runner_Component_Interfaces>)
     : bool =
 
 (* It seems this function can be called before Configuration or Save_Load is initialized. *)
     if
-        Unchecked.defaultof<_> = runner_components.current.configuration.current ||
-        Unchecked.defaultof<_> = runner_components.current.save_load.current then false
-    elif runner_components.current.configuration.current.is_visible () ||
-        runner_components.current.save_load.current.is_visible () then
+        Unchecked.defaultof<_> = runner_component_interfaces.current.configuration.current ||
+        Unchecked.defaultof<_> = runner_component_interfaces.current.save_load.current then false
+    elif runner_component_interfaces.current.configuration.current.is_visible () ||
+        runner_component_interfaces.current.save_load.current.is_visible () then
         false
     else
         match history.current.current_index with
@@ -96,7 +96,7 @@ let can_redo
 let undo_redo
     (history : IRefValue<Runner_History>)
     (queue : IRefValue<Runner_Queue>)
-    (runner_components : IRefValue<Runner_Components>)
+    (runner_component_interfaces : IRefValue<Runner_Component_Interfaces>)
     (undo : bool)
     : unit =
 
@@ -108,7 +108,7 @@ let undo_redo
     | Some current_index_1 ->
         if (undo && current_index_1 > 0) || (not undo && current_index_1 < history.current.history.Length - 1) then
 (* We do not call force_complete_transitions () until we have determined undo/redo is valid. *)
-            do force_complete_transitions runner_components queue true (fun () ->
+            do force_complete_transitions runner_component_interfaces queue true (fun () ->
                 #if debug
                 do debug "undo_redo" "Runner_State.force_complete_transitions () done." []
                 #endif
@@ -122,6 +122,6 @@ let undo_redo
                     debug "undo_redo" String.Empty ["History index (after)", history.current.current_index; "History length", history.current.history.Length]
                     #endif
 
-                    set_state history.current.history.[current_index_2] queue runner_components
+                    set_state history.current.history.[current_index_2] queue runner_component_interfaces
             )
     | None -> ()

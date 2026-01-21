@@ -22,21 +22,21 @@ open Units_Of_Measure
 
 (* Types - public *)
 
-type Runner_Component_Names =
-    | Background
-    | Characters
-    | Dialogue_Box
-    | Menu
-    | Image_Map
+type Plugin_Data = {
+    component_ : ReactElement
+(* TODO1 We must store the interface as an obj because each component exposes a different interface and we do not know how to statically determine the interface type. If we did, we are not sure how we would store different interface types in a single map. Presumably they would all need to inherit from a base interface type, but there are no base interface methods we require, so they might as well inherit from obj.
+In any case, we do not use these interfaces inside the framework. Instead, they are used by JavaScript written by the author. JavaScript does not need to cast the obj to the interface type. It is enough to say, for example:
+window.Interfaces.<interface>.current.<method>
+(end)
 
-type Run_Reason =
-    | Initial_Run
-    | Player_Run
-    | Handle_Queue_Empty
-    | Notify_Menu_Selection
-    | Notify_Image_Map_Selection
+- However, we should let a plugin author provide a TypeScript definition of the interface that we can then use to check the JavaScript code.
+*)
+    interface_ref : IRefValue<obj>
+}
 
-type Runner_Components = {
+type Plugins_Data = Map<string, Plugin_Data>
+
+type Runner_Component_Interfaces = {
     background : IRefValue<I_Background>
     characters : IRefValue<I_Characters>
     dialogue_box : IRefValue<I_Dialogue_Box>
@@ -47,6 +47,7 @@ type Runner_Components = {
     configuration : IRefValue<I_Configuration>
     command_menu : IRefValue<I_Command_Menu>
     notifications : IRefValue<I_Notifications>
+    plugins : Plugins_Data
 }
 
 type Runner_Saveable_State_Component_Data = {
@@ -84,6 +85,13 @@ type Runner_History = {
     history : Runner_Saveable_State list
     notify_history_changed : unit -> unit
 }
+
+type Runner_Component_Names =
+    | Background
+    | Characters
+    | Dialogue_Box
+    | Menu
+    | Image_Map
 
 type Runner_Command_Data = {
     command : (int<runner_queue_item_id> -> unit) option
@@ -148,6 +156,13 @@ type Runner_Queue =
     | Queue_Running of Runner_Queue_State_Running_Data
     | Queue_Interrupting of Runner_Queue_State_Running_Data
     | Queue_Done
+
+type Run_Reason =
+    | Initial_Run
+    | Player_Run
+    | Handle_Queue_Empty
+    | Notify_Menu_Selection
+    | Notify_Image_Map_Selection
 
 (* Interfaces *)
 

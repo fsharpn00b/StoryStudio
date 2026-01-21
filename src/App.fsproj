@@ -31,7 +31,7 @@
     <Compile Include="Components/Notifications/Notifications.fs" />
     <Compile Include="Components/Configuration/Key_Bindings.fs" />
     <Compile Include="Components/Configuration/Configuration.fs" />
-    <Compile Include="Components/Inventory/Inventory.fs" />
+    <Compile Include="0_data/plugins/Plugin_Template.fs" />
     <Compile Include="Runner/Command_Types.fs" />
     <Compile Include="Save_Load/Save_Load_Types.fs" />
     <Compile Include="Save_Load/Save_Load_Storage_Helpers.fs" />
@@ -56,8 +56,8 @@
     <Compile Include="Runner/Runner_Queue.fs" />
     <Compile Include="Runner/Runner_Queue_Transition.fs" />
     <Compile Include="Runner/Runner_Notify.fs" />
-    <Compile Include="Runner/Runner_UI.fs" />
-    <Compile Include="Runner/Plugins.fs" />
+    <Compile Include="Runner/Plugins.fs" /><Compile Include="Runner/Runner_UI.fs" />
+    
     <Compile Include="Runner/Runner.fs" />
     <Compile Include="Runner/Main.fs" />
   </ItemGroup>

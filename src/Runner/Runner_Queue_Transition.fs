@@ -31,7 +31,7 @@ let private remove_transition_2
     (queue : IRefValue<Runner_Queue>)
     (history : IRefValue<Runner_History>)
     (scenes : Scene_Map)
-    (runner_components : IRefValue<Runner_Components>)
+    (runner_component_interfaces : IRefValue<Runner_Component_Interfaces>)
     (queue_data : Runner_Queue_State_Running_Data)
     (command_queue_item_id : int<runner_queue_item_id>)
     (command : Runner_Queue_Item)
@@ -63,12 +63,12 @@ let private remove_transition_2
 - It's not intuitive to remember that this function (remove_transition) is where we add to history and autosave.
 *)
         if queue_data.add_to_history then
-            add_to_history history runner_components queue
+            add_to_history history runner_component_interfaces queue
         if queue_data.autosave then
-            quicksave_or_autosave queue runner_components Save_Load_Types.Autosave
+            quicksave_or_autosave queue runner_component_interfaces Save_Load_Types.Autosave
 (* Run the next command(s) if specified. *)
         if queue_data.continue_after_finished then
-            run queue scenes runner_components Handle_Queue_Empty
+            run queue scenes runner_component_interfaces Handle_Queue_Empty
     else
 (* Update the queue with the new map of command queue items. *)
         do queue.current <-
@@ -83,7 +83,7 @@ let remove_transition_1
     (queue : IRefValue<Runner_Queue>)
     (history : IRefValue<Runner_History>)
     (scenes : Scene_Map)
-    (runner_components : IRefValue<Runner_Components>)
+    (runner_component_interfaces : IRefValue<Runner_Component_Interfaces>)
     (command_queue_item_id : int<runner_queue_item_id>)
     (component_id : Runner_Component_Names)
     : unit =
@@ -122,7 +122,7 @@ let remove_transition_1
                     command_2
 
 (* If the command has no more transitions, remove it from the queue. *)
-            remove_transition_2 queue history scenes runner_components queue_data command_queue_item_id command_1
+            remove_transition_2 queue history scenes runner_component_interfaces queue_data command_queue_item_id command_1
         )
 
     | _ -> error "remove_transition" "Unexpected queue state." ["Queue state", queue.current] |> invalidOp

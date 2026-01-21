@@ -1,5 +1,8 @@
 module Plugins
 
+// Exception
+open System
+
 // console, document, window
 open Browser.Dom
 // jsNative
@@ -12,23 +15,8 @@ open Feliz
 open Thoth.Json
 
 open Log
+open Runner_Types
 open Utilities
-
-(* Types *)
-
-type Plugin_Data = {
-    component_ : ReactElement
-(* TODO1 We must store the interface as an obj because each component exposes a different interface and we do not know how to statically determine the interface type. If we did, we are not sure how we would store different interface types in a single map. Presumably they would all need to inherit from a base interface type, but there are no base interface methods we require, so they might as well inherit from obj.
-In any case, we do not use these interfaces inside the framework. Instead, they are used by JavaScript written by the author. JavaScript does not need to cast the obj to the interface type. It is enough to say, for example:
-window.Interfaces.<interface>.current.<method>
-(end)
-
-- However, we should let a plugin author provide a TypeScript definition of the interface that we can then use to check the JavaScript code.
-*)
-    interface_ref : IRefValue<obj>
-}
-
-type Plugins_Data = Map<string, Plugin_Data>
 
 (* Consts *)
 
@@ -79,21 +67,29 @@ let private load_script (path : string) =
         return ()
     }
 
-let private Dynamic_Component_Loader (name : string) (path : string) (interface_ref : IRefValue<obj>) : ReactElement =
+let private load_component (name : string) (path : string) (interface_ref : IRefValue<obj>) : ReactElement =
     let is_loaded, set_is_loaded = React.useState false
+    let is_error, set_is_error = React.useState false
 
     React.useEffect(
         (fun () ->
-            promise {
+            let result = promise {
                 ensure_plugin_registry ()
                 do! load_script path
                 set_is_loaded true
             }
-            |> ignore
+//            do result |> Promise.catch (fun _ -> set_is_error true) |> ignore
+(* TODO2 This does not stop the app from running, presumably because it is in a React.useEffect function. However, handling the error outside this function creates multiple alerts. For now this is the less painful solution. *)
+            do result |> Promise.catch (fun _ -> error "load_script" "Failed to load plugin script." ["path", path] |> invalidOp) |> ignore
         ),
         [||]
     )
 
+// TODO2 This creates multiple alerts.
+(*
+    if is_error then error "load_script" "Failed to load plugin script." ["path", path] |> invalidOp
+    elif is_loaded then
+*)
     if is_loaded then
         let component_ = window?(plugins_registry_name)?(name)
         Feliz.Interop.reactApi.createElement(component_, {| expose = interface_ref |})
@@ -103,7 +99,7 @@ let get_plugins () : Plugins_Data =
     get_plugin_paths ()
         |> Seq.map (fun kv ->
             let interface_ref = React.useRef<obj> Unchecked.defaultof<_>
-            let component_ = Dynamic_Component_Loader kv.Key kv.Value interface_ref
+            let component_ = load_component kv.Key kv.Value interface_ref
             kv.Key, { component_ = component_; interface_ref = interface_ref }
         )
         |> Map.ofSeq

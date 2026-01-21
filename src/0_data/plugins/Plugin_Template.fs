@@ -1,10 +1,10 @@
-module Inventory
+module Plugin_Template
 
 // console, window
 open Browser.Dom
 // Cmd
 open Elmish
-// ? operator
+// ? operator, importSideEffects
 open Fable.Core.JsInterop
 // Html, IRefValue, React, ReactComponent, ReactElement
 open Feliz
@@ -15,21 +15,22 @@ open Utilities
 
 (* Note This file is in the project only so Fable will compile it to .js, which we can then import to dynamically load the component. *)
 
-// TODO1 Add separate css file.
+(* Import CSS. *)
+importSideEffects "./Plugin_Template.css"
 
 (* Types *)
 
-type private Inventory_State = {
+type private Plugin_Template_State = {
     is_visible : bool
 }
 
-type private Inventory_Message =
+type private Plugin_Template_Message =
     | Show
     | Hide
 
 (* Interfaces *)
 
-type I_Inventory =
+type I_Plugin_Template =
     abstract member show : unit -> unit
     abstract member hide : unit -> unit
     abstract member is_visible : unit -> bool
@@ -37,9 +38,9 @@ type I_Inventory =
 (* Main functions - state *)
 
 let private update
-    (message : Inventory_Message)
-    (state : Inventory_State)
-    : Inventory_State * Cmd<Inventory_Message> =
+    (message : Plugin_Template_Message)
+    (state : Plugin_Template_State)
+    : Plugin_Template_State * Cmd<Plugin_Template_Message> =
 
     match message with
 
@@ -54,20 +55,15 @@ let private update
 (* Main functions - rendering *)
 
 let private view 
-    (state : IRefValue<Inventory_State>)
-    (dispatch : Inventory_Message -> unit)
+    (state : IRefValue<Plugin_Template_State>)
+    (dispatch : Plugin_Template_Message -> unit)
     : ReactElement =
 
     if state.current.is_visible then
         Html.div [
-            Html.h1 [
-                prop.style [
-                    style.top 100
-                    style.left 100
-                    style.custom ("position", "absolute")
-                    style.zIndex 10
-                ]
-                prop.text $"Test"
+            prop.id "plugin_template"
+            prop.children [
+                Html.h1 "Test"
             ]
         ]
     else Html.none
@@ -75,8 +71,8 @@ let private view
 (* Component *)
 
 [<ReactComponent>]
-let private Inventory
-    (props : {| expose : IRefValue<I_Inventory> |})
+let private Plugin_Template
+    (props : {| expose : IRefValue<I_Plugin_Template> |})
     : ReactElement =
 
     let initial_state = { is_visible = false }
@@ -87,7 +83,7 @@ let private Inventory
 
     React.useImperativeHandle(props.expose, fun () ->
         {
-            new I_Inventory with
+            new I_Plugin_Template with
                 member _.show () = dispatch <| Show
                 member _.hide () = dispatch <| Hide
                 member _.is_visible () : bool = state_ref.current.is_visible
@@ -99,4 +95,4 @@ let private Inventory
     view state_ref dispatch
 
 (* Note plugins_registry_name won't work for plugins written outside the framework. *)
-window?(plugins_registry_name)?Inventory <- Inventory
+window?(plugins_registry_name)?Plugin_Template <- Plugin_Template

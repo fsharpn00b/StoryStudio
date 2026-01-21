@@ -1,0 +1,7 @@
+#plugin_template {
+    position: absolute;
+    z-index: 10;
+
+    top: 100px;
+    left: 100px;
+}

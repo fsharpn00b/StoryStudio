@@ -22,12 +22,12 @@ let mutable debug_render_counter = 1
 
 (* Helper functions - rendering *)
 
-let private get_character_style (character : Visible_Character_Data) : IStyleAttribute list =
+let private get_character_style (character_sprite : Visible_Character_Data) : IStyleAttribute list =
     [
         style.custom ("position", "absolute")
         style.bottom 0
-        style.custom ("left", $"{character.position}%%")
-        style.custom ("height", $"{character.height}vh")
+        style.custom ("left", $"{character_sprite.position}%%")
+        style.custom ("height", $"{character_sprite.height}vh")
         style.custom ("width", "auto")
         style.zIndex character_z_index
     ]
@@ -35,7 +35,7 @@ let private get_character_style (character : Visible_Character_Data) : IStyleAtt
 (* Main functions - rendering *)
 
 let private view_idle_visible
-    (character : Visible_Character_Data)
+    (character_sprite : Visible_Character_Data)
     : ReactElement =
     Html.img [
 (* TODO2 For some reason it is impossible to use a CSS file for this component, even though it works for every other component. In any case, we don't have any static properties or styles to apply at the moment. *)
@@ -45,15 +45,15 @@ https://react.dev/learn/rendering-lists
 Keys tell React which array item each component corresponds to, so that it can match them up later. This becomes important if your array items can move (e.g. due to sorting), get inserted, or get deleted. A well-chosen key helps React infer what exactly has happened, and make the correct updates to the DOM tree.
 (end)
 *)
-        prop.key character.url
-        prop.src character.url
-        prop.style <| get_character_style character
+        prop.key character_sprite.url
+        prop.src character_sprite.url
+        prop.style <| get_character_style character_sprite
     ]
 
 let private view_fade_in_out
     (is_pre_transition : bool)
     (is_fade_in : bool)
-    (character : Visible_Character_Data)
+    (character_sprite : Visible_Character_Data)
     (transition_time : Fade_Transition_Time)
     : ReactElement =
 
@@ -67,10 +67,10 @@ let private view_fade_in_out
     Html.img [
 (* TODO2 For some reason it is impossible to use a CSS file for this component, even though it works for every other component. In any case, we don't have any static properties or styles to apply at the moment. *)
 //        prop.className "character"
-        prop.key character.url
-        prop.src character.url
+        prop.key character_sprite.url
+        prop.src character_sprite.url
         prop.style (
-            get_character_style character
+            get_character_style character_sprite
             @ [
                 style.opacity opacity
                 style.custom ("transition", $"opacity {transition_time}s ease-in-out")
@@ -80,18 +80,18 @@ let private view_fade_in_out
 
 let private view_cross_fade
     (is_pre_transition : bool)
-    (old_character : Visible_Character_Data)
-    (new_character : Visible_Character_Data)
+    (old_character_sprite : Visible_Character_Data)
+    (new_character_sprite : Visible_Character_Data)
     (transition_time : Fade_Transition_Time)
     : ReactElement seq =
     [
         Html.img [
 (* TODO2 For some reason it is impossible to use a CSS file for this component, even though it works for every other component. In any case, we don't have any static properties or styles to apply at the moment. *)
 //            prop.className "character"
-            prop.key old_character.url
-            prop.src old_character.url
+            prop.key old_character_sprite.url
+            prop.src old_character_sprite.url
             prop.style (
-                get_character_style old_character
+                get_character_style old_character_sprite
                 @ [
                     style.opacity <| if is_pre_transition then 1.0 else 0.0
                     style.custom ("transition", $"opacity {transition_time}s ease-in-out")
@@ -101,10 +101,10 @@ let private view_cross_fade
         Html.img [
 (* TODO2 For some reason it is impossible to use a CSS file for this component, even though it works for every other component. In any case, we don't have any static properties or styles to apply at the moment. *)
 //            prop.className "character"
-            prop.key new_character.url
-            prop.src new_character.url
+            prop.key new_character_sprite.url
+            prop.src new_character_sprite.url
             prop.style (
-                get_character_style new_character
+                get_character_style new_character_sprite
                 @ [
                     style.opacity <| if is_pre_transition then 0.0 else 1.0
                     style.custom ("transition", $"opacity {transition_time}s ease-in-out")

@@ -9,6 +9,7 @@ open Units_Of_Measure
 
 (* Consts*)
 
+let wait_for_plugin_interfaces_to_be_ready_time = 10<milliseconds>
 let pre_transition_time = 50<milliseconds>
 
 let notify_transition_complete_delay_time = 10<milliseconds>

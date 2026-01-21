@@ -20,7 +20,7 @@ let private error : error_function = error debug_module_name
 (* Main functions - state *)
 
 let get_state
-    (runner_components : IRefValue<Runner_Components>)
+    (runner_component_interfaces : IRefValue<Runner_Component_Interfaces>)
 (* Previously this parameter was type Command_State rather than IRefValue<Command_State>, meaning we called .current before passing the result to this function. It seems that caused this function to see a stale state. It seems the rule is, with any IRefValue, we must call .current as late as possible, whether setting or getting or the value. *)
     (queue : IRefValue<Runner_Queue>)
     : Runner_Saveable_State =
@@ -39,13 +39,13 @@ If add_to_history is false, which means that when we halted running commands, we
             add_to_history = data.add_to_history
             autosave = data.autosave
             component_data = {
-                background = runner_components.current.background.current.get_state ()
-                dialogue = runner_components.current.dialogue_box.current.get_state ()
-                characters = runner_components.current.characters.current.get_state ()
-                menu = runner_components.current.menu.current.get_state ()
-                image_map = runner_components.current.image_map.current.get_state ()
-                music = runner_components.current.music.current.get_state ()
-                notifications = runner_components.current.notifications.current.get_state ()
+                background = runner_component_interfaces.current.background.current.get_state ()
+                dialogue = runner_component_interfaces.current.dialogue_box.current.get_state ()
+                characters = runner_component_interfaces.current.characters.current.get_state ()
+                menu = runner_component_interfaces.current.menu.current.get_state ()
+                image_map = runner_component_interfaces.current.image_map.current.get_state ()
+                music = runner_component_interfaces.current.music.current.get_state ()
+                notifications = runner_component_interfaces.current.notifications.current.get_state ()
                 javascript = get_state_from_js ()
             }
             menu_variables = data.menu_variables
@@ -54,13 +54,13 @@ If add_to_history is false, which means that when we halted running commands, we
     | Queue_Done ->
 
         Runner_Saveable_State_Done {
-            background = runner_components.current.background.current.get_state ()
-            dialogue = runner_components.current.dialogue_box.current.get_state ()
-            characters = runner_components.current.characters.current.get_state ()
-            menu = runner_components.current.menu.current.get_state ()
-            image_map = runner_components.current.image_map.current.get_state ()
-            music = runner_components.current.music.current.get_state ()
-            notifications = runner_components.current.notifications.current.get_state ()
+            background = runner_component_interfaces.current.background.current.get_state ()
+            dialogue = runner_component_interfaces.current.dialogue_box.current.get_state ()
+            characters = runner_component_interfaces.current.characters.current.get_state ()
+            menu = runner_component_interfaces.current.menu.current.get_state ()
+            image_map = runner_component_interfaces.current.image_map.current.get_state ()
+            music = runner_component_interfaces.current.music.current.get_state ()
+            notifications = runner_component_interfaces.current.notifications.current.get_state ()
             javascript = get_state_from_js ()
         }
 
@@ -72,7 +72,7 @@ If add_to_history is false, which means that when we halted running commands, we
 let set_state
     (runner_state : Runner_Saveable_State)
     (queue : IRefValue<Runner_Queue>)
-    (runner_components : IRefValue<Runner_Components>)
+    (runner_component_interfaces : IRefValue<Runner_Component_Interfaces>)
     : unit =
 
     let component_data =
@@ -89,13 +89,13 @@ let set_state
 (* TODO2 When we save (that is, call each component's get_state () method), we record the final state of any in-progress transition, rather than the original state.
 We might want to get the state at the most recent pausable point (which might be the current point if no transition is in progress). Since we plan to represent history and save state the same way, this should be feasible. However, if they have just loaded the game, the history might be empty.
 *)
-        runner_components.current.background.current.set_state component_data.background
-        runner_components.current.dialogue_box.current.set_state component_data.dialogue
-        runner_components.current.characters.current.set_state component_data.characters
-        runner_components.current.menu.current.set_state component_data.menu
-        runner_components.current.image_map.current.set_state component_data.image_map
-        runner_components.current.music.current.set_state component_data.music
-        runner_components.current.notifications.current.set_state component_data.notifications
+        runner_component_interfaces.current.background.current.set_state component_data.background
+        runner_component_interfaces.current.dialogue_box.current.set_state component_data.dialogue
+        runner_component_interfaces.current.characters.current.set_state component_data.characters
+        runner_component_interfaces.current.menu.current.set_state component_data.menu
+        runner_component_interfaces.current.image_map.current.set_state component_data.image_map
+        runner_component_interfaces.current.music.current.set_state component_data.music
+        runner_component_interfaces.current.notifications.current.set_state component_data.notifications
         set_state_in_js component_data.javascript
 
 (* We set the command state afterward to prevent having it overwritten due to a component completing an existing transition (on its own, not because we called its set_state () method) after we set the command state but before we call the components' set_state () methods.

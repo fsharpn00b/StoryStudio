@@ -70,7 +70,7 @@ let is_visible (state_ref : IRefValue<Save_Load_State>) : bool =
     | Hidden -> false
 
 let private update
-(* load_game is Runner_State.load_game (), closed over runner_components, history, and queue. All it needs is the saved game state. *)
+(* load_game is Runner_State.load_game (), closed over runner_component_interfaces, history, and queue. All it needs is the saved game state. *)
     (load_game : string -> unit)
     (show_game_paused_notification : unit -> unit)
     (message : Save_Load_Message)

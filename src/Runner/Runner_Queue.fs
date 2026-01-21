@@ -108,7 +108,7 @@ let private handle_no_more_commands
 let rec private handle_next_command
     (queue : IRefValue<Runner_Queue>)
     (scenes : Scene_Map)
-    (runner_components : IRefValue<Runner_Components>)
+    (runner_component_interfaces : IRefValue<Runner_Component_Interfaces>)
     (queue_data : Runner_Queue_State_Loading_Data)
     (next_command_id : int<command_id>)
     : unit =
@@ -126,14 +126,14 @@ let rec private handle_next_command
             | None -> error "add_commands_to_queue" "Next command ID not found in current scene." ["scene", queue_data.next_command_data.next_command_scene_id; "next_command_id", next_command_id] |> invalidOp
 
             | Some command ->
-                let command_data = get_command_data queue_data.next_command_data.next_command_scene_id runner_components command queue_data.menu_variables
+                let command_data = get_command_data queue_data.next_command_data.next_command_scene_id runner_component_interfaces command queue_data.menu_variables
                 let queue_data_2 = add_command_to_queue queue_data command_data
                 match command_data.behavior with
 
 (* We keep adding commands to the queue until we reach a command with behavior Wait_For_Callback. *)
                 | Continue_Immediately _ ->
                     do queue.current <- Queue_Loading queue_data_2
-                    add_commands_to_queue queue scenes runner_components
+                    add_commands_to_queue queue scenes runner_component_interfaces
 
 (* Once we reach a command with behavior Wait_For_Callback, we do not add any more commands to the queue for now, and we set continue_after_finished and add_to_history to reflect the last command. *)
                 | Wait_For_Callback wait ->
@@ -151,7 +151,7 @@ let rec private handle_next_command
 and private add_commands_to_queue
     (queue : IRefValue<Runner_Queue>)
     (scenes : Scene_Map)
-    (runner_components : IRefValue<Runner_Components>)
+    (runner_component_interfaces : IRefValue<Runner_Component_Interfaces>)
     : unit =
 
 (* Change the queue state to Queue_Loading to protect it from other functions. *)
@@ -184,7 +184,7 @@ and private add_commands_to_queue
     match queue_data.next_command_data.next_command_id with
 (* If there are no more commands to add to the queue... *)
     | None -> handle_no_more_commands queue queue_data
-    | Some next_command_id_2 -> handle_next_command queue scenes runner_components queue_data next_command_id_2
+    | Some next_command_id_2 -> handle_next_command queue scenes runner_component_interfaces queue_data next_command_id_2
 
 let private run_commands
     (queue : IRefValue<Runner_Queue>)
@@ -240,7 +240,7 @@ If the last command has behavior Wait_For_Callback, remove_transition () removes
 let run
     (queue : IRefValue<Runner_Queue>)
     (scenes : Scene_Map)
-    (runner_components : IRefValue<Runner_Components>)
+    (runner_component_interfaces : IRefValue<Runner_Component_Interfaces>)
 (* Previously, this was run_manually : bool. We used it to determine whether we were running a command automatically, or running (or interrupting) a command at player request. Now that is handled by queue.state. reason is for debugging.
 *)
     (reason : Run_Reason)
@@ -253,14 +253,14 @@ let run
     match queue.current with
     | Queue_Idle _ ->
         do
-            add_commands_to_queue queue scenes runner_components
+            add_commands_to_queue queue scenes runner_component_interfaces
 (* If there are no more commands, add_commands_to_queue sets the queue state to Queue_Done. Otherwise, it sets it to Queue_Running. *)
             match queue.current with
             | Queue_Running _ -> run_commands queue reason
             | _ -> ()
     | Queue_Loading _ -> do error "run" "Unexpected queue state (Queue_Loading)." [] |> invalidOp
     | Queue_Running _ ->
-        do force_complete_transitions runner_components queue false
+        do force_complete_transitions runner_component_interfaces queue false
             (fun () ->
                 #if debug
                 do debug "run" "Runner_State.force_complete_transitions () done." []

@@ -1,6 +1,13 @@
 // Play music.
 //playmusic autumn
 
+// This shows how to use the interface of a dynamically loaded React component.
+/*
+js
+window.Interfaces.Plugin_Template.current.show ()
+endjs
+*/
+
 // Fade in daytime background over 2 seconds.
 fadein day 2.0 // Comment after statement.
 
@@ -22,13 +29,6 @@ endif
 // JS interpolation in dialogue.
 l Which way should we go? (Lost: ${window.state.player_state.is_lost})
 
-// This shows how to use the interface of a dynamically loaded React component.
-/*
-js
-window.Interfaces.Inventory.current.show ()
-endjs
-*/
-
 /*
 // Create a menu whose result is stored in a variable named direction.
 menu direction Which way?
@@ -43,7 +43,7 @@ endmenu
 That would also let the user put labels or onMouseOver handlers in the hotspot.
 */
 imagemap direction overhead 1.0
-1 0 0 25 25 / false === window.state.player_state.is_lost // Comment after image map item.
+1 0 0 25 25 / false === window.state.player_state.is_lost // Comment after image map item with conditional.
 2 25 25 50 50
 endimagemap
 hideimagemap 1.0

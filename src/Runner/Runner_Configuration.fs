@@ -53,13 +53,13 @@ let default_configuration = {
 (* Main functions *)
 
 let set_configuration
-    (runner_components : IRefValue<Runner_Components>)
+    (runner_component_interfaces : IRefValue<Runner_Component_Interfaces>)
     (old_configuration : IRefValue<Runner_Configuration>)
     (new_configuration : Runner_Configuration)
     : unit =
     do
-        runner_components.current.background.current.set_configuration new_configuration.background_configuration
-        runner_components.current.characters.current.set_configuration new_configuration.characters_configuration
-        runner_components.current.dialogue_box.current.set_configuration new_configuration.dialogue_box_configuration
-        runner_components.current.notifications.current.set_configuration new_configuration.temporary_notifications_configuration
+        runner_component_interfaces.current.background.current.set_configuration new_configuration.background_configuration
+        runner_component_interfaces.current.characters.current.set_configuration new_configuration.characters_configuration
+        runner_component_interfaces.current.dialogue_box.current.set_configuration new_configuration.dialogue_box_configuration
+        runner_component_interfaces.current.notifications.current.set_configuration new_configuration.temporary_notifications_configuration
         old_configuration.current <- new_configuration

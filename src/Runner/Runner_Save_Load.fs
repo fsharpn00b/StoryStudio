@@ -29,7 +29,7 @@ let private error : error_function = error debug_module_name
 let private load_game
     (history : IRefValue<Runner_History>)
     (queue : IRefValue<Runner_Queue>)
-    (runner_components : IRefValue<Runner_Components>)
+    (runner_component_interfaces : IRefValue<Runner_Component_Interfaces>)
     (saved_game_state : string)
     : unit =
 
@@ -41,35 +41,35 @@ let private load_game
 (* We do not need to call force_complete_transitions () because we did so before showing the saved game screen.
 Each UI component's set_state () method dispatches Show or Hide messages with notify_transition_complete = false to prevent commands from auto-continuing unexpectedly.
 *)
-            set_state saved_state queue runner_components
+            set_state saved_state queue runner_component_interfaces
 (* If the state was saved at a point where it should be added to the history (typically, this means a point where we are waiting for player input), add the state to the history again. We need to do this after calling set_state (), because add_to_history () calls get_state ().
 *)
 (* See also Runner_Transition.notify_transition_complete (). *)
             match saved_state with
             | Runner_Saveable_State_Running data when data.add_to_history ->
-(* Include a delay to make sure set_state finishes updating runner_components and command_state. *)
+(* Include a delay to make sure set_state finishes updating runner_component_interfaces and command_state. *)
                 window.setTimeout((fun () ->
-                    add_to_history history runner_components queue
+                    add_to_history history runner_component_interfaces queue
                 ), int notify_transition_complete_delay_time) |> ignore
             | _ -> ()
     | _ -> error "load_game" "Failed to deserialize saved game." ["saved_game_state", saved_game_state] |> invalidOp
 
 let get_load_game
-    (runner_components : IRefValue<Runner_Components>)
+    (runner_component_interfaces : IRefValue<Runner_Component_Interfaces>)
     (history : IRefValue<Runner_History>)
     (queue : IRefValue<Runner_Queue>)
     : string -> unit =
 (* Close load_game () over all these parameters so it becomes a string -> unit that we can pass to UI components.
-We also need to delay the evaluation of this function until runner_components_1 is not None. The delayed result of this function is passed to the constructors of these components.
+We also need to delay the evaluation of this function until runner_component_interfaces_1 is not None. The delayed result of this function is passed to the constructors of these components.
 We can close over command_state because it is a reference.
 *)
 (* TODO2 #pause For now, we do not show the pause notification when we actually load a game. That is because we already do it when we hide the save/load screen (which we do after we load a game) and when the player presses f to import a saved game from a file (whether they proceed to load the game or not).
 *)
-    fun (saved_game_state : string) -> do load_game history queue runner_components saved_game_state
+    fun (saved_game_state : string) -> do load_game history queue runner_component_interfaces saved_game_state
 
 let quicksave_or_autosave
     (queue : IRefValue<Runner_Queue>)
-    (runner_components : IRefValue<Runner_Components>)
+    (runner_component_interfaces : IRefValue<Runner_Component_Interfaces>)
     (quicksave_or_autosave : Quicksave_Or_Autosave)
     : unit =
 
@@ -80,65 +80,65 @@ let quicksave_or_autosave
             | Quicksave -> window.alert $"This browser does not support IndexedDB. {warn_recommendation}"
             | Autosave -> ()
         else
-            force_complete_transitions runner_components queue true (fun () ->
-                let runner_state = get_state runner_components queue
+            force_complete_transitions runner_component_interfaces queue true (fun () ->
+                let runner_state = get_state runner_component_interfaces queue
                 let json = Encode.Auto.toString (0, runner_state)
-                do runner_components.current.save_load.current.quicksave_or_autosave json quicksave_or_autosave
+                do runner_component_interfaces.current.save_load.current.quicksave_or_autosave json quicksave_or_autosave
             )
 
 let export_current_game_to_file
     (queue : IRefValue<Runner_Queue>)
-    (runner_components : IRefValue<Runner_Components>)
+    (runner_component_interfaces : IRefValue<Runner_Component_Interfaces>)
     : unit =
 
-    do force_complete_transitions runner_components queue true (fun () ->
-        let runner_state = get_state runner_components queue
+    do force_complete_transitions runner_component_interfaces queue true (fun () ->
+        let runner_state = get_state runner_component_interfaces queue
         let json = Encode.Auto.toString (0, runner_state)
-        do runner_components.current.save_load.current.export_current_game_to_file json
+        do runner_component_interfaces.current.save_load.current.export_current_game_to_file json
     )
 
 let import_current_game_from_file
     (queue : IRefValue<Runner_Queue>)
-    (runner_components : IRefValue<Runner_Components>)
+    (runner_component_interfaces : IRefValue<Runner_Component_Interfaces>)
     : unit =
     
-    do force_complete_transitions runner_components queue true (fun () ->
-        runner_components.current.save_load.current.import_current_game_from_file ()
+    do force_complete_transitions runner_component_interfaces queue true (fun () ->
+        runner_component_interfaces.current.save_load.current.import_current_game_from_file ()
     )
 
 let export_saved_games_from_storage_to_file
     (queue : IRefValue<Runner_Queue>)
-    (runner_components : IRefValue<Runner_Components>)
+    (runner_component_interfaces : IRefValue<Runner_Component_Interfaces>)
     : unit =
     
-    do force_complete_transitions runner_components queue true (fun () ->
-        runner_components.current.save_load.current.export_saved_games_from_storage_to_file ()
+    do force_complete_transitions runner_component_interfaces queue true (fun () ->
+        runner_component_interfaces.current.save_load.current.export_saved_games_from_storage_to_file ()
     )
 
 let import_saved_games_from_file_to_storage
     (queue : IRefValue<Runner_Queue>)
-    (runner_components : IRefValue<Runner_Components>)
+    (runner_component_interfaces : IRefValue<Runner_Component_Interfaces>)
     : unit =
     
-    do force_complete_transitions runner_components queue true (fun () ->
-        runner_components.current.save_load.current.import_saved_games_from_file_to_storage ()
+    do force_complete_transitions runner_component_interfaces queue true (fun () ->
+        runner_component_interfaces.current.save_load.current.import_saved_games_from_file_to_storage ()
     )
 
 let show_saved_game_screen
     (queue : IRefValue<Runner_Queue>)
-    (runner_components : IRefValue<Runner_Components>)
+    (runner_component_interfaces : IRefValue<Runner_Component_Interfaces>)
     (action : Saved_Game_Action)
     : unit =
 
 (* Stop all transitions before we show the saved game screen. *)
-    do force_complete_transitions runner_components queue true (fun () ->
+    do force_complete_transitions runner_component_interfaces queue true (fun () ->
         #if debug
         do debug "show_saved_game_screen" "Runner_State.force_complete_transitions () done." []
         #endif
 
-        let runner_state = get_state runner_components queue
+        let runner_state = get_state runner_component_interfaces queue
         let json = Encode.Auto.toString (0, runner_state)
-        do runner_components.current.save_load.current.show action json
+        do runner_component_interfaces.current.save_load.current.show action json
     )
 
 (* TODO2 Issues with surf. We put this here because these issues mostly seem to involve key input, and many key inputs involve save/load.

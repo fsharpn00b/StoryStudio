@@ -26,9 +26,9 @@ let private error : error_function = error debug_module_name
 For now we have to assume all transitions for a given component are simultaneous, or at least can be ordered to complete simultaneously. For our purposes, all we want is to be able to continue to the next command.
 *)
 (* TODO2 Can we replace this function by having Runner provide each component with a dispatch method that it can use to send Notify_Transition_Complete, rather than making a function that is closed over all these values?
-But then we would need a Runner.update () function. It would essentially be a rename of this function. It would add an extra step, though it might be more idiomatic. We would still need the fun () -> delay to populate runner_components.
+But then we would need a Runner.update () function. It would essentially be a rename of this function. It would add an extra step, though it might be more idiomatic. We would still need the fun () -> delay to populate runner_component_interfaces.
 In Runner:
-let state, dispatch = React.useElmish((<state>, Cmd.none), update scenes runner_components_1 history command_state, [||])
+let state, dispatch = React.useElmish((<state>, Cmd.none), update scenes runner_component_interfaces_1 history command_state, [||])
 The Notify_Transition_Complete message would include the sender.
 - What would the state be? command_state?
 
@@ -37,19 +37,19 @@ The Notify_Transition_Complete message would include the sender.
 (* A UI component uses this function to notify Runner that the component has finished its current transition. *)
 let get_notify_transition_complete
     (scenes : Scene_Map)
-    (runner_components : IRefValue<Runner_Components>)
+    (runner_component_interfaces : IRefValue<Runner_Component_Interfaces>)
     (queue : IRefValue<Runner_Queue>)
     (history : IRefValue<Runner_History>)
     (component_id : Runner_Component_Names)
     : int<runner_queue_item_id> -> unit =
 (* Close over all these parameters so it becomes a unit -> unit that we can pass to UI components.
-We also need to delay the evaluation of this function until runner_components is not null. The delayed result of this function is passed to the constructors of these components.
+We also need to delay the evaluation of this function until runner_component_interfaces is not null. The delayed result of this function is passed to the constructors of these components.
 We can close over queue because it is a reference.
 *)
     fun (command_queue_item_id : int<runner_queue_item_id>) ->
 (* If we do not delay here, and a transition is short enough, this notification can set the queue state to Queue_Idle *before* the transition sets it to Queue_Running. As a result, it is not possible to start any more transitions. *)
         do window.setTimeout ((fun () ->
-            do remove_transition_1 queue history scenes runner_components command_queue_item_id component_id
+            do remove_transition_1 queue history scenes runner_component_interfaces command_queue_item_id component_id
         ), int notify_transition_complete_delay_time) |> ignore
 
 (* notify_transition_complete is only called when a transition completes on its own, without being interrupted. *)
@@ -61,7 +61,7 @@ See notes in Fade_Transition.update_complete_transition (), Fade_Visibility.upda
 let get_notify_menu_selection
     (scenes : Scene_Map)
     (queue : IRefValue<Runner_Queue>)
-    (runner_components : IRefValue<Runner_Components>)
+    (runner_component_interfaces : IRefValue<Runner_Component_Interfaces>)
     : string -> int -> unit =
 
     fun (menu_name : string) (selected_index : int) ->
@@ -103,17 +103,17 @@ The command behavior for Menu is Wait_For_Callback/continue_after_finished = fal
 That is because the Menu command is for showing the menu, and after that, the command and its transition are complete. It does not concern itself with menu item selection. In effect, menu item selection is not a command and does not have an associated behavior.
 *)
 // TODO2 Can this be done in the Menu.Menu_Item_Selected handler? Just return false for is_visible and clear menu data there. No, it might be we still want to make sure no mouse clicks are processed yet.
-                runner_components.current.menu.current.hide false None
+                runner_component_interfaces.current.menu.current.hide false None
                 window.setTimeout((fun () ->
 (* Since the user has to select a menu item, we set run_manually to true. *)
-                    run queue scenes runner_components Run_Reason.Notify_Menu_Selection
+                    run queue scenes runner_component_interfaces Run_Reason.Notify_Menu_Selection
                 ), int notify_transition_complete_delay_time) |> ignore
             ), int notify_transition_complete_delay_time) |> ignore
 
 let get_notify_image_map_selection
     (scenes : Scene_Map)
     (queue : IRefValue<Runner_Queue>)
-    (runner_components : IRefValue<Runner_Components>)
+    (runner_component_interfaces : IRefValue<Runner_Component_Interfaces>)
     : string -> int -> unit =
 
     fun (image_map_name : string) (selected_index : int) ->
@@ -127,7 +127,7 @@ let get_notify_image_map_selection
             window.setTimeout((fun () ->
                 window.setTimeout((fun () ->
 (* Since the user has to select an image map item, we set run_manually to true. *)
-                    run queue scenes runner_components Run_Reason.Notify_Image_Map_Selection
+                    run queue scenes runner_component_interfaces Run_Reason.Notify_Image_Map_Selection
                 ), int notify_transition_complete_delay_time) |> ignore
             ), int notify_transition_complete_delay_time) |> ignore
 

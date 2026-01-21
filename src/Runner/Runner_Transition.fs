@@ -20,16 +20,16 @@ let private error : error_function = error debug_module_name
 (* Helper functions *)
 
 let private component_id_to_component
-    (runner_components : IRefValue<Runner_Components>)
+    (runner_component_interfaces : IRefValue<Runner_Component_Interfaces>)
     (component_id : Runner_Component_Names)
     : I_Transitionable =
 
     match component_id with
-    | Background -> runner_components.current.background.current :?> I_Transitionable
-    | Characters -> runner_components.current.characters.current :?> I_Transitionable
-    | Dialogue_Box -> runner_components.current.dialogue_box.current :?> I_Transitionable
-    | Menu -> runner_components.current.menu.current :?> I_Transitionable
-    | Image_Map -> runner_components.current.image_map.current :?> I_Transitionable
+    | Background -> runner_component_interfaces.current.background.current :?> I_Transitionable
+    | Characters -> runner_component_interfaces.current.characters.current :?> I_Transitionable
+    | Dialogue_Box -> runner_component_interfaces.current.dialogue_box.current :?> I_Transitionable
+    | Menu -> runner_component_interfaces.current.menu.current :?> I_Transitionable
+    | Image_Map -> runner_component_interfaces.current.image_map.current :?> I_Transitionable
 
 (* Main functions *)
 
@@ -121,7 +121,7 @@ x Where do we call Runner_State.force_complete_transitions ()?
 (end)
 *)
 let force_complete_transitions
-    (runner_components : IRefValue<Runner_Components>)
+    (runner_component_interfaces : IRefValue<Runner_Component_Interfaces>)
     (queue : IRefValue<Runner_Queue>)
     (override_continue_after_finished : bool)
     (continuation : unit -> unit)
@@ -153,7 +153,7 @@ Runner_Queue.remove_transition () and Runner_Queue.add_commands_to_queue () set 
 
         data.components_used_by_commands
             |> Set.toList
-            |> List.map (component_id_to_component runner_components)
+            |> List.map (component_id_to_component runner_component_interfaces)
 (* TODO2 Menu does not implement I_Transitionable because it does not have "real" transitions, only Show and Hide. For the same reason, it should not be possible to interrupt a menu transition. *)
             |> List.iter (fun (runner_component : I_Transitionable) ->
                 #if debug
@@ -169,7 +169,7 @@ We also now address this by using IRefValues for all component states.
             let components_running_transitions =
                 data.components_used_by_commands
                     |> Set.toList
-                    |> List.map (component_id_to_component runner_components)
+                    |> List.map (component_id_to_component runner_component_interfaces)
                     |> List.filter (fun runner_component-> runner_component.is_running_transition ())
 (* is_running_transition () checks the internal state of each component, which in our experience is the last thing to be updated (that is, after the runner command queue has been notified), so this should be the safest way to make sure the transition is complete. *)
             if components_running_transitions.Length > 0 then
