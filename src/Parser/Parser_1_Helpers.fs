@@ -1,6 +1,6 @@
 module Parser_1_Helpers
 
-// Environment.NewLine, String
+// Environment.NewLine, Exception String
 open System
 // Regex
 open System.Text.RegularExpressions
@@ -23,6 +23,16 @@ let private debug : log_function = debug debug_module_name
 let private warn : warn_function = warn debug_module_name
 let private error : error_function = error debug_module_name
 
+(* Types *)
+
+type Semantic_Error_Data = {
+    message : string
+    index : int
+    data : (string * obj) list
+}
+
+exception Semantic_Error of Semantic_Error_Data
+
 (* Helper functions - javascript. These are used to parse all commands that allow javascript interpolation. *)
 
 let private get_compiled_regex (pattern : string) = Regex (pattern, RegexOptions.Compiled ||| RegexOptions.IgnoreCase)
@@ -37,113 +47,121 @@ let convert_string_to_use_javascript_interpolation (text : string) : string = $"
 
 (* Helper functions *)
 
-let private get_line_number (text : string) (index : int) : int =
-    Regex.Matches(text.Substring (0, index), Regex.Escape Environment.NewLine).Count
-
-// TODO1 #parsing We should throw these errors instead. Then they will be caught by parse_script_1.
-
 let get_music_track_url
     (music_tracks : Map<string, string>)
     (track_name : string)
-    (script_text : string)
     (script_text_index : int)
     : string =
 
     match music_tracks.TryFind track_name with
     | Some url -> url
     | None ->
-(* We defer this calculation until we need to report an error. *)
-        let line_number = get_line_number script_text script_text_index
-        error "get_music" "Unknown music track name." ["music track name", track_name; "known music tracks", music_tracks; "line_number", line_number] |> invalidOp
+        raise <| Semantic_Error {
+            message = "Unknown music track name."
+            index = script_text_index
+            data = ["music track name", track_name; "known music tracks", music_tracks]
+        }
 
 let get_background_url
     (backgrounds : Map<string, string>)
     (background_name : string)
-    (script_text : string)
     (script_text_index : int)
     : string =
 
     match backgrounds.TryFind background_name with
     | Some url -> url
     | None ->
-        let line_number = get_line_number script_text script_text_index
-        error "get_background" "Unknown background name." ["background name", background_name; "known backgrounds", backgrounds; "line_number", line_number] |> invalidOp
+        raise <| Semantic_Error {
+            message = "Unknown background name."
+            index = script_text_index
+            data = ["background name", background_name; "known backgrounds", backgrounds]
+        }
 
 let get_character_input_data
     (characters : Character_Input_Map)
     (character_short_name : string)
-    (script_text : string)
     (script_text_index : int)
     : Character_Input =
 
     match characters.TryFind character_short_name with
     | Some character -> character
     | None ->
-        let line_number = get_line_number script_text script_text_index
-        error "get_character" "Unknown character." ["character_short_name", character_short_name; "known characters", characters; "line_number", line_number] |> invalidOp
+        raise <| Semantic_Error {
+            message = "Unknown character."
+            index = script_text_index
+            data = ["character_short_name", character_short_name; "known characters", characters]
+        }
 
 let get_character_sprite_url
     (characters : Character_Input_Map)
     (character_short_name : string)
     (character_sprite_name : string)
-    (script_text : string)
     (script_text_index : int)
     : string =
 
-    let character = get_character_input_data characters character_short_name script_text script_text_index
+    let character = get_character_input_data characters character_short_name script_text_index
     match character.sprites.TryFind character_sprite_name with
     | Some url -> url
     | None ->
-        let line_number = get_line_number script_text script_text_index
-        error "get_character_sprite" "Unknown character sprite." ["sprite", character_sprite_name; "character data", character; "line_number", line_number] |> invalidOp
+        raise <| Semantic_Error {
+            message = "Unknown character sprite."
+            index = script_text_index
+            data = ["sprite", character_sprite_name; "character data", character]
+        }
 
 let get_script_id
     (scripts : Script list)
     (destination : string)
-    (script_text : string)
     (script_text_index : int)
     : int<scene_id> =
 
     match scripts |> List.tryFind (fun script -> script.name = destination) with
     | Some script -> script.id
     | None ->
-        let line_number = get_line_number script_text script_text_index
-        error "get_script_id" "Jump destination not found." ["destination", destination; "scripts", scripts; "line_number", line_number] |> invalidOp
+        raise <| Semantic_Error {
+            message = "Jump destination not found."
+            index = script_text_index
+            data = ["destination", destination; "scripts", scripts]
+        }
 
 let check_menu_items
-    (script_name : string)
     (menu_name : string)
     (items_1 : Menu_Item_Data_1 list)
-    (script_text : string)
     (script_text_index : int)
     : unit =
 
-    let error_data = ["script_name", script_name; "menu_name", menu_name] |> List.map (fun (name, data) -> name, data :> obj)
-
     if Seq.isEmpty items_1 then
-        let line_number = get_line_number script_text script_text_index
-        error "check_menu_items" "Menu must contain at least one menu item." (error_data @ ["menu_line_number", line_number]) |> invalidOp
+        raise <| Semantic_Error {
+            message = "Menu must contain at least one item."
+            index = script_text_index
+            data = ["menu_name", menu_name]
+        }
     else
         let items_2 = items_1 |> Seq.filter (fun item -> item.conditional.IsNone)
         if Seq.isEmpty items_2 then
-            let line_number = get_line_number script_text script_text_index
-            error "check_menu_items" "Menu must contain at least one menu item with no conditional." (error_data @ ["menu_line_number", line_number]) |> invalidOp
+            raise <| Semantic_Error {
+                message = "Menu must contain at least one item with no conditional."
+                index = script_text_index
+                data = ["menu_name", menu_name]
+            }
 
 let check_image_map_items
-    (script_name : string)
     (image_map_name : string)
     (items_1 : Image_Map_Item_Data list)
-    (script_text : string)
     (script_text_index : int)
     : unit =
-    
-    let error_data = ["script_name", script_name; "image_map_name", image_map_name] |> List.map (fun (name, data) -> name, data :> obj)
 
     if Seq.isEmpty items_1 then
-        let line_number = get_line_number script_text script_text_index
-        error "check_image_map_items" "Image map must contain at least one image_map item." (error_data @ ["image_map_line_number", line_number]) |> invalidOp
+        raise <| Semantic_Error {
+            message = "Image map must contain at least one item."
+            index = script_text_index
+            data = ["image_map_name", image_map_name]
+        }
     else
         let items_2 = items_1 |> Seq.filter (fun item -> item.conditional.IsNone)
         if Seq.isEmpty items_2 then
-            let line_number = get_line_number script_text script_text_index
-            error "check_image_map_items" "Image map must contain at least one image_map item with no conditional." (error_data @ ["image_map_line_number", line_number]) |> invalidOp
+            raise <| Semantic_Error {
+                message = "Image map must contain at least one item with no conditional."
+                index = script_text_index
+                data = ["image_map_name", image_map_name]
+            }

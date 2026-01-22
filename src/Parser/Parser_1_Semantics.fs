@@ -51,8 +51,6 @@ let private get_semantics
     (music_tracks : Map<string, string>)
     (backgrounds : Map<string, string>)
     (characters : Character_Input_Map)
-    (script_name : string)
-    (script_text : string)
     : obj =
 
     let semantics = createObj []
@@ -96,7 +94,7 @@ We do not currently use this. *)
 
     semantics?fade_in_background <- fun _ _ background_name _ transition_time ->
         {
-            Background_Fade_In_Data.new_url = get_background_url backgrounds background_name?sourceString script_text background_name?source?startIdx
+            Background_Fade_In_Data.new_url = get_background_url backgrounds background_name?sourceString background_name?source?startIdx
             transition_time = transition_time?ast()
         } |> Background_Fade_In |> Command_Pre_Parse.Command
     semantics?fade_out_background <- fun _ _ transition_time ->
@@ -105,13 +103,13 @@ We do not currently use this. *)
         } |> Background_Fade_Out |> Command_Pre_Parse.Command
     semantics?cross_fade_background <- fun _ _ background_name _ transition_time ->
         {
-            Background_Cross_Fade_Data.new_url = get_background_url backgrounds background_name?sourceString script_text background_name?source?startIdx
+            Background_Cross_Fade_Data.new_url = get_background_url backgrounds background_name?sourceString background_name?source?startIdx
             transition_time = transition_time?ast()
         } |> Background_Cross_Fade |> Command_Pre_Parse.Command
     semantics?fade_in_character <- fun _ _ character_short_name _ character_sprite_name _ position _ transition_time ->
         {
             Character_Fade_In_Data.character_short_name = character_short_name?sourceString
-            url = get_character_sprite_url characters character_short_name?sourceString character_sprite_name?sourceString script_text character_short_name?source?startIdx
+            url = get_character_sprite_url characters character_short_name?sourceString character_sprite_name?sourceString character_short_name?source?startIdx
             position = position?ast()
             transition_time = transition_time?ast()
         } |> Character_Fade_In |> Command_Pre_Parse.Command
@@ -123,13 +121,13 @@ We do not currently use this. *)
     semantics?cross_fade_character <- fun _ _ character_short_name _ character_sprite_name _ transition_time ->
         {
             Character_Cross_Fade_Data.character_short_name = character_short_name?sourceString
-            url = get_character_sprite_url characters character_short_name?sourceString character_sprite_name?sourceString script_text character_short_name?source?startIdx
+            url = get_character_sprite_url characters character_short_name?sourceString character_sprite_name?sourceString character_short_name?source?startIdx
             transition_time = transition_time?ast()
         } |> Character_Cross_Fade  |> Command_Pre_Parse.Command
     semantics?fade_out_all <- fun _ _ transition_time ->
         transition_time?ast() |> Fade_Out_All |> Command_Pre_Parse.Command
     semantics?play_music <- fun _ _ music_track_name ->
-        let music_track_url = get_music_track_url music_tracks music_track_name?sourceString script_text music_track_name?source?startIdx
+        let music_track_url = get_music_track_url music_tracks music_track_name?sourceString music_track_name?source?startIdx
         music_track_url |> Music_Play |> Command_Pre_Parse.Command
     semantics?stop_music <- fun _ -> Music_Stop |> Command_Pre_Parse.Command
     semantics?show_dialogue_box <- fun _ -> Dialogue_Box_Show |> Command_Pre_Parse.Command
@@ -140,7 +138,7 @@ We do not currently use this. *)
     semantics?``else`` <- fun _ -> Command_Pre_Parse.Else
     semantics?end_if <- fun _ -> Command_Pre_Parse.End_If
     semantics?jump <- fun _ _ destination ->
-        let script_id = get_script_id scripts destination?sourceString script_text destination?source?startIdx
+        let script_id = get_script_id scripts destination?sourceString destination?source?startIdx
         script_id |> Command.Jump |> Command_Pre_Parse.Command
     semantics?hide_image_map <- fun _ _ transition_time ->
         transition_time?ast() |> Command_Pre_Parse.End_Image_Map
@@ -149,7 +147,7 @@ We do not currently use this. *)
         {
             Dialogue_Data.character_short_name = character_short_name?sourceString
             character_full_name =
-                let character = get_character_input_data characters character_short_name?sourceString script_text character_short_name?source?startIdx
+                let character = get_character_input_data characters character_short_name?sourceString character_short_name?source?startIdx
                 character.full_name
             text = text?sourceString |> convert_string_to_use_javascript_interpolation
             javascript_interpolations = extract_javascript_interpolations text?sourceString
@@ -199,7 +197,7 @@ Therefore, this is not the place to see whether menu_item_conditional is present
                     menu_items_1?ast()
                         |> unbox<Menu_Item_Data_1 array>
                         |> Array.toList
-                do check_menu_items script_name name?sourceString menu_items_2 script_text menu_items_1?source?startIdx
+                do check_menu_items name?sourceString menu_items_2 menu_items_1?source?startIdx
                 menu_items_2
 
         } |> Command_Pre_Parse.Menu
@@ -228,13 +226,13 @@ Therefore, this is not the place to see whether menu_item_conditional is present
     semantics?image_map <- fun _ _ name _ background_name _ transition_time _ image_map_items_1 _ ->
         {
             Image_Map_Data.name = name?sourceString
-            url = get_background_url backgrounds background_name?sourceString script_text background_name?source?startIdx
+            url = get_background_url backgrounds background_name?sourceString background_name?source?startIdx
             items =
                 let image_map_items_2 =
                     image_map_items_1?ast()
                         |> unbox<Image_Map_Item_Data array>
                         |> Array.toList
-                do check_image_map_items script_name name?sourceString image_map_items_2 script_text image_map_items_1?source?startIdx
+                do check_image_map_items name?sourceString image_map_items_2 image_map_items_1?source?startIdx
                 image_map_items_2
             transition_time = transition_time?ast()
         } |> Command_Pre_Parse.Image_Map
@@ -254,31 +252,37 @@ Therefore, this is not the place to see whether menu_item_conditional is present
 
 // TODO1 #parsing How can we get clearer error messages from the parser?
 
-let private parse_script_2
+let get_grammar_and_semantics
     (scripts : Script list)
     (music_tracks : Map<string, string>)
     (backgrounds : Map<string, string>)
     (characters : Character_Input_Map)
-    (script_name : string)
+    : obj * obj =
+
+    let grammar_text = get_grammar_text characters
+    let grammar = ohm?grammar(grammar_text)
+
+    let semantics_1 = get_semantics scripts music_tracks backgrounds characters
+    let semantics_2 = grammar?createSemantics()?addOperation("ast", semantics_1)
+
+    grammar, semantics_2
+
+let private parse_script_2
+    (grammar : obj)
+    (semantics_1 : obj)
     (script_text : string)
     : Command_Pre_Parse list =
 
-    let grammar_text = get_grammar_text characters
-    let grammar : obj = ohm?grammar(grammar_text)
     let grammar_match_result : obj = grammar?``match``(script_text)
 
-// TODO1 #parsing We should throw this instead. Then it will be caught by parse_script_1.
     if grammar_match_result?failed() then
-        error "parse_ohm" grammar_match_result?message [] |> invalidOp
+        raise <| Exception grammar_match_result?message
 
-    let semantics_1 = get_semantics scripts music_tracks backgrounds characters script_name script_text
     let semantics_2 : obj =
-        grammar?createSemantics()?addOperation("ast", semantics_1)
-    let semantics_3 : obj =
-        emitJsExpr (semantics_2, grammar_match_result) "$0($1)"
+        emitJsExpr (semantics_1, grammar_match_result) "$0($1)"
 
     let semantics_application_result =
-        semantics_3?ast()
+        semantics_2?ast()
             |> unbox<obj array>
             |> Array.choose (fun (item : obj) ->
                 if isNull item then None
@@ -287,19 +291,21 @@ let private parse_script_2
             |> Array.toList
 
     #if debug
-    debug "parse_ohm" String.Empty ["semantics_application_result", json_stringify semantics_application_result]
+    debug "parse_script_2" String.Empty ["semantics_application_result", json_stringify semantics_application_result]
     #endif
 
     semantics_application_result
 
 let parse_script_1
-    (scripts : Script list)
-    (music_tracks : Map<string, string>)
-    (backgrounds : Map<string, string>)
-    (characters : Character_Input_Map)
+    (grammar : obj)
+    (semantics : obj)
     (script_name : string)
     (script_text : string)
     : Command_Pre_Parse list =
 
-    try parse_script_2 scripts music_tracks backgrounds characters script_name script_text
-    with exn -> error "parse_script_1" exn.Message ["script_name", script_name] |> invalidOp
+    try parse_script_2 grammar semantics script_text
+    with
+        | Semantic_Error e ->    
+            let line_number = Regex.Matches(script_text.Substring (0, e.index), Regex.Escape Environment.NewLine).Count
+            error "parse_script_1" e.message (e.data @ ["script_name", script_name; "line_number", line_number]) |> invalidOp
+        | e -> error "parse_script_1" e.Message ["script_name", script_name] |> invalidOp

@@ -8,6 +8,7 @@ open Browser.Dom
 
 open Character_Types
 open Log
+open Utilities
 
 (* Debug *)
 
@@ -32,8 +33,8 @@ let get_grammar_text (characters : Character_Input_Map) : string =
     let character_short_names_2 = String.Join (" | ", character_short_names_1)
     let dialogue_pattern = $"dialogue = ({ character_short_names_2 }) sp+ (~nl any)+"
 
-// TODO1 #parsing To generate keyword list, just get anything here in quotes.
-    """
+    let grammar_text =
+        """
 Script {
 /* Note Unlike with code, it seems we must define top-level patterns before the lower-level patterns they comprise. */
 /* Top-level patterns. */
@@ -53,7 +54,7 @@ Script {
         | sp* image_map sp* single_line_comment? nl
 
 /* Miscellaneous patterns. */
-    string_param = (alnum | "_") +
+    string_param = (alnum | "_" | "-") +
     int_param = digit+
     float_param = digit* "." digit*
 
@@ -113,8 +114,8 @@ Script {
     hide_image_map = "hideimagemap" sp+ float_param
 """
 (* We cannot get interpolation to work with a triple-quoted string. *)
-    + dialogue_pattern
-    + """
+        + dialogue_pattern
+        + """
 /* Multi-line patterns. */
 
     comment = single_line_comment | multi_line_comment
@@ -147,3 +148,18 @@ Script {
     permanent_notification = "status" sp+ (~"endstatus" any)* "endstatus"
 }
 """
+
+(* TODO2 Utility function to get keywords list from grammar.
+We skip non-alphanumeric keywords because character short names must consist of alphanumeric characters only.
+*)
+(*
+    let keywords =
+        System.Text.RegularExpressions.Regex.Matches(grammar_text, "\"(\\w+)\"")
+            |> Seq.map (fun m -> m.Groups[1].Value)
+            |> Set.ofSeq
+            |> Set.toList
+            |> json_stringify
+    console.log keywords
+*)
+
+    grammar_text

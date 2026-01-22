@@ -2,6 +2,8 @@ module Scripts
 
 // String
 open System
+// Regex
+open System.Text.RegularExpressions
 
 // console, window
 open Browser.Dom
@@ -37,6 +39,36 @@ let game_state_name = "state"
 (* This is used by JavaScript_Interop.set_state_in_js (). *)
 [<Literal>]
 let set_state_in_js_emit = "window.state = $0"
+
+(* See Parser_1_Grammar.get_grammar_text (). *)
+let keywords =
+    [
+        "elif"
+        "else"
+        "elseif"
+        "endif"
+        "endimagemap"
+        "endjs"
+        "endmenu"
+        "endnotify"
+        "endstatus"
+        "fadein"
+        "fadeout"
+        "fadeoutall"
+        "fadeto"
+        "hidedialogue"
+        "hideimagemap"
+        "if"
+        "imagemap"
+        "js"
+        "jump"
+        "menu"
+        "notify"
+        "playmusic"
+        "showdialogue"
+        "status"
+        "stopmusic"
+    ]
 
 (* Debug *)
 
@@ -79,18 +111,27 @@ let private character_decoder : Decoder<Character_Input> =
 
 let private characters_decoder = Decode.list character_decoder
 
+let private validate_character_inputs (characters : Character_Input list) : unit =
+    characters |> List.iter (fun character ->
+        if Regex.IsMatch (character.short_name, "\W") then
+            error "validate_character_inputs" "Character short name contains non-alphanumeric character." ["character", character] |> invalidOp
+        elif List.contains character.short_name keywords then
+            error "validate_character_inputs" "Character short name collides with a keyword." ["character", character; "keywords", keywords] |> invalidOp
+    )
+
 (* Functions - main *)
+
 let get_backgrounds () : Map<string, string> =
     match Decode.Auto.fromString<{| name : string; url : string |} list> backgrounds_1 with
     | Ok backgrounds_2 ->
         backgrounds_2 |> List.map (fun entry -> entry.name, entry.url) |> Map.ofList
     | _ -> error "get_backgrounds" "Failed to deserialize backgrounds." ["backgrounds", backgrounds_1] |> invalidOp
 
-(* TODO1 #parsing Keep a list of reserved words so the author cannot name characters after them. On the other hand, this might not be a significant issue unless the author not only uses a reserved word as a character name, but also writes dialogue that mimics a correct command that uses that reserved word.
-*)
 let get_character_inputs () : Character_Input_Map =
     match Decode.fromString characters_decoder characters_1 with
-    | Ok characters_2 -> characters_2 |> List.map (fun character -> character.short_name, character) |> Map.ofList
+    | Ok characters_2 ->
+        do validate_character_inputs characters_2    
+        characters_2 |> List.map (fun character -> character.short_name, character) |> Map.ofList
     | _ -> error "get_character_inputs" "Failed to deserialize characters." ["characters", characters_1] |> invalidOp
 
 let get_music () : Map<string, string> =
@@ -131,7 +172,7 @@ let get_typescript_types () : string =
         |> Seq.map (fun (path, content) -> content)
     String.Join (Environment.NewLine, results)
 
-(* TODO2 Should we automatically fade out the dialogue box during a scene change. Should we fade it in for the first line of dialogue in a scene? Or should these things be left to the author?
+(* TODO2 Should we automatically fade out the dialogue box during a scene change? Should we fade it in for the first line of dialogue in a scene? Or should these things be left to the author?
 For now, we simply show the dialogue box whenever there is a dialogue command and the dialogue box is not already visible.
 We also added the fade_out_all command to fade out background and characters and hide the dialogue box, and authors are supposed to use this before jumping to another scene.
 *)
