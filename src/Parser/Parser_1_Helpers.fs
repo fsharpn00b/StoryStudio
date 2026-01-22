@@ -1,6 +1,6 @@
 module Parser_1_Helpers
 
-// Environment.NewLine, Exception String
+// Environment.NewLine, Exception, String
 open System
 // Regex
 open System.Text.RegularExpressions
@@ -124,6 +124,7 @@ let get_script_id
             data = ["destination", destination; "scripts", scripts]
         }
 
+(* These checks either would be too complex to do with the grammar (for example, a menu could contain only comments, yet appear non-empty) or detect errors for which we prefer more descriptive error messages. *)
 let check_menu_items
     (menu_name : string)
     (items_1 : Menu_Item_Data_1 list)

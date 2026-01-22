@@ -192,7 +192,7 @@ Therefore, this is not the place to see whether menu_item_conditional is present
             text = text?sourceString |> convert_string_to_use_javascript_interpolation
             javascript_interpolations = extract_javascript_interpolations text?sourceString
             items =
-// TODO1 #parsing Why are we not just calling get_children?
+(* We call get_children in semantics?menu_items, which we call with menu_items_1?ast(). However, get_children returns an obj array, so we must still convert it to a Menu_Item_Data_1 array with unbox. *)
                 let menu_items_2 =
                     menu_items_1?ast()
                         |> unbox<Menu_Item_Data_1 array>
@@ -228,6 +228,7 @@ Therefore, this is not the place to see whether menu_item_conditional is present
             Image_Map_Data.name = name?sourceString
             url = get_background_url backgrounds background_name?sourceString background_name?source?startIdx
             items =
+(* We call get_children in semantics?image_map_items, which we call with image_map_items_1?ast(). However, get_children returns an obj array, so we must still convert it to a Image_Map_Item_Data array with unbox. *)
                 let image_map_items_2 =
                     image_map_items_1?ast()
                         |> unbox<Image_Map_Item_Data array>
@@ -305,7 +306,7 @@ let parse_script_1
 
     try parse_script_2 grammar semantics script_text
     with
-        | Semantic_Error e ->    
-            let line_number = Regex.Matches(script_text.Substring (0, e.index), Regex.Escape Environment.NewLine).Count
-            error "parse_script_1" e.message (e.data @ ["script_name", script_name; "line_number", line_number]) |> invalidOp
-        | e -> error "parse_script_1" e.Message ["script_name", script_name] |> invalidOp
+        | Semantic_Error exn ->    
+            let line_number = Regex.Matches(script_text.Substring (0, exn.index), Regex.Escape Environment.NewLine).Count
+            error "parse_script_1" exn.message (exn.data @ ["script_name", script_name; "line_number", line_number]) |> invalidOp
+        | exn -> error "parse_script_1" exn.Message ["script_name", script_name] |> invalidOp

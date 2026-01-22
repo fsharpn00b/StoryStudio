@@ -21,7 +21,10 @@ let private error : error_function = error debug_module_name
 
 (* Types *)
 
-type private TypeScript_Compile_Result = { js_code : string; errors : string [] }
+type private TypeScript_Compile_Result = {
+    js_code : string
+    errors : string []
+}
 
 (* TODO1 #future Make it so value can be any type. Including discriminated unions.
 Replace this with a JavaScript_Environment type to which the author can add arbitrary variable definitions.
@@ -30,25 +33,32 @@ type Menu_Variables = Map<string, int>
 
 (* Functions - JavaScript *)
 
-// TODO1 We handle errors for these at a higher level so we can show menu variables as well. We should, however, wrap all JS interop functions with error handling if possible, so the app does not silently fail.
 [<Emit("eval($0)")>]
-let private eval_js (code : string) : obj = jsNative
+let private eval_js (code : string) : obj =
+    try jsNative
+    with exn -> error "eval_js" exn.Message ["code", code] |> invalidOp
 
 [<Emit("eval($0)")>]
 let private eval_js_boolean (code : string) : bool =
-    let result = jsNative code
-    unbox<bool> result
+    try
+        let result = jsNative code
+        unbox<bool> result
+    with exn -> error "eval_js_boolean" exn.Message ["code", code] |> invalidOp
 
 [<Emit("eval($0)")>]
 let private eval_js_string (code : string) : string =
-    let result = jsNative code
-    unbox<string> result
+    try
+        let result = jsNative code
+        unbox<string> result
+    with exn -> error "eval_js_string" exn.Message ["code", code] |> invalidOp
 
 (* We need to copy the state by value, not by reference. *)
 let get_state_from_js () : obj = eval_js $"JSON.parse(JSON.stringify(window.{game_state_name}));"
 
 [<Emit(set_state_in_js_emit)>]
-let set_state_in_js (code : obj) : unit = jsNative
+let set_state_in_js (code : obj) : unit =
+    try jsNative
+    with exn -> error "set_state_in_js" exn.Message ["code", code] |> invalidOp
 
 let private emit_menu_variables (menu_variables : Menu_Variables) : string =
     (String.Empty, menu_variables) ||> Seq.fold (fun acc kv ->
@@ -56,24 +66,19 @@ let private emit_menu_variables (menu_variables : Menu_Variables) : string =
     )
 
 let eval_js_with_menu_variables (code : string) (menu_variables : Menu_Variables) =
-    try eval_js $"{emit_menu_variables menu_variables}{code}"
-    with exn -> error "eval_js_with_menu_variables" exn.Message ["code", code; "menu_variables", menu_variables] |> invalidOp
+    eval_js $"{emit_menu_variables menu_variables}{code}"
 
 let eval_js_boolean_with_menu_variables (code : string) (menu_variables : Menu_Variables) =
-    try eval_js_boolean $"{emit_menu_variables menu_variables}{code}"
-    with exn -> error "eval_js_boolean_with_menu_variables" exn.Message ["code", code; "menu_variables", menu_variables] |> invalidOp
+    eval_js_boolean $"{emit_menu_variables menu_variables}{code}"
 
 let eval_js_string_with_menu_variables (code : string) (menu_variables : Menu_Variables) =
-    try eval_js_string $"{emit_menu_variables menu_variables}{code}"
-    with exn -> error "eval_js_string_with_menu_variables" exn.Message ["code", code; "menu_variables", menu_variables] |> invalidOp
+    eval_js_string $"{emit_menu_variables menu_variables}{code}"
 
 (* In some cases we must run JavaScript code that might fail. If the JavaScript code fails, eval_js_string returns null, which is a valid value of System.String. We check for that here and return String.Empty instead. *)
 let try_eval_js_string_with_menu_variables (code : string) (menu_variables : Menu_Variables) =
-    try
-        let result = eval_js_string $"{emit_menu_variables menu_variables}{code}"
-        if isNull result then String.Empty
-        else result
-    with exn -> error "try_eval_js_string_with_menu_variables" exn.Message ["code", code; "menu_variables", menu_variables] |> invalidOp
+    let result = eval_js_string $"{emit_menu_variables menu_variables}{code}"
+    if isNull result then String.Empty
+    else result
 
 (* This is for debugging. *)
 let show_js_state () : unit =

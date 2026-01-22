@@ -127,7 +127,11 @@ let run
             else poll_for_plugins_to_be_ready ()
         ), int wait_for_plugin_interfaces_to_be_ready_time) |> ignore
 
-    if Initial_Run = reason then do poll_for_plugins_to_be_ready ()
+(* window.state must be defined, so we provide an empty definition here in case the author does not define it. If they do, their definition will replace ours. *)
+    if Initial_Run = reason then
+        do
+            set_state_in_js "{}"
+            poll_for_plugins_to_be_ready ()
     else do continuation ()
 
 let show_or_hide_configuration_screen
