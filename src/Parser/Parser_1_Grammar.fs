@@ -70,6 +70,8 @@ Script {
         | fade_out_character
         | cross_fade_character
         | fade_out_all
+        | move_in_character
+        | move_out_character
         | play_music
         | stop_music
         | show_dialogue_box
@@ -101,6 +103,8 @@ Script {
     fade_out_character = "fadeout" sp+ string_param sp+ float_param
     cross_fade_character = "fadeout" sp+ string_param sp+ string_param sp+ float_param 
     fade_out_all = "fadeoutall" sp+ float_param
+    move_in_character = "movein" sp+ string_param sp+ string_param sp+ ("left" | "right" | "bottom") sp+ int_param sp+ float_param
+    move_out_character = "moveout" sp+ string_param sp+ ("left" | "right" | "bottom") sp+ float_param
     play_music = "playmusic" sp+ string_param
     stop_music = "stopmusic" 
     show_dialogue_box = "showdialogue"
@@ -122,7 +126,7 @@ Script {
     single_line_comment = "//" (~nl any)*
     multi_line_comment = "/*" (~"*/" any)* "*/"
 
-    multi_line_javascript = "js" (~"endjs" any)* "endjs" 
+    multi_line_javascript = "js" (~"endjs" any)* "endjs"
 
     menu = "menu" sp+ string_param sp+ (~nl any)* nl menu_items end_menu
 /* Note nl gets its own parameter in the semantics even though it is part of a group. */

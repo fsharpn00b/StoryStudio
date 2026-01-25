@@ -126,6 +126,10 @@ We do not currently use this. *)
         } |> Character_Cross_Fade  |> Command_Pre_Parse.Command
     semantics?fade_out_all <- fun _ _ transition_time ->
         transition_time?ast() |> Fade_Out_All |> Command_Pre_Parse.Command
+    semantics?move_in_character <- fun _ _ character_short_name _ character_sprite_name _ direction _ position _ transition_time ->
+        get_move_in_semantics characters character_short_name?sourceString character_sprite_name?sourceString direction?sourceString (position?ast()) (transition_time?ast()) character_short_name?source?startIdx
+    semantics?move_out_character <- fun _ _ character_short_name _ direction _ transition_time ->
+        get_move_out_semantics character_short_name?sourceString direction?sourceString (transition_time?ast()) character_short_name?source?startIdx
     semantics?play_music <- fun _ _ music_track_name ->
         let music_track_url = get_music_track_url music_tracks music_track_name?sourceString music_track_name?source?startIdx
         music_track_url |> Music_Play |> Command_Pre_Parse.Command
@@ -152,6 +156,19 @@ We do not currently use this. *)
             text = text?sourceString |> convert_string_to_use_javascript_interpolation
             javascript_interpolations = extract_javascript_interpolations text?sourceString
         } |> Command.Dialogue |> Command_Pre_Parse.Command
+
+(* TODO1 #parsing We want the author to be able to use js for arbitrary commands, for example fadein ${background_name} ${fade_in_time}. That would be cumbersome and ugly, even under the old line-by-line parser, because the variables can't be replaced by values until runtime.
+
+We could add a dynamic eval command.
+1 Grammar: eval/endeval
+2 In semantics, apply convert_string_to_use_javascript_interpolation.
+3 In runner, run eval_js. That returns a new command.
+4 Apply grammar to command.
+5 Apply semantics to grammar match.
+6 Run resulting command.
+
+- Problem, resulting command won't have a command ID. We could assign it the next available, in case it for example starts a transition. It can't be an If or other control statement.
+*)
 
 (* Multi-line patterns *)
 
@@ -260,13 +277,16 @@ let get_grammar_and_semantics
     (characters : Character_Input_Map)
     : obj * obj =
 
-    let grammar_text = get_grammar_text characters
-    let grammar = ohm?grammar(grammar_text)
+    try
+        let grammar_text = get_grammar_text characters
+        let grammar = ohm?grammar(grammar_text)
 
-    let semantics_1 = get_semantics scripts music_tracks backgrounds characters
-    let semantics_2 = grammar?createSemantics()?addOperation("ast", semantics_1)
+        let semantics_1 = get_semantics scripts music_tracks backgrounds characters
+        let semantics_2 = grammar?createSemantics()?addOperation("ast", semantics_1)
 
-    grammar, semantics_2
+        grammar, semantics_2
+(* This should not happen, but get_semantics uses the ? operator, which prevents type checking, so we handle exceptions to be safe. *)
+    with exn -> error "get_grammar_and_semantics" exn.Message ["exception", exn] |> invalidOp
 
 let private parse_script_2
     (grammar : obj)

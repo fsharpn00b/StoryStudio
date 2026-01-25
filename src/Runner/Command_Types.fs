@@ -24,6 +24,7 @@ type Command =
     | Character_Fade_Out of Character_Fade_Out_Data
     | Character_Cross_Fade of Character_Cross_Fade_Data
     | Fade_Out_All of Fade_Transition_Time
+    | Character_Move of Character_Move_Data_2
     | Dialogue_Box_Show
     | Dialogue_Box_Hide
     | Dialogue of Dialogue_Data

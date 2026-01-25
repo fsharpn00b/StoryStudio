@@ -17,9 +17,11 @@ status ${window.is_lost ()} endstatus
 // If/then example.
 if true === window.state.player_state.is_lost
 // Fade in the character Laura, with a sad expression, at horizontal position 25%, over 1 second.
-    fadein l sad 25 1.0
+//    fadein l sad 25 1.0
+    movein l sad left 25 2.0
 else
-    fadein l happy 25 1.0
+//    fadein l happy 25 1.0
+    movein l happy left 25 2.0
 endif
 
 // These are to test the error reporting.
@@ -51,6 +53,7 @@ hideimagemap 1.0
 // Fade in the character Tom, with a happy expression, at horizontal position 75%, over 1 second.
 fadein t happy 75 1.0
 t Great idea!
+moveout t right 2.0
 
 if 1 === direction
 // JS statement to change state.

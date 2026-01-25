@@ -41,6 +41,7 @@ let private command_to_behavior (command : Command) : Command_Behavior =
     | Character_Fade_In _
     | Character_Fade_Out _
     | Character_Cross_Fade _
+    | Character_Move _
     | Fade_Out_All _
     | Dialogue_Box_Show
     | Dialogue_Box_Hide -> Wait_For_Callback { continue_afterward = true; add_to_history = false; autosave = false }
@@ -65,7 +66,8 @@ let private command_to_component_ids (command : Command) : Runner_Component_Name
     | Background_Cross_Fade _ -> Set.singleton Background
     | Character_Fade_In _
     | Character_Fade_Out _
-    | Character_Cross_Fade _ -> Set.singleton Characters
+    | Character_Cross_Fade _
+    | Character_Move _ -> Set.singleton Characters
     | Fade_Out_All _ -> Set.ofList [Background; Characters; Dialogue_Box]
     | Dialogue_Box_Show
     | Dialogue_Box_Hide
@@ -128,6 +130,12 @@ let private handle_command
 
         | Character_Cross_Fade command_2 ->
             Some <| fun (command_queue_item_id : int<runner_queue_item_id>) -> runner_component_interfaces.current.characters.current.cross_fade command_2.character_short_name command_2.url command_2.transition_time command_queue_item_id
+
+        | Character_Move command_2 ->
+            Some <| fun (command_queue_item_id : int<runner_queue_item_id>) ->
+            match command_2 with
+            | In data -> runner_component_interfaces.current.characters.current.move_in data.character_short_name data.url data.direction data.position data.transition_time command_queue_item_id
+            | Out data -> runner_component_interfaces.current.characters.current.move_out data.character_short_name data.direction data.transition_time command_queue_item_id
 
         | Fade_Out_All transition_time ->
             Some <| fun (command_queue_item_id : int<runner_queue_item_id>) ->

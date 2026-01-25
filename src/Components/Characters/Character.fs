@@ -11,10 +11,9 @@ open Feliz.UseElmish
 
 open Character_Rendering
 open Character_Types
-open Fade_Transition
-open Fade_Types
-open Fade_Visibility
 open Log
+open Transition
+open Transition_Types
 open Units_Of_Measure
 open Utilities
 
@@ -27,116 +26,36 @@ let private error : error_function = error log_module_name
 
 let mutable debug_render_counter = 1
 
-(* Helper functions *)
-
-let private force_complete_transition
-    (dispatch : Fade_Message<Visible_Character_Data> -> unit)
-    (fade_state : IRefValue<Fade_State<Visible_Character_Data>>)
-    : unit =
-
-(* Only cancel transitions for characters for whom we are running transitions. *)
-    if Fade_Transition.is_running_transition fade_state then
-        do force_complete_fade_transition fade_state dispatch
-
-(* Main functions - visibility *)
-
-let private fade_in
-    (dispatch : Fade_Message<Visible_Character_Data> -> unit)
-    (character_full_name : string)
-    (url : string)
-    (position : int<percent>)
-    (height : IRefValue<int<percent>>)
-    (transition_time : Fade_Transition_Time)
-    (command_queue_item_id : int<runner_queue_item_id>)
-    : unit =
-
-    #if debug
-    do debug "fade_in" String.Empty ["character_full_name", character_full_name; "url", url; "position", position; "transition_time", transition_time]
-    #endif
-
-    dispatch (Fade_In {
-        new_data = {
-            position = position
-            height = height.current
-            url = url
-        }
-        transition_time = transition_time
-        command_queue_item_id = command_queue_item_id
-    })
-
-let private fade_out
-    (dispatch : Fade_Message<Visible_Character_Data> -> unit)
-    (character_full_name : string)
-    (transition_time : Fade_Transition_Time)
-    (command_queue_item_id : int<runner_queue_item_id>)
-    : unit =
-
-    #if debug
-    do debug "fade_out" String.Empty ["character_full_name", character_full_name; "transition_time",transition_time]
-    #endif
-
-    dispatch <| Fade_Out {
-        transition_time = transition_time
-        command_queue_item_id = command_queue_item_id
-    }
-
-let private cross_fade
-    (dispatch : Fade_Message<Visible_Character_Data> -> unit)
-    (fade_state : IRefValue<Fade_State<Visible_Character_Data>>)
-    (character_full_name : string)
-    (url : string)
-    (height : IRefValue<int<percent>>)
-    (transition_time : Fade_Transition_Time)
-    (command_queue_item_id : int<runner_queue_item_id>)
-    : unit =
-
-    #if debug
-    do debug "cross_fade" String.Empty ["character_full_name", character_full_name; "url", url; "transition_time",transition_time]
-    #endif
-
-(* Character position is stored in the fade state (if the state is visible) so we need to extract it. *)
-    match fade_state.current with
-    | Idle_Visible character_data ->
-        dispatch (Cross_Fade {
-            new_data = {
-                position = character_data.position
-                height = height.current
-                url = url
-            }
-            transition_time = transition_time
-            command_queue_item_id = command_queue_item_id
-        })
-    | _ -> do warn "cross_fade" false "Character not visible." ["character_full_name", character_full_name]
-
 (* Main functions - state *)
 
 let private get_state
-    (fade_state : IRefValue<Fade_State<Visible_Character_Data>>)
-    : Visible_Character_Data option =
-    match fade_state.current with
-    | Idle_Hidden -> None
-    | Idle_Visible data -> Some data
-    | Cross_Fade_Pre_Transition state_2 -> Some state_2.new_data
-    | Cross_Fade_Transition state_2 -> Some state_2.new_data
-    | Fade_In_Pre_Transition state_2 -> Some state_2.new_data
-    | Fade_In_Transition state_2 -> Some state_2.new_data
-    | Fade_Out_Pre_Transition _ -> None
-    | Fade_Out_Transition _ -> None
+    (state : IRefValue<Transition_State<Character_State, Character_Transition_Type>>)
+    : Character_State =
+
+    match state.current with
+    | Idle Hidden -> Hidden
+    | Idle (Visible data) -> Visible data
+    | Pre_Transition state_2 -> state_2.new_data
+    | In_Transition state_2 -> state_2.new_data
 
 let private set_state
-    (state_1 : Visible_Character_Data option)
-    (dispatch : Fade_Message<Visible_Character_Data> -> unit)
+    (saved_state : Character_State)
+    (dispatch : Transition_Message<Character_State, Character_Transition_Type> -> unit)
     : unit =
 
-    match state_1 with
-    | Some state_2 ->
-        dispatch <| Show {
-            data = state_2
+    match saved_state with
+    | Visible data ->
+        dispatch <| Skip_Transition {
+            new_data = Visible data
+(* Both Fade and Move involve visibility. Technically we could use either transition type. The transition time is zero, and we are simply setting the character state to Idle Visible in the specified position, so no transition is rendered. *)
+            transition_type = Fade
             is_notify_transition_complete = false
             command_queue_item_id = None
         }
-    | None ->
-        dispatch <| Hide {
+    | Hidden ->
+        dispatch <| Skip_Transition {
+            new_data = Hidden
+            transition_type = Fade
             is_notify_transition_complete = false
             command_queue_item_id = None
         }
@@ -153,16 +72,15 @@ let Character
 
 (* State *)
 
-    let id = character_id
 (* Character position is only needed for fade in and cross fade. After fade in, it is stored in Visible_Character_Data, which is stored in the Idle_Visible Fade_State.
 Height is set in the character definition file and not changed afterward. It is copied to Visible_Characer_Data because we use that to render the character.
 *)
     let height : IRefValue<int<percent>> = React.useRef character.height
-    let fade_configuration : Fade_Configuration = ()
-    let fade_transition_timeout_function_handle = React.useRef None
-    let fade_state, dispatch = React.useElmish((Idle_Hidden, Cmd.none), update fade_configuration fade_transition_timeout_function_handle notify_transition_complete, [||])
-    let fade_state_ref = React.useRef fade_state
-    do fade_state_ref.current <- fade_state
+    let transition_configuration : Transition_Configuration = ()
+    let transition_timeout_function_handle = React.useRef None
+    let state, dispatch = React.useElmish((Idle Hidden, Cmd.none), update transition_configuration transition_timeout_function_handle notify_transition_complete, [||])
+    let state_ref = React.useRef state
+    do state_ref.current <- state
 
 (* Interface *)
 
@@ -170,25 +88,92 @@ Height is set in the character definition file and not changed afterward. It is 
         {
             new I_Character with
                 member _.fade_in
-                    (url : string)
+                    (new_url : string)
                     (position : int<percent>)
                     (transition_time : Fade_Transition_Time)
                     (command_queue_item_id : int<runner_queue_item_id>)
                     : unit =
-                    fade_in dispatch character.full_name url position height transition_time command_queue_item_id
+                    dispatch (Transition {
+                        new_data = Visible {
+                            position = position
+                            height = height.current
+                            url = new_url
+                        }
+                        transition_type = Fade
+                        transition_time = transition_time
+                        command_queue_item_id = command_queue_item_id
+                    })
                 member _.fade_out
                     (transition_time : Fade_Transition_Time)
                     (command_queue_item_id : int<runner_queue_item_id>)
                     : unit =
-                    fade_out dispatch character.full_name transition_time command_queue_item_id
+                    dispatch (Transition {
+                        new_data = Hidden
+                        transition_type = Fade
+                        transition_time = transition_time
+                        command_queue_item_id = command_queue_item_id
+                    })
                 member _.cross_fade
-                    (url : string)
+                    (new_url : string)
                     (transition_time : Fade_Transition_Time)
                     (command_queue_item_id : int<runner_queue_item_id>)
                     : unit =
-                    cross_fade dispatch fade_state_ref character.full_name url height transition_time command_queue_item_id
-                member _.get_state () : Character_Saveable_State = get_state fade_state_ref
-                member _.set_state (state : Character_Saveable_State) : unit = set_state state dispatch
+
+(* Character position is stored in the fade state (if the state is visible) so we need to extract it. *)
+                    let position =
+                        match state_ref.current with
+                        | Idle (Visible data) -> data.position
+                        | _ -> error "cross_fade" "Tried to cross-fade a character that is not visible." ["character", character] |> invalidOp
+                    dispatch (Transition {
+                        new_data = Visible {
+                            position = position
+                            height = height.current
+                            url = new_url
+                        }
+                        transition_type = Fade
+                        transition_time = transition_time
+                        command_queue_item_id = command_queue_item_id
+                    })
+(* TODO1 #transitions Verify:
+- For backgrounds and characters:
+- Hidden -> cross fade -> fade in
+- Visible -> fade in -> cross fade
+- and so on.
+
+- Should moving in an already visible character fail? We could simply move the character to the new position.
+*)
+                member _.move_in
+                    (new_url : string)
+                    (direction : Character_Move_Direction)
+                    (position : int<percent>)
+                    (transition_time : Transition_Time)
+                    (command_queue_item_id : int<runner_queue_item_id>)
+                    : unit =
+
+                    dispatch (Transition {
+                        new_data = Visible {
+                            position = position
+                            height = height.current
+                            url = new_url
+                        }
+                        transition_type = Move { in_or_out = Character_Move_In_Or_Out.In; direction = direction }
+                        transition_time = transition_time
+                        command_queue_item_id = command_queue_item_id
+                    })
+                member _.move_out
+                    (direction : Character_Move_Direction)
+                    (transition_time : Transition_Time)
+                    (command_queue_item_id : int<runner_queue_item_id>)
+                    : unit =
+
+                    dispatch (Transition {
+                        new_data = Hidden
+                        transition_type = Move { in_or_out = Character_Move_In_Or_Out.Out; direction = direction }
+                        transition_time = transition_time
+                        command_queue_item_id = command_queue_item_id
+                    })
+                member _.get_state () : Character_State = get_state state_ref
+                member _.set_state (state : Character_State) : unit = set_state state dispatch
                 member _.get_full_name () : string = character.full_name
                 member _.get_id () : int<character_id> = character_id
 (* This is for debugging. *)
@@ -196,15 +181,15 @@ Height is set in the character definition file and not changed afterward. It is 
                     id = character_id
                     short_name = character.short_name
                     full_name = character.full_name
-                    fade_state = fade_state_ref.current
-                    fade_transition_timeout_function_handle = fade_transition_timeout_function_handle.current
+                    state = state_ref.current
+                    transition_timeout_function_handle = transition_timeout_function_handle.current
                 |}
 
             interface I_Transitionable with
-                member _.is_running_transition () : bool = Fade_Transition.is_running_transition fade_state_ref
-                member _.force_complete_transition () : unit = force_complete_transition dispatch fade_state_ref
+                member _.is_running_transition () : bool = is_running_transition state_ref
+                member _.force_complete_transition () : unit = force_complete_transition state_ref dispatch
                 member _.get_name () : string = character.full_name
         }
     )
 
-    view fade_state_ref
+    view state_ref

@@ -177,10 +177,12 @@ let get_scene_map_and_javascript
     (music_tracks : Map<string, string>)
     : Scene_Map =
 
+(* get_grammar_and_semantics uses a try/catch block. *)
     let grammar, semantics = get_grammar_and_semantics scripts music_tracks backgrounds characters
 
     scripts
         |> List.map (fun script ->
+(* parse_script_1 simply wraps parse_script_2 in a try/catch block. *)
             match parse_script_1 grammar semantics script.name script.content with
             | [] -> error "get_scene_map_and_javascript" "Script is empty or contains only comments." ["script name", script.name] |> invalidOp
             | commands -> script.id, commands |> parse_commands

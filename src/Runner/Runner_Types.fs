@@ -51,7 +51,7 @@ type Runner_Component_Interfaces = {
 }
 
 type Runner_Saveable_State_Component_Data = {
-    background : Background_Saveable_State
+    background : Background_State
     dialogue : Dialogue_Box_Saveable_State
     characters : Characters_Saveable_State
     menu : Menu_Saveable_State

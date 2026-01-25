@@ -15,6 +15,7 @@ module Units_Of_Measure
 
 [<Measure>] type saved_game_id
 
+type Transition_Time = float<seconds>
 type Fade_Transition_Time = float<seconds>
 type Dialogue_Box_Typing_Speed = int<milliseconds>
 type Temporary_Notification_Display_Time = float<seconds>

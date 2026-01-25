@@ -10,6 +10,7 @@
     <Compile Include="Misc/Utilities.fs" />
     <Compile Include="Misc/Log.fs" />
     <Compile Include="Components/Music/Music.fs" />
+    <Compile Include="Components/Transition/Transition_Types.fs" /><Compile Include="Components/Transition/Transition.fs" />
     <Compile Include="Components/Fade/Fade_Types.fs" />
     <Compile Include="Components/Fade/Fade_Transition.fs" />
     <Compile Include="Components/Fade/Fade_Visibility.fs" />
@@ -56,8 +57,8 @@
     <Compile Include="Runner/Runner_Queue.fs" />
     <Compile Include="Runner/Runner_Queue_Transition.fs" />
     <Compile Include="Runner/Runner_Notify.fs" />
-    <Compile Include="Runner/Plugins.fs" /><Compile Include="Runner/Runner_UI.fs" />
-    
+    <Compile Include="Runner/Plugins.fs" />
+    <Compile Include="Runner/Runner_UI.fs" />
     <Compile Include="Runner/Runner.fs" />
     <Compile Include="Runner/Main.fs" />
   </ItemGroup>

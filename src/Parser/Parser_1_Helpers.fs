@@ -124,6 +124,55 @@ let get_script_id
             data = ["destination", destination; "scripts", scripts]
         }
 
+let get_move_in_semantics
+    (characters : Character_Input_Map)
+    (character_short_name : string) 
+    (character_sprite_name : string)
+    (direction : string)
+    (position : int<percent>)
+    (transition_time : Transition_Time)
+    (script_text_index : int)
+    : Command_Pre_Parse =
+
+    {
+        Character_Move_In_Data.character_short_name = character_short_name
+        url = get_character_sprite_url characters character_short_name character_sprite_name script_text_index
+        direction =
+            match direction with
+            | "left" -> Character_Move_Direction.Left
+            | "right" -> Character_Move_Direction.Right
+            | "bottom" -> Character_Move_Direction.Bottom
+            | _ -> raise <| Semantic_Error {
+                    message = "Unknown character move in direction."
+                    index = script_text_index
+                    data = ["direction", direction]
+                }
+        position = position
+        transition_time = transition_time
+    } |> Character_Move_Data_2.In |> Character_Move |> Command_Pre_Parse.Command
+
+let get_move_out_semantics
+    (character_short_name : string) 
+    (direction : string)
+    (transition_time : Transition_Time)
+    (script_text_index : int)
+    : Command_Pre_Parse =
+
+    {
+        Character_Move_Out_Data.character_short_name = character_short_name
+        direction =
+            match direction with
+            | "left" -> Character_Move_Direction.Left
+            | "right" -> Character_Move_Direction.Right
+            | "bottom" -> Character_Move_Direction.Bottom
+            | _ -> raise <| Semantic_Error {
+                    message = "Unknown character move in direction."
+                    index = script_text_index
+                    data = ["direction", direction]
+                }
+        transition_time = transition_time
+    } |> Character_Move_Data_2.Out |> Character_Move |> Command_Pre_Parse.Command
+
 (* These checks either would be too complex to do with the grammar (for example, a menu could contain only comments, yet appear non-empty) or detect errors for which we prefer more descriptive error messages. *)
 let check_menu_items
     (menu_name : string)
