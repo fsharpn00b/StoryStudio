@@ -9,9 +9,9 @@ open Feliz
 // useElmish
 open Feliz.UseElmish
 
-open Fade_Types
-open Fade_Visibility
 open Log
+open Transition
+open Transition_Types
 open Units_Of_Measure
 
 (* Debug *)
@@ -23,9 +23,11 @@ let private error : error_function = error log_module_name
 
 (* Types *)
 
+type Notification_Transition_Type = Fade
+
 type Temporary_Notifications_Configuration = {
     display_time : Temporary_Notification_Display_Time
-    transition_time : Fade_Transition_Time
+    transition_time : Transition_Time
 }
 
 type Notification_Data_1 = {
@@ -38,6 +40,9 @@ type Notification_Data_2 = {
     text : string
 }
 
+type Notification_State =
+    | Visible of Notification_Data_2
+    | Hidden
 
 (* Interfaces *)
 
@@ -71,7 +76,7 @@ let private view_fade_in_out
     (is_pre_transition : bool)
     (is_fade_in : bool)
     (data : Notification_Data_2)
-    (transition_time : Fade_Transition_Time)
+    (transition_time : Transition_Time)
     : ReactElement =
 
     let opacity =
@@ -95,7 +100,7 @@ let private view_cross_fade
     (is_pre_transition : bool)
     (old_data : Notification_Data_2)
     (new_data : Notification_Data_2)
-    (transition_time : Fade_Transition_Time)
+    (transition_time : Transition_Time)
     : ReactElement seq =
 
     [
@@ -120,27 +125,31 @@ let private view_cross_fade
     ]
 
 let private view
-    (fade_state : IRefValue<Fade_State<Notification_Data_2>>)
+    (fade_state : IRefValue<Transition_State<Notification_State, Notification_Transition_Type>>)
     : ReactElement =
 
     Html.div [
         match fade_state.current with
-        | Idle_Hidden -> Html.none
-        | Idle_Visible character -> view_idle_visible character
-        | Fade_In_Pre_Transition data -> view_fade_in_out true true data.new_data data.transition_time
-        | Fade_In_Transition data -> view_fade_in_out false true data.new_data data.transition_time
-        | Fade_Out_Pre_Transition data -> view_fade_in_out true false data.old_data data.transition_time
-        | Fade_Out_Transition data -> view_fade_in_out false false data.old_data data.transition_time
-        | Cross_Fade_Pre_Transition data ->
-            yield! view_cross_fade true data.old_data data.new_data data.transition_time
-        | Cross_Fade_Transition data ->
-            yield! view_cross_fade false data.old_data data.new_data data.transition_time
+        | Idle Hidden -> Html.none
+        | Idle (Visible data) -> view_idle_visible data
+        | Pre_Transition transition_data ->
+            match transition_data.old_data, transition_data.new_data with
+            | Hidden, Visible data -> view_fade_in_out true true data transition_data.transition_time
+            | Visible data, Hidden -> view_fade_in_out true false data transition_data.transition_time
+            | Visible old_data, Visible new_data -> yield! view_cross_fade true old_data new_data transition_data.transition_time
+            | _ -> error "view_2" "Called with unexpected transition data." ["transition_data", transition_data] |> invalidOp
+        | In_Transition transition_data ->
+            match transition_data.old_data, transition_data.new_data with
+            | Hidden, Visible data -> view_fade_in_out false true data transition_data.transition_time
+            | Visible data, Hidden -> view_fade_in_out false false data transition_data.transition_time
+            | Visible old_data, Visible new_data -> yield! view_cross_fade false old_data new_data transition_data.transition_time
+            | _ -> error "view_2" "Called with unexpected transition data." ["transition_data", transition_data] |> invalidOp
     ]
 
 (* Main functions - state *)
 
 let private notify_fade_in_or_fade_out_complete
-    (dispatch : IRefValue<Fade_Message<Notification_Data_2> -> unit>)
+    (dispatch : IRefValue<Transition_Message<Notification_State, Notification_Transition_Type> -> unit>)
     (configuration : IRefValue<Temporary_Notifications_Configuration>)
     (notify_queue : unit -> unit)
 (* This is not a valid Runner_Queue item ID. A component that supports fade transitions typically notifies Runner_Queue when a transition is complete, so Runner_Queue can run the next command. In this case, we have the Temporary_Notification component notify the Temporary_Notifications_Queue instead. *)
@@ -149,7 +158,9 @@ let private notify_fade_in_or_fade_out_complete
 
     if notify_fade_in_complete = fade_in_or_fade_out then
         window.setTimeout ((fun () ->
-            dispatch.current (Fade_Out {
+            dispatch.current (Transition {
+                transition_type = Fade
+                new_data = Hidden
                 transition_time = configuration.current.transition_time
                 command_queue_item_id = notify_fade_out_complete
             })
@@ -180,10 +191,10 @@ let Temporary_Notification_Component
     let notify_fade_in_or_fade_out_complete (fade_in_or_fade_out : int<runner_queue_item_id>) : unit = notify_fade_in_or_fade_out_complete dispatch_ref configuration_ref notify_queue fade_in_or_fade_out
 
 // TODO2 This currently does nothing, so we pass in a dummy implementation.
-    let fade_configuration : Fade_Configuration = ()
-    let fade_transition_timeout_function_handle = React.useRef None
+    let fade_configuration : Transition_Configuration = ()
+    let Transition_Timeout_function_handle = React.useRef None
 (* This component does not notify Runner_Queue when it completes a transition. Instead, it notifies Temporary_Notifications_Queue by calling notify_fade_in_or_fade_out_complete (). *)
-    let fade_state, dispatch = React.useElmish((Idle_Hidden, Cmd.none), update fade_configuration fade_transition_timeout_function_handle notify_fade_in_or_fade_out_complete, [||])
+    let fade_state, dispatch = React.useElmish((Idle Hidden, Cmd.none), update fade_configuration Transition_Timeout_function_handle notify_fade_in_or_fade_out_complete, [||])
     let fade_state_ref = React.useRef fade_state
     do fade_state_ref.current <- fade_state
 (* Save the dispatch () function exposed by Temporary_Notification_Component. See comments where this value is declared. *)
@@ -195,8 +206,9 @@ let Temporary_Notification_Component
                 member _.show
                     (data : Notification_Data_2)
                     : unit =
-                    do dispatch (Fade_In {
-                        new_data = data
+                    do dispatch (Transition {
+                        transition_type = Fade
+                        new_data = Visible data
                         transition_time = configuration_ref.current.transition_time
 (* See comments in notify_fade_in_or_fade_out_complete (). *)
                         command_queue_item_id = notify_fade_in_complete

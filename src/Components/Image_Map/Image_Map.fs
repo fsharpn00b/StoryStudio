@@ -13,14 +13,15 @@ open Feliz
 // useElmish
 open Feliz.UseElmish
 
-open Fade_Transition
-open Fade_Types
-open Fade_Visibility
 open Log
+open Transition
+open Transition_Types
 open Units_Of_Measure
 open Utilities
 
 (* Types *)
+
+type Image_Map_Transition_Type = Fade
 
 type Image_Map_Item_Data = {
     value : int
@@ -36,7 +37,7 @@ type Image_Map_Data = {
     name : string
     url : string
     items : Image_Map_Item_Data list
-    transition_time : Fade_Transition_Time
+    transition_time : Transition_Time
 }
 
 type Image_Map_Item_Selected_Data = {
@@ -44,7 +45,7 @@ type Image_Map_Item_Selected_Data = {
     value : int
 }
 
-type Image_Map_Saveable_State =
+type Image_Map_State =
     | Visible of Image_Map_Data
     | Hidden
 
@@ -52,16 +53,16 @@ type Image_Map_Saveable_State =
 
 type I_Image_Map =
 (* new_data, transition_time *)
-    abstract member fade_in : Image_Map_Data -> Fade_Transition_Time -> int<runner_queue_item_id> -> unit
+    abstract member fade_in : Image_Map_Data -> Transition_Time -> int<runner_queue_item_id> -> unit
 (* transition_time *)
-    abstract member fade_out : Fade_Transition_Time -> int<runner_queue_item_id> -> unit
+    abstract member fade_out : Transition_Time -> int<runner_queue_item_id> -> unit
 (*
     abstract member show : Image_Map_Data -> bool -> int<runner_queue_item_id> option -> unit
     abstract member hide : bool -> int<runner_queue_item_id> option -> unit
 *)
     abstract member is_visible : unit -> bool
-    abstract member get_state : unit -> Image_Map_Saveable_State
-    abstract member set_state : Image_Map_Saveable_State -> unit
+    abstract member get_state : unit -> Image_Map_State
+    abstract member set_state : Image_Map_State -> unit
 
 (* Debug *)
 
@@ -78,58 +79,45 @@ We could use fade_out_all for the background, characters, and dialogue box, the 
 *)
 
 let private view_idle_visible
-    (element_ref : IRefValue<HTMLElement option>)
     (data : Image_Map_Data)
     (notify_image_map_selection : string -> int -> unit)
-    : ReactElement =
+    : ReactElement seq =
 
-    Html.div [
-(* Make sure this screen can receive focus. This is not strictly needed if we are not stopping propagation of key down events, but we are leaving it here for now in case it is useful later. *)
-        prop.ref element_ref
-        prop.tabIndex 0
-(* Unlike in the configuration screen, we do not stop the propagation of key down events. *)
-(* Prevent a mouse click from calling Runner.run (). *)
-        prop.onClick (fun event -> do event.stopPropagation ())
-
-        prop.id "image_map_container"
-        prop.style [style.zIndex image_map_z_index]
-        prop.children [
-            Html.img [
-                prop.id "image_map_image"
-                prop.key data.url
-                prop.src data.url
-            ]
-
-            for item in data.items do
-                let left   = item.x1
-                let top    = item.y1
-                let width  = item.x2 - item.x1
-                let height = item.y2 - item.y1
-
-                Html.div [
-                    prop.className "image_map_hotspot"
-                    prop.style [
-                        style.zIndex image_map_hotspot_z_index
-                        style.left (length.percent left)
-                        style.top (length.percent top)
-                        style.width (length.percent width)
-                        style.height (length.percent height)
-                    ]
-                    prop.onClick (fun event ->
-                        do
-                            event.stopPropagation ()
-                            notify_image_map_selection data.name item.value
-                    )
-                ]
+    [
+        Html.img [
+            prop.id "image_map_image"
+            prop.key data.url
+            prop.src data.url
         ]
+
+        for item in data.items do
+            let left   = item.x1
+            let top    = item.y1
+            let width  = item.x2 - item.x1
+            let height = item.y2 - item.y1
+
+            Html.div [
+                prop.className "image_map_hotspot"
+                prop.style [
+                    style.zIndex image_map_hotspot_z_index
+                    style.left (length.percent left)
+                    style.top (length.percent top)
+                    style.width (length.percent width)
+                    style.height (length.percent height)
+                ]
+                prop.onClick (fun event ->
+                    do
+                        event.stopPropagation ()
+                        notify_image_map_selection data.name item.value
+                )
+            ]
     ]
 
 let private view_fade_in_out
-    (element_ref : IRefValue<HTMLElement option>)
     (is_pre_transition : bool)
     (is_fade_in : bool)
     (url : string)
-    (transition_time : Fade_Transition_Time)
+    (transition_time : Transition_Time)
     : ReactElement =
 
 (* TODO2 It would probably be straightforward to generalize Fade to handle any kind of transition that can be expressed this way.
@@ -143,83 +131,86 @@ let private view_fade_in_out
         | false, true -> 1.0
         | false, false -> 0.0
 
-    Html.div [
-(* Make sure this screen can receive focus. This is not strictly needed if we are not stopping propagation of key down events, but we are leaving it here for now in case it is useful later. *)
-        prop.ref element_ref
-        prop.tabIndex 0
-(* Unlike in the configuration screen, we do not stop the propagation of key down events. *)
-(* Prevent a mouse click from calling Runner.run (). *)
-        prop.onClick (fun event -> do event.stopPropagation ())
-
-        prop.id "image_map_container"
-        prop.style [style.zIndex image_map_z_index]
-        prop.children [
-            Html.img [
-                prop.id "image_map_image"
-                prop.key url
-                prop.src url
-                prop.style [
-                    style.opacity opacity
-                    style.custom ("transition", $"opacity {transition_time}s ease-in-out")
-                ]
-            ]
+    Html.img [
+        prop.id "image_map_image"
+        prop.key url
+        prop.src url
+        prop.style [
+            style.opacity opacity
+            style.custom ("transition", $"opacity {transition_time}s ease-in-out")
         ]
     ]
 
+let private view_2
+    (is_pre_transition : bool)
+    (transition_data : Transition_Data<Image_Map_State, Image_Map_Transition_Type>)
+    : ReactElement =
+
+    match transition_data.old_data, transition_data.new_data with
+    | Hidden, Visible data -> view_fade_in_out is_pre_transition true data.url data.transition_time
+    | Visible data, Hidden -> view_fade_in_out is_pre_transition false data.url data.transition_time
+    | _ -> error "view_2" "Called with unexpected transition data." ["transition_data", transition_data] |> invalidOp
+
 let private view
     (element_ref : IRefValue<HTMLElement option>)
-    (state : IRefValue<Fade_State<Image_Map_Data>>)
+    (state : IRefValue<Transition_State<Image_Map_State, Image_Map_Transition_Type>>)
     (notify_image_map_selection : string -> int -> unit)
     : ReactElement =
 
     match state.current with
+    | Idle Hidden -> Html.none
+    | _ ->
+        Html.div [
+(* Make sure this screen can receive focus. This is not strictly needed if we are not stopping propagation of key down events, but we are leaving it here for now in case it is useful later. *)
+            prop.ref element_ref
+            prop.tabIndex 0
+(* Unlike in the configuration screen, we do not stop the propagation of key down events. *)
+(* Prevent a mouse click from calling Runner.run (). *)
+            prop.onClick (fun event -> do event.stopPropagation ())
 
-    | Idle_Hidden -> Html.none
-
-    | Idle_Visible data -> view_idle_visible element_ref data notify_image_map_selection
-
-    | Fade_In_Pre_Transition data -> view_fade_in_out element_ref true true data.new_data.url data.transition_time
-
-    | Fade_In_Transition data -> view_fade_in_out element_ref false true data.new_data.url data.transition_time
-
-    | Fade_Out_Pre_Transition data -> view_fade_in_out element_ref true false data.old_data.url data.transition_time
-
-    | Fade_Out_Transition data -> view_fade_in_out element_ref false false data.old_data.url data.transition_time
-
-    | _ -> error "view" "Unexpected state." ["state", state.current] |> invalidOp
+            prop.id "image_map_container"
+            prop.style [style.zIndex image_map_z_index]
+            prop.children [
+                match state.current with
+                | Idle Hidden -> Html.none
+                | Idle (Visible data) -> yield! view_idle_visible data notify_image_map_selection
+                | Pre_Transition transition_data -> view_2 true transition_data
+                | In_Transition transition_Data -> view_2 false transition_Data 
+            ]
+        ]
 
 (* For all of the following, see comments for Menu. *)
 
 (* Main functions - state *)
 
 let private get_state
-    (state : IRefValue<Fade_State<Image_Map_Data>>)
-    : Image_Map_Saveable_State =
+    (state : IRefValue<Transition_State<Image_Map_State, Image_Map_Transition_Type>>)
+    : Image_Map_State =
 
     match state.current with
-    | Idle_Hidden -> Hidden
-    | Idle_Visible data -> Visible data
-    | Fade_In_Pre_Transition data -> Visible data.new_data
-    | Fade_In_Transition data -> Visible data.new_data
-    | Fade_Out_Pre_Transition _
-    | Fade_Out_Transition _ -> Hidden
-    | _ -> error "get_state" "Unexpected state." ["state", state.current] |> invalidOp
+    | Idle Hidden -> Hidden
+    | Idle (Visible data) -> Visible data
+    | Pre_Transition data -> data.new_data
+    | In_Transition data -> data.new_data
 
 let private set_state
-    (fade_dispatch : Fade_Message<Image_Map_Data> -> unit)
-    (saved_state : Image_Map_Saveable_State)
+    (fade_dispatch : Transition_Message<Image_Map_State, Image_Map_Transition_Type> -> unit)
+    (saved_state : Image_Map_State)
     : unit =
 
     match saved_state with
 (* We do not notify Runner when the transition completes when the player loads a saved game or rolls back/forward, because we are not running a command. *)
     | Visible data ->
-        fade_dispatch <| Show {
-            data = data
+        fade_dispatch <| Skip_Transition {
+            transition_type = Fade
+            new_data = Visible data
             is_notify_transition_complete = false
             command_queue_item_id = None
         }
     | Hidden ->
-        fade_dispatch <| Hide {
+        fade_dispatch <| Skip_Transition {
+            transition_type = Fade
+            new_data = Hidden
             is_notify_transition_complete = false
             command_queue_item_id = None
         }
@@ -236,8 +227,8 @@ let Image_Map
 (* State *)
 
     let fade_transition_timeout_function_handle = React.useRef None
-    let fade_configuration : Fade_Configuration = ()
-    let state, dispatch = React.useElmish((Idle_Hidden, Cmd.none), update fade_configuration fade_transition_timeout_function_handle notify_transition_complete, [||])
+    let fade_configuration : Transition_Configuration = ()
+    let state, dispatch = React.useElmish((Idle Hidden, Cmd.none), update fade_configuration fade_transition_timeout_function_handle notify_transition_complete, [||])
 
     let state_ref = React.useRef state
     do state_ref.current <- state
@@ -247,7 +238,7 @@ let Image_Map
     React.useEffect(
         (fun () ->
             match state with
-            | Idle_Hidden -> ()
+            | Idle Hidden -> ()
             | _ -> element_ref.current?focus()
         ), [| box state |])
 
@@ -258,17 +249,20 @@ let Image_Map
             new I_Image_Map with
                 member _.fade_in
                     (new_data : Image_Map_Data)
-                    (transition_time : Fade_Transition_Time)
+                    (transition_time : Transition_Time)
                     (command_queue_item_id : int<runner_queue_item_id>) =
-                    dispatch (Fade_In {
-                        new_data = new_data
+                    dispatch (Transition {
+                        transition_type = Fade
+                        new_data = Visible new_data
                         transition_time = transition_time
                         command_queue_item_id = command_queue_item_id
                     })
                 member _.fade_out
-                    (transition_time : Fade_Transition_Time)
+                    (transition_time : Transition_Time)
                     (command_queue_item_id : int<runner_queue_item_id>) =
-                    dispatch (Fade_Out {
+                    dispatch (Transition {
+                        transition_type = Fade
+                        new_data = Hidden
                         transition_time = transition_time
                         command_queue_item_id = command_queue_item_id
                     })
@@ -283,13 +277,13 @@ The other three components with is_visible () methods (Menu, Save_Load, Configur
 *)
                 member _.is_visible (): bool =
                     match state_ref.current with
-                    | Idle_Visible _ -> true
+                    | Idle (Visible _) -> true
                     | _ -> false
                 member _.get_state () = get_state state_ref
-                member _.set_state (saved_state : Image_Map_Saveable_State) = set_state  dispatch saved_state
+                member _.set_state (saved_state : Image_Map_State) = set_state dispatch saved_state
             interface I_Transitionable with
                 member _.is_running_transition () : bool = is_running_transition state_ref
-                member _.force_complete_transition () : unit = force_complete_fade_transition state_ref dispatch
+                member _.force_complete_transition () : unit = force_complete_transition state_ref dispatch
                 member _.get_name () : string = "Image_Map"
         }
     )

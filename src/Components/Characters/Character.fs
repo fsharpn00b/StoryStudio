@@ -90,7 +90,7 @@ Height is set in the character definition file and not changed afterward. It is 
                 member _.fade_in
                     (new_url : string)
                     (position : int<percent>)
-                    (transition_time : Fade_Transition_Time)
+                    (transition_time : Transition_Time)
                     (command_queue_item_id : int<runner_queue_item_id>)
                     : unit =
                     dispatch (Transition {
@@ -104,7 +104,7 @@ Height is set in the character definition file and not changed afterward. It is 
                         command_queue_item_id = command_queue_item_id
                     })
                 member _.fade_out
-                    (transition_time : Fade_Transition_Time)
+                    (transition_time : Transition_Time)
                     (command_queue_item_id : int<runner_queue_item_id>)
                     : unit =
                     dispatch (Transition {
@@ -115,7 +115,7 @@ Height is set in the character definition file and not changed afterward. It is 
                     })
                 member _.cross_fade
                     (new_url : string)
-                    (transition_time : Fade_Transition_Time)
+                    (transition_time : Transition_Time)
                     (command_queue_item_id : int<runner_queue_item_id>)
                     : unit =
 
@@ -142,6 +142,7 @@ Height is set in the character definition file and not changed afterward. It is 
 
 - Should moving in an already visible character fail? We could simply move the character to the new position.
 *)
+// TODO1 #transitions Combine these methods, here and upstream. Only view_* helpers should need to worry about the different move aspects.
                 member _.move_in
                     (new_url : string)
                     (direction : Character_Move_Direction)

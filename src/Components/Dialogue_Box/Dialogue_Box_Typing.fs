@@ -12,8 +12,8 @@ open Feliz
 
 open Dialogue_Box_Types
 open Dialogue_Box_Transition
-open Fade_Types
 open Log
+open Transition_Types
 open Units_Of_Measure
 
 (* Debug *)
@@ -60,7 +60,7 @@ let private reveal_next
 
 (* Notify the container (Runner) that the transition is complete so it can run the next command if needed.
 We do not need to cancel the transition timeout function because it just dispatches a Reveal_Next message, which is handled by this function. All we have to do is not dispatch that message again. *)
-            Idle { character_full_name = data.character; text = data.text }, command_queue_item_id |> Dialogue_Box_Types.Notify_Transition_Complete |> Cmd.ofMsg
+            Typing_State.Idle { character_full_name = data.character; text = data.text }, command_queue_item_id |> Dialogue_Box_Types.Notify_Transition_Complete |> Cmd.ofMsg
         else
             let state_2 = Typing { data with index = data.index + 1; visible_text = data.text.Substring(0, data.index) }
             state_2, Cmd.ofEffect (fun dispatch ->
@@ -123,7 +123,7 @@ let update_typing_state
 
         match state_1 with
         | Typing state_2 ->
-            Idle { character_full_name = state_2.character; text = state_2.text }, state_2.command_queue_item_id |> Dialogue_Box_Types.Notify_Transition_Complete |> Cmd.ofMsg
+            Typing_State.Idle { character_full_name = state_2.character; text = state_2.text }, state_2.command_queue_item_id |> Dialogue_Box_Types.Notify_Transition_Complete |> Cmd.ofMsg
 
 (* Ignore the Empty and Idle states. This should already have been done by Dialogue_Box_Transition.force_complete_transition (), so we issue a warning. *)
         | _ ->
@@ -139,10 +139,10 @@ Force_Complete_Typing is responsible for canceling the transition timeout functi
 We also do not dispatch the Notify_Transition_Complete message here because we must also set the fade state before doing so.
 *)
     | Set_Dialogue dialogue ->
-        let state_2 = Idle { character_full_name = dialogue.character_full_name; text = dialogue.text }
+        let state_2 = Typing_State.Idle { character_full_name = dialogue.character_full_name; text = dialogue.text }
         match state_1 with
         | Empty -> state_2, Cmd.none
-        | Idle _ -> state_2, Cmd.none
+        | Typing_State.Idle _ -> state_2, Cmd.none
 (* Force_Complete_Typing should already have set the current state to Empty or Idle. *)
         | Typing dialogue -> error "update_typing_state" "Received Set_Dialogue message with state Typing." ["dialogue", dialogue] |> invalidOp
 
@@ -157,7 +157,7 @@ We also do not dispatch the Notify_Transition_Complete message here because we m
 let type_dialogue
     (state : IRefValue<Typing_State>)
     (configuration : IRefValue<Dialogue_Box_Configuration>)
-    (fade_dispatch : Fade_Message<unit> -> unit)
+    (fade_dispatch : Transition_Message<Dialogue_Box_Visibility_State, Dialogue_Box_Transition_Type> -> unit)
     (typing_dispatch : Typing_Message -> unit)
     (reveal_next_timeout_function_handle : IRefValue<float option>)
     (character : string)
@@ -175,7 +175,7 @@ let type_dialogue
 Our initial typing state is Empty. Dialogue_Box_Rendering.view () renders the Empty state as Html.none. However, our default fade state is Idle_Visible. Once our typing state is non-Empty, view () renders the dialogue box. If we set our fade state to Idle_Hidden, we must change it back by dispatching the Show message.
 *)
 (* We do not notify the Runner_Queue when we complete the Show transition, because it is an internal method call rather than a command. *)
-    fade_dispatch <| Show { data = (); is_notify_transition_complete = false; command_queue_item_id = None }
+    fade_dispatch <| Skip_Transition { transition_type = Fade; new_data = Visible; is_notify_transition_complete = false; command_queue_item_id = None }
 
     match state.current with
 
@@ -188,7 +188,7 @@ Our initial typing state is Empty. Dialogue_Box_Rendering.view () renders the Em
             command_queue_item_id = command_queue_item_id
         }
 
-    | Idle dialogue ->
+    | Typing_State.Idle dialogue ->
 (* If the state is already Idle and the caller sends us a character and text that are the same as the old, do nothing. *)
         if 0 = String.Compare(character, dialogue.character_full_name) && 0 = String.Compare(text, dialogue.text) then
             do warn "type_dialogue" false "Called with state Idle and same character and text as already displayed. Ignoring." debug_data

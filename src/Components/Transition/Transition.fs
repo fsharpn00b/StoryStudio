@@ -125,23 +125,25 @@ let private update_skip_transition
     (configuration : Transition_Configuration)
     (transition_timeout_function_handle : IRefValue<float option>)
     (state : Transition_State<'data_type, 'transition_type>)
-    (data : Skip_Transition_Message_Data<'data_type, 'transition_type>)
+    (message_data : Skip_Transition_Message_Data<'data_type, 'transition_type>)
     : Transition_State<'data_type, 'transition_type> * Cmd<Transition_Message<'data_type, 'transition_type>> =
 
     let debug_data : (string * obj) list = ["state", state; "transition_timeout_function_handle", transition_timeout_function_handle.current]
 
     let command =
-        match data.is_notify_transition_complete, data.command_queue_item_id with
+        match message_data.is_notify_transition_complete, message_data.command_queue_item_id with
         | true, Some command_queue_item_id -> command_queue_item_id |> Notify_Transition_Complete |> Cmd.ofMsg
-        | true, None -> error "update_skip_transition" "Skip_Transition_Message_Data.is_notify_transition_complete is true, but Skip_Transition_Message_Data.Skip_Transition_Message_Data is None." ["Hide_Message_Data", data] |> invalidOp
+        | true, None -> error "update_skip_transition" "Skip_Transition_Message_Data.is_notify_transition_complete is true, but Skip_Transition_Message_Data.command_queue_item_id is None." ["Skip_Transition_Message_Data", message_data] |> invalidOp
         | _ -> Cmd.none
 
     match state with
 
-    | Idle data ->
-        Idle data, command
+    | Idle _ ->
+(* Replace the old data. *)
+        Idle message_data.new_data, command
 
-    | In_Transition data ->
+// TODO2 If this is used to force transition completion, then In_Transition data should equal message_data.new_data? In the former implementation (Fade_Visibility.update_show()/update_hide()), we just replaced the old data with message_data.new_data. We do the same here.
+    | In_Transition _ ->
         cancel_transition_timeout_function configuration transition_timeout_function_handle debug_data
 (* TODO2 There is a potential timing/stale data issue here. It takes different amounts of time to (1) update the state and (2) dispatch and handle Notify_Transition_Complete, which calls Runner_Transition.get_notify_transition_complete (), which calls Runner_Run.get_next_command ().
 
@@ -157,7 +159,7 @@ But then we would have to:
 3 Always have a component notify when it completes a transition.
 20251118 We experimented to see if this is viable, by having Runner_Run.handle_command () handle the Fade_Out_All message by allowing all components - Dialogue_Box, Characters, and Background, to notify. However, that still causes unwanted behavior.
 *)
-        Idle data.new_data, command
+        Idle message_data.new_data, command
 
     | _ ->
         do warn "update_show" false "Called with unexpected state. Ignoring." debug_data

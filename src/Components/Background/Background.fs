@@ -98,8 +98,9 @@ Keys tell React which array item each component corresponds to, so that it can m
         prop.src url
     ]
 
-(* TODO1 #future Make Fade_* more abstract so it can transition any property, not just opacity. That assumes we can use the same process, namely (1) draw very briefly with original property value, draw again with target property value, set back to idle.
-For instance, if you give original and target x or y coordinates, does HTML know to animate between the two?
+(* TODO2 #future Make Fade_* more abstract so it can transition any property, not just opacity. As of 20260126 we have done so, though we still have to
+1 Determine how different transition types (fade, move, and so on) compose, per component.
+2 Implement view_* helpers for each transition type for each component.
 *)
 let private view_fade_in_out
     (is_pre_transition : bool)
@@ -209,6 +210,10 @@ let private get_state
     (state : IRefValue<Transition_State<Background_State, Background_Transition_Type>>)
     : Background_State =
 
+    #if debug
+    do debug "get_state" String.Empty ["state", state.current]
+    #endif
+
     match state.current with
     | Idle Hidden -> Hidden
     | Idle (Visible data) -> Visible data
@@ -219,6 +224,10 @@ let private set_state
     (dispatch : Transition_Message<Background_State, Background_Transition_Type> -> unit)
     (saved_state : Background_State)
     : unit =
+
+    #if debug
+    do debug "get_state" String.Empty ["state", saved_state]
+    #endif
 
     do
 (* Runner_State.undo_redo () and .show_saved_game_screen () are now responsible for forcing transition completion. *)

@@ -6,8 +6,8 @@ open Browser.Dom
 open Feliz
 
 open Dialogue_Box_Types
-open Fade_Types
 open Log
+open Transition_Types
 open Utilities
 
 (* Debug *)
@@ -24,7 +24,11 @@ let mutable private debug_state_update_counter = 1
 
 let view
     (typing_state : IRefValue<Typing_State>)
-    (fade_state : IRefValue<Fade_State<unit>>)
+(* TODO1 #transitions Again, our type parameters to Transition_State entangle visibility with other potential transition types?
+
+In this case, Typing_State is not managed by the Transition_* classes because it doesn't have the same set of states (Idle/Pre_Transition/In_Transition) that a CSS transition does.
+*)
+    (fade_state : IRefValue<Transition_State<Dialogue_Box_Visibility_State, Dialogue_Box_Transition_Type>>)
     (configuration : Dialogue_Box_Configuration)
     : ReactElement=
 
@@ -64,11 +68,11 @@ let view
 See also get_state ().
 *)
     match fade_state.current with
-    | Idle_Hidden -> Html.none
-    | Idle_Visible _ ->
+    | Idle Hidden -> Html.none
+    | Idle Visible ->
         match typing_state.current with
         | Empty -> Html.none
-        | Idle dialogue -> get_dialogue_box dialogue.character_full_name dialogue.text
+        | Typing_State.Idle dialogue -> get_dialogue_box dialogue.character_full_name dialogue.text
         | Typing dialogue -> get_dialogue_box dialogue.character dialogue.visible_text
     | _ ->
         do warn "view" false "Unexpected Fade_State. Ignoring." ["fade_state", fade_state]

@@ -4,6 +4,12 @@ open Units_Of_Measure
 
 (* Types - public *)
 
+type Dialogue_Box_Visibility_State =
+    | Visible
+    | Hidden
+
+type Dialogue_Box_Transition_Type = Fade
+
 (* TODO2 Make these configurable.
 / Typing speed
     x Set to 0 to disable typing. If typing disabled, just tell typewriter to show entire string.
@@ -24,7 +30,7 @@ type Dialogue = {
 type Dialogue_Box_Saveable_State = {
 (* None means the typing state is Empty; Some means it is Idle. *)
     dialogue : Dialogue option
-    visible : bool
+    visible : Dialogue_Box_Visibility_State
 }
 
 (* Interfaces *)

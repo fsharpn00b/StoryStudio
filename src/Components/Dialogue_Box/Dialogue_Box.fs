@@ -14,8 +14,9 @@ open Dialogue_Box_State
 open Dialogue_Box_Transition
 open Dialogue_Box_Types
 open Dialogue_Box_Typing
-open Fade_Types
 open Log
+open Transition
+open Transition_Types
 open Units_Of_Measure
 open Utilities
 
@@ -73,7 +74,7 @@ In this case, we do not need any dependencies. We can just run update whenever a
     let fade_transition_timeout_function_handle = React.useRef None
     let fade_configuration = ()
 (* We set the fade state to Idle_Visible at the start, but in the view function, that is overridden by the typing state of Empty. *)
-    let fade_state, fade_dispatch = React.useElmish((Idle_Visible (), Cmd.none), Fade_Visibility.update fade_configuration fade_transition_timeout_function_handle notify_transition_complete, [||])
+    let fade_state, fade_dispatch = React.useElmish((Idle Visible, Cmd.none), Transition.update fade_configuration fade_transition_timeout_function_handle notify_transition_complete, [||])
     let fade_state_ref = React.useRef fade_state
     do fade_state_ref.current <- fade_state
 
@@ -86,8 +87,9 @@ In this case, we do not need any dependencies. We can just run update whenever a
                     (is_notify_transition_complete : bool)
                     (command_queue_item_id : int<runner_queue_item_id> option)
                     : unit =
-                        fade_dispatch <| Show {
-                            data = ()
+                        fade_dispatch <| Skip_Transition {
+                            transition_type = Fade
+                            new_data = Visible
                             is_notify_transition_complete = is_notify_transition_complete
                             command_queue_item_id = command_queue_item_id
                         }
@@ -95,7 +97,9 @@ In this case, we do not need any dependencies. We can just run update whenever a
                     (is_notify_transition_complete : bool)
                     (command_queue_item_id : int<runner_queue_item_id> option)
                     : unit =
-                        fade_dispatch <| Hide {
+                        fade_dispatch <| Skip_Transition {
+                            transition_type = Fade
+                            new_data = Hidden
                             is_notify_transition_complete = is_notify_transition_complete
                             command_queue_item_id = command_queue_item_id
                         }
@@ -106,8 +110,8 @@ In this case, we do not need any dependencies. We can just run update whenever a
                 member _.get_state () = get_state typing_state_ref fade_state_ref
                 member _.set_state (state : Dialogue_Box_Saveable_State) = set_state typing_dispatch fade_dispatch state
             interface I_Transitionable with
-                member _.is_running_transition (): bool = is_running_transition fade_state_ref typing_state_ref
-                member _.force_complete_transition () : unit = force_complete_transition fade_state_ref typing_state_ref fade_dispatch typing_dispatch
+                member _.is_running_transition (): bool = Dialogue_Box_Transition.is_running_transition fade_state_ref typing_state_ref
+                member _.force_complete_transition () : unit = Dialogue_Box_Transition.force_complete_transition fade_state_ref typing_state_ref fade_dispatch typing_dispatch
                 member _.get_name () : string = "Dialogue Box"
         }
     )
