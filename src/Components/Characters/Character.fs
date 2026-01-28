@@ -142,7 +142,6 @@ Height is set in the character definition file and not changed afterward. It is 
 
 - Should moving in an already visible character fail? We could simply move the character to the new position.
 *)
-// TODO1 #transitions Combine these methods, here and upstream. Only view_* helpers should need to worry about the different move aspects.
                 member _.move_in
                     (new_url : string)
                     (direction : Character_Move_Direction)

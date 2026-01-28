@@ -5,8 +5,6 @@ open System
 
 // console, window
 open Browser.Dom
-// Cmd
-open Elmish
 (* 20251001 We are supposed to be using Feliz, not Fable.React. It seems IRefValue is in Fable.React, but can also be provided by Feliz. Using IRefValue only causes an error if we comment out both open Fable.React and open Feliz.
 *)
 (*
@@ -14,17 +12,15 @@ open Fable.React
 *)
 // Html, IRefValue, React, ReactComponent, ReactElement
 open Feliz
-// useElmish
-open Feliz.UseElmish
 
 open Log
-open Transition
-open Transition_Types
+open Transition_2
 open Units_Of_Measure
 open Utilities
 
 (* Types - public *)
 
+// TODO1 This could be used to set the background size.
 type Background_Configuration = {
     placeholder : unit
 }
@@ -81,6 +77,46 @@ let private error : error_function = error log_module_name
 
 let mutable private debug_render_counter = 1
 
+(* Image component *)
+
+// TODO1 #transitions Generalize this and move to a separate file.
+
+(* TODO1 #transitions Split Fade_Image and the view functions into a separate re-usable component for background, characters, etc.
+Could have separate classes - fadeable, moveable, etc.
+Could let container components inject React properties.
+Could pass in the transition property name and initial/final values. We still need to do React.useState ()/useEffectOnce () in the component, we think.
+
+- This could become the template for the new Transition class.
+*)
+
+[<ReactComponent>]
+let Fade_Image (
+    url: string,
+    is_fade_in : bool,
+    transition_time : Transition_Time,
+    handle_transition_end : unit -> unit
+    ) =
+
+    let opacity_1, opacity_2 = if is_fade_in then 0.0, 1.0 else 1.0, 0.0
+    let opacity, set_opacity = React.useState opacity_1
+
+    React.useEffectOnce (fun () ->
+        window.setTimeout ((fun () -> set_opacity opacity_2), int pre_transition_time) |> ignore
+    )
+
+    Html.img [
+        prop.key url
+        prop.src url
+        prop.className "background_fade_image"
+        prop.style [
+            style.opacity opacity
+            style.custom("transition", $"opacity {transition_time}s ease-in-out")
+        ]
+        prop.onTransitionEnd (fun ev ->
+            handle_transition_end ()
+        )
+    ]
+
 (* Main functions - rendering *)
 
 let private view_idle_visible
@@ -88,7 +124,6 @@ let private view_idle_visible
     : ReactElement =
 
     Html.img [
-        prop.className "background_fade_image"
 (* See
 https://react.dev/learn/rendering-lists
 Keys tell React which array item each component corresponds to, so that it can match them up later. This becomes important if your array items can move (e.g. due to sorting), get inserted, or get deleted. A well-chosen key helps React infer what exactly has happened, and make the correct updates to the DOM tree.
@@ -96,86 +131,40 @@ Keys tell React which array item each component corresponds to, so that it can m
 *)
         prop.key url
         prop.src url
+        prop.className "background_fade_image"
     ]
 
 (* TODO2 #future Make Fade_* more abstract so it can transition any property, not just opacity. As of 20260126 we have done so, though we still have to
 1 Determine how different transition types (fade, move, and so on) compose, per component.
 2 Implement view_* helpers for each transition type for each component.
 *)
-let private view_fade_in_out
-    (is_pre_transition : bool)
-    (is_fade_in : bool)
-    (url : string)
-    (transition_time : Transition_Time)
-    : ReactElement =
-
-(* TODO2 It would probably be straightforward to generalize Fade to handle any kind of transition that can be expressed this way.
-1 Render with original value and specify transition property and time.
-2 Render again with final value to trigger transition.
-*)
-    let opacity =
-        match is_fade_in, is_pre_transition with
-        | true, true -> 0.0
-        | true, false -> 1.0
-        | false, true -> 1.0
-        | false, false -> 0.0
-
-    Html.img [
-        prop.className "background_fade_image"
-        prop.key url
-        prop.src url
-        prop.style [
-            style.opacity opacity
-            style.custom ("transition", $"opacity {transition_time}s ease-in-out")
-        ]
-    ]
-
-(* To transition from image A to image B, we need to briefly render image A with opacity 1 and image B with opacity 0, specify fade transitions for each of them, then render image A with opacity 0 and image B with opacity 1 (the final opacity values).
-*)
-let private view_cross_fade
-    (is_pre_transition : bool)
-    (old_url : string)
-    (new_url : string)
-    (transition_time : Transition_Time)
-    : ReactElement seq =
-
-    [
-        Html.img [
-            prop.className "background_fade_image"
-            prop.key old_url
-            prop.src old_url
-            prop.style [
-                style.opacity <| if is_pre_transition then 1.0 else 0.0
-                style.custom ("transition", $"opacity {transition_time}s ease-in-out")
-            ]
-        ]
-        Html.img [
-            prop.className "background_fade_image"
-            prop.key new_url
-            prop.src new_url
-            prop.style [
-                style.opacity <| if is_pre_transition then 0.0 else 1.0
-                style.custom ("transition", $"opacity {transition_time}s ease-in-out")
-            ]
-        ]
-    ] |> List.toSeq
 
 let private view_2
-    (is_pre_transition : bool)
     (transition_data : Transition_Data<Background_State, Background_Transition_Type>)
+    (complete_transition : Complete_Transition_Func<Background_State>)
     : ReactElement seq =
 
     match transition_data.old_data, transition_data.new_data with
-    | Hidden, Visible url -> view_fade_in_out is_pre_transition true url transition_data.transition_time |> Seq.singleton
-    | Visible url, Hidden -> view_fade_in_out is_pre_transition false url transition_data.transition_time |> Seq.singleton
+
+// TODO1 #transitions In Transition_Data, augment 'transition_type to take an argument, the transition operation, which in takes takes arguments, old and new data. For example, Fade (In (old, new)). Then match on the transition operation instead of assuming what is going to happen based on old and new data.
+    | Hidden, Visible url -> Fade_Image (url, true, transition_data.transition_time, fun () -> complete_transition true (Visible url) transition_data.command_queue_item_id) |> Seq.singleton
+
+    | Visible url, Hidden -> Fade_Image (url, false, transition_data.transition_time, fun () -> complete_transition true Hidden transition_data.command_queue_item_id) |> Seq.singleton
+
     | Visible old_url, Visible new_url when 0 <> String.Compare (old_url, new_url) ->
-        view_cross_fade is_pre_transition old_url new_url transition_data.transition_time
-(* Transition.update_transition () should not trigger a state change when old_data and new_data are the same (either Hidden/Hidden or Visible old_url/Visible new_url where old_url = new_url). *)
+        [
+// TODO1 #transitions Consider a separate component for cross fade.
+            Fade_Image (old_url, false, transition_data.transition_time, fun () -> complete_transition false Hidden 0<runner_queue_item_id>)
+            Fade_Image (new_url, true, transition_data.transition_time, fun () -> complete_transition true (Visible new_url) transition_data.command_queue_item_id)
+        ]
+
+(* Transition.begin_transition () should not trigger a state change when old_data and new_data are the same (either Hidden/Hidden or Visible old_url/Visible new_url where old_url = new_url). *)
     | _ -> error "view_2" "Called with unexpected transition data." ["transition_data", transition_data] |> invalidOp
 
 let private view
     (state : IRefValue<Transition_State<Background_State, Background_Transition_Type>>)
     (configuration : Background_Configuration)
+    (complete_transition : Complete_Transition_Func<Background_State>)
     : ReactElement =
 
     #if debug
@@ -197,8 +186,8 @@ opacity could be moved to a CSS class. But src, key, and transition are not stat
 *)
                 | Idle Hidden -> Html.none
                 | Idle (Visible url) -> view_idle_visible url
-                | Pre_Transition transition_data -> yield! view_2 true transition_data
-                | In_Transition transition_data -> yield! view_2 false transition_data
+                | In_Transition transition_data ->
+                    yield! view_2 transition_data complete_transition
             ]
         ]
 
@@ -217,44 +206,25 @@ let private get_state
     match state.current with
     | Idle Hidden -> Hidden
     | Idle (Visible data) -> Visible data
-    | Pre_Transition state_2 -> state_2.new_data
     | In_Transition state_2 -> state_2.new_data
 
-let private set_state
-    (dispatch : Transition_Message<Background_State, Background_Transition_Type> -> unit)
+let private restore_saved_state
     (saved_state : Background_State)
+    (complete_transition : Complete_Transition_Func<Background_State>)
     : unit =
 
     #if debug
     do debug "get_state" String.Empty ["state", saved_state]
     #endif
 
-    do
-(* Runner_State.undo_redo () and .show_saved_game_screen () are now responsible for forcing transition completion. *)
-//        force_complete_transition current_state dispatch
-        match saved_state with
-        | Visible data ->
-            dispatch <| Skip_Transition {
-                new_data = Visible data
-                transition_type = Fade
-                is_notify_transition_complete = false
-                command_queue_item_id = None
-            }
-        | Hidden ->
-            dispatch <| Skip_Transition {
-                new_data = Hidden
-                transition_type = Fade
-                is_notify_transition_complete = false
-                command_queue_item_id = None
-            }
+(* Notes
+- Runner_State.undo_redo () and .show_saved_game_screen () are now responsible for forcing existing transition completion.
+- Since we are not running a command, we set is_notify_transition_complete to false.
+(end)
+*)
+    do complete_transition false saved_state 0<runner_queue_item_id>
 
-let private set_configuration
-    (old_configuration : IRefValue<Background_Configuration>)
-    (new_configuration : Background_Configuration)
-    : unit =
-    do old_configuration.current <- new_configuration
-
-(* Component *)
+(* Container component *)
 
 [<ReactComponent>]
 let Background
@@ -265,17 +235,9 @@ let Background
 
 (* State *)
 
-(* Previously, when we were using React, we made fade_transition_timeout_function_handle part of Fade In/Fade_Out/Cross_Fade Transition_State_Data.
-However, that caused an infinite loop of state updates and re-renders. 
-That should not apply here, since updates should only be triggered by dispatched messages, but we feel it is better not to take chances.
-
-We would like fade_transition_timeout_function_handle to be internal to Fade, but Fade is only a module, not a component, and we need to create fade_transition_timeout_function_handle with React.useRef, which we believe we can only call inside a component. Alternately, if we create fade_transition_timeout_function_handle inside the Fade module, we might end up with only one fade_transition_timeout_function_handle, shared by every component that uses the Fade module, which would be wrong.
-*)
-// TODO2 Having only a single transition_timeout_function_handle means we can only have one transition active at once. If we ever allow multiple simultaneous transitions, we need a separate transition_timeout_function_handle for each transition type.
-    let transition_timeout_function_handle = React.useRef None
     let transition_configuration : Transition_Configuration = ()
     let configuration = React.useRef configuration
-    let state, dispatch = React.useElmish((Idle Hidden, Cmd.none), update transition_configuration transition_timeout_function_handle notify_transition_complete, [||])
+    let state, set_state = React.useState (Idle Hidden)
 
     let state_ref = React.useRef state
 (* We can use this code to detect any change to the state. *)
@@ -291,6 +253,8 @@ We would like fade_transition_timeout_function_handle to be internal to Fade, bu
     #endif
     do state_ref.current <- state
 
+    let complete_transition_2 = complete_transition set_state notify_transition_complete
+
 (* Interface *)
 
     React.useImperativeHandle(props.expose, fun () ->
@@ -303,48 +267,36 @@ We would like fade_transition_timeout_function_handle to be internal to Fade, bu
                     (transition_time : Transition_Time)
                     (command_queue_item_id : int<runner_queue_item_id>)
                     : unit =
-                    dispatch (Transition {
-                        new_data = Visible new_url
-                        transition_type = Fade
-                        transition_time = transition_time
-                        command_queue_item_id = command_queue_item_id
-                    })
+                    begin_transition set_state notify_transition_complete state_ref (Visible new_url) transition_time Fade command_queue_item_id
+
                 member _.fade_out
                     (transition_time : Transition_Time)
                     (command_queue_item_id : int<runner_queue_item_id>)
                     : unit =
-                    dispatch (Transition {
-                        new_data = Hidden
-                        transition_type = Fade
-                        transition_time = transition_time
-                        command_queue_item_id = command_queue_item_id
-                    })
+                    begin_transition set_state notify_transition_complete state_ref Hidden transition_time Fade command_queue_item_id
+
                 member _.cross_fade
                     (new_url : string)
                     (transition_time : Transition_Time)
                     (command_queue_item_id : int<runner_queue_item_id>)
                     : unit =
-                    dispatch (Transition {
-                        new_data = Visible new_url
-                        transition_type = Fade
-                        transition_time = transition_time
-                        command_queue_item_id = command_queue_item_id
-                    })
+                    begin_transition set_state notify_transition_complete state_ref (Visible new_url) transition_time Fade command_queue_item_id
+
                 member _.get_state () : Background_State = get_state state_ref
-                member _.set_state (saved_state : Background_State) : unit = set_state dispatch saved_state
-                member _.set_configuration (new_configuration : Background_Configuration) = set_configuration configuration new_configuration
+                member _.set_state (saved_state : Background_State) : unit = restore_saved_state saved_state complete_transition_2
+                member _.set_configuration (new_configuration : Background_Configuration) = do configuration.current <- new_configuration
                 member _.get_configuration () : Background_Configuration = configuration.current
 (* This is for debugging. *)
                 member _.get_background (): unit =
-                    do debug "get_background" String.Empty ["state", state_ref.current; "transition_timeout_function_handle", transition_timeout_function_handle.current]
+                    do debug "get_background" String.Empty ["state", state_ref.current]
 
             interface I_Transitionable with
                 member _.is_running_transition () : bool = is_running_transition state_ref
-                member _.force_complete_transition () : unit = force_complete_transition state_ref dispatch
+                member _.force_complete_transition () : unit = force_complete_transition state_ref complete_transition_2
                 member _.get_name () : string = "Background"
         }
     )
 
 (* Render *)
 
-    view state_ref configuration.current
+    view state_ref configuration.current complete_transition_2
