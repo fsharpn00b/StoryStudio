@@ -11,6 +11,13 @@ endjs
 // Fade in daytime background over 2 seconds.
 fadein day 2.0 // Comment after statement.
 
+// Test old data = new data and transition time 0.
+/*
+fadein day 2.0
+fadein day 0.0
+fadein night 0.0
+*/
+
 // Display status (permanent notification).
 status ${window.is_lost ()} endstatus
 

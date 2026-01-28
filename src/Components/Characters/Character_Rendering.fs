@@ -139,7 +139,7 @@ let private view_move
     let out_right_style =
         [
             style.bottom 0
-            style.custom ("left", $"{100.0 + float character_data.position}%%")
+            style.custom ("left", "100.0%")
             style.custom ("transition", $"left {transition_time}s ease-in-out")
         ]
 

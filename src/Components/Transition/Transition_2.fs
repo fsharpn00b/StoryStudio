@@ -45,7 +45,7 @@ type Transition_State<'data_type, 'transition_type> =
     | Idle of 'data_type
     | In_Transition of Transition_Data<'data_type, 'transition_type>
 
-type Complete_Transition_Func<'data_type> = bool -> 'data_type -> int<runner_queue_item_id> -> unit
+type Complete_Transition_Func<'data_type> = int<runner_queue_item_id> -> bool -> 'data_type -> unit
 type Set_State_Func<'data_type, 'transition_type> = Transition_State<'data_type, 'transition_type> -> unit
 
 (* Functions *)
@@ -64,7 +64,7 @@ let force_complete_transition
         match state_1.current with
         | In_Transition state_2 ->
 (* Note The onTransitionEnd () handler in the ReactElement is cancelled when the element is replaced by the new Idle state. *)
-            complete_transition true state_2.new_data state_2.command_queue_item_id
+            complete_transition state_2.command_queue_item_id true state_2.new_data
         | _ -> ()
 
 let begin_transition
@@ -77,7 +77,6 @@ let begin_transition
     (command_queue_item_id : int<runner_queue_item_id>)
     : unit =
 
-// TODO1 #transitions Test all these cases.
     match state.current with
 
 (* If the old and new data are the same, do nothing. *)
@@ -106,10 +105,63 @@ Previously, if this method was called during a transition, we would skip the tra
 let complete_transition
     (set_state : Set_State_Func<'data_type, 'transition_type>)
     (notify_transition_complete : int<runner_queue_item_id> -> unit)
+    (command_queue_item_id : int<runner_queue_item_id>)
     (is_notify_transition_complete : bool)
     (data : 'data_type)
-    (command_queue_item_id : int<runner_queue_item_id>)
     : unit =
 
     set_state <| Idle data
     if is_notify_transition_complete then notify_transition_complete command_queue_item_id
+
+(* Component *)
+
+(* TODO1 #transitions Split Fade_Image and the view functions into a separate re-usable component for background, characters, etc.
+Could have separate classes - fadeable, moveable, etc.
+Could let container components inject React properties.
+Could pass in the transition property name and initial/final values. We still need to do React.useState ()/useEffectOnce () in the component, we think.
+*)
+
+[<ReactComponent>]
+let Transitionable_Image (
+    url: string,
+    class_name : string,
+    additional_properties : IReactProperty list,
+    transition_property_name : string,
+    transition_property_initial_value : float,
+    transition_property_final_value : float,
+    transition_time : Transition_Time,
+    handle_transition_end : unit -> unit
+    ) =
+
+    let transition_property_value, set_transition_property_value = React.useState transition_property_initial_value
+
+    React.useEffectOnce (fun () ->
+        window.setTimeout ((fun () -> set_transition_property_value transition_property_final_value), int pre_transition_time) |> ignore
+    )
+
+    Html.img [
+        prop.key url
+        prop.src url
+        prop.className class_name
+        prop.style [
+            style.custom (transition_property_name, transition_property_value)
+            style.custom ("transition", $"{transition_property_name} {transition_time}s ease-in-out")
+        ]
+        prop.onTransitionEnd (fun _ ->
+            handle_transition_end ()
+        )
+        yield! additional_properties
+    ]
+
+let get_transitionable_image
+    (class_name : string)
+    (additional_properties : IReactProperty list)
+    (transition_property_name : string)
+    (transition_time : Transition_Time)
+    (handle_transition_end : unit -> unit)
+    (url: string)
+    (transition_property_initial_value : float)
+    (transition_property_final_value : float)
+    : ReactElement =
+
+    Transitionable_Image (url, class_name, additional_properties, transition_property_name, transition_property_initial_value, transition_property_final_value, transition_time, handle_transition_end)

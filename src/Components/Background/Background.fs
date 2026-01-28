@@ -77,46 +77,6 @@ let private error : error_function = error log_module_name
 
 let mutable private debug_render_counter = 1
 
-(* Image component *)
-
-// TODO1 #transitions Generalize this and move to a separate file.
-
-(* TODO1 #transitions Split Fade_Image and the view functions into a separate re-usable component for background, characters, etc.
-Could have separate classes - fadeable, moveable, etc.
-Could let container components inject React properties.
-Could pass in the transition property name and initial/final values. We still need to do React.useState ()/useEffectOnce () in the component, we think.
-
-- This could become the template for the new Transition class.
-*)
-
-[<ReactComponent>]
-let Fade_Image (
-    url: string,
-    is_fade_in : bool,
-    transition_time : Transition_Time,
-    handle_transition_end : unit -> unit
-    ) =
-
-    let opacity_1, opacity_2 = if is_fade_in then 0.0, 1.0 else 1.0, 0.0
-    let opacity, set_opacity = React.useState opacity_1
-
-    React.useEffectOnce (fun () ->
-        window.setTimeout ((fun () -> set_opacity opacity_2), int pre_transition_time) |> ignore
-    )
-
-    Html.img [
-        prop.key url
-        prop.src url
-        prop.className "background_fade_image"
-        prop.style [
-            style.opacity opacity
-            style.custom("transition", $"opacity {transition_time}s ease-in-out")
-        ]
-        prop.onTransitionEnd (fun ev ->
-            handle_transition_end ()
-        )
-    ]
-
 (* Main functions - rendering *)
 
 let private view_idle_visible
@@ -144,18 +104,22 @@ let private view_2
     (complete_transition : Complete_Transition_Func<Background_State>)
     : ReactElement seq =
 
+    let complete_transition_2 = complete_transition transition_data.command_queue_item_id true
+    let get_transitionable_image_2 = get_transitionable_image "background_fade_image" [] "opacity" transition_data.transition_time
+
     match transition_data.old_data, transition_data.new_data with
 
 // TODO1 #transitions In Transition_Data, augment 'transition_type to take an argument, the transition operation, which in takes takes arguments, old and new data. For example, Fade (In (old, new)). Then match on the transition operation instead of assuming what is going to happen based on old and new data.
-    | Hidden, Visible url -> Fade_Image (url, true, transition_data.transition_time, fun () -> complete_transition true (Visible url) transition_data.command_queue_item_id) |> Seq.singleton
+    | Hidden, Visible url -> get_transitionable_image_2 (fun () -> complete_transition_2 <| Visible url) url 0.0 1.0 |> Seq.singleton
 
-    | Visible url, Hidden -> Fade_Image (url, false, transition_data.transition_time, fun () -> complete_transition true Hidden transition_data.command_queue_item_id) |> Seq.singleton
+    | Visible url, Hidden -> get_transitionable_image_2 (fun () -> complete_transition_2 Hidden) url 1.0 0.0 |> Seq.singleton
 
     | Visible old_url, Visible new_url when 0 <> String.Compare (old_url, new_url) ->
         [
-// TODO1 #transitions Consider a separate component for cross fade.
-            Fade_Image (old_url, false, transition_data.transition_time, fun () -> complete_transition false Hidden 0<runner_queue_item_id>)
-            Fade_Image (new_url, true, transition_data.transition_time, fun () -> complete_transition true (Visible new_url) transition_data.command_queue_item_id)
+(* We only want one of these transitions to report when it is complete. Otherwise, we will try to remove the command queue item id from the command queue twice, and get an error. *)
+// TODO2 #transitions Consider a separate component for cross fade.
+            get_transitionable_image_2 (fun () -> complete_transition 0<runner_queue_item_id> false Hidden) old_url 0.0 1.0
+            get_transitionable_image_2 (fun () -> complete_transition_2 <| Visible new_url) new_url 0.0 1.0
         ]
 
 (* Transition.begin_transition () should not trigger a state change when old_data and new_data are the same (either Hidden/Hidden or Visible old_url/Visible new_url where old_url = new_url). *)
@@ -222,7 +186,7 @@ let private restore_saved_state
 - Since we are not running a command, we set is_notify_transition_complete to false.
 (end)
 *)
-    do complete_transition false saved_state 0<runner_queue_item_id>
+    do complete_transition 0<runner_queue_item_id> false saved_state
 
 (* Container component *)
 
