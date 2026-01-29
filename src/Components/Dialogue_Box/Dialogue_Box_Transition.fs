@@ -8,7 +8,6 @@ open Feliz
 open Dialogue_Box_Types
 open Log
 open Transition
-open Transition_Types
 open Units_Of_Measure
 
 (* Debug *)
@@ -21,7 +20,10 @@ let private error : error_function = error log_module_name
 let mutable private debug_render_counter = 1
 let mutable private debug_state_update_counter = 1
 
-let is_running_transition (fade_state : IRefValue<Transition_State<Dialogue_Box_Visibility_State, Dialogue_Box_Transition_Type>>) (typing_state : IRefValue<Typing_State>) : bool =
+let is_running_transition
+    (fade_state : IRefValue<Transition_State<Dialogue_Box_Visibility_State, Dialogue_Box_Transition_Type>>)
+    (typing_state : IRefValue<Typing_State>)
+    : bool =
     let is_typing =
         match typing_state.current with
         | Empty
@@ -68,8 +70,8 @@ let private force_complete_typing_transition
 (* This function is called by both Runner_Run.force_complete_transitions (), when the player wants to skip a transition, and (indirectly) by Runner_State.set_state (), when the player wants to load a saved game. In the former case, we notify Runner the transition is complete. In the latter, we do not. *)
 let force_complete_transition
     (fade_state : IRefValue<Transition_State<Dialogue_Box_Visibility_State, Dialogue_Box_Transition_Type>>)
+    (complete_fade_transition : Complete_Transition_Func<Dialogue_Box_Visibility_State>)
     (typing_state : IRefValue<Typing_State>)
-    (fade_dispatch : Transition_Message<Dialogue_Box_Visibility_State, Dialogue_Box_Transition_Type> -> unit)
     (typing_dispatch : Typing_Message -> unit)
     : unit =
 
@@ -99,7 +101,7 @@ Runner_Queue.remove_transition will at least issue a warning, because we will tr
             | Typing _ -> true
             | _ -> false
         if fade_state_in_transition then
-            Transition.force_complete_transition fade_state fade_dispatch
+            Transition.force_complete_transition fade_state complete_fade_transition
         if typing_state_in_transition then 
 (* Force_Complete_Typing cancels the transition timeout function. *)
             typing_dispatch Force_Complete_Typing

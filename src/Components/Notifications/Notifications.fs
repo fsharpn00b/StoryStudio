@@ -70,7 +70,7 @@ let private game_paused_notification = "Game paused. Click to continue."
 
 (* Main functions - rendering *)
 
-// TODO2 Add cross-fade for changes to permanent notification data.
+// TODO1 Add cross-fade for changes to permanent notification data. See if we can use Fade_Label from temporary notifications.
 let view
     (is_visible : bool)
     (permanent_notification_data : string)

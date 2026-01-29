@@ -10,9 +10,9 @@
     <Compile Include="Misc/Utilities.fs" />
     <Compile Include="Misc/Log.fs" />
     <Compile Include="Components/Music/Music.fs" />
-    <Compile Include="Components/Transition/Transition_Types.fs" />
+    
+    
     <Compile Include="Components/Transition/Transition.fs" />
-    <Compile Include="Components/Transition/Transition_2.fs" />
     <Compile Include="Components/Background/Background.fs" />
     <Compile Include="Components/Characters/Character_Types.fs" />
     <Compile Include="Components/Characters/Character_Rendering.fs" />

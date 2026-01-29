@@ -4,18 +4,13 @@ module Image_Map
 open Browser.Dom
 // HTMLElement
 open Browser.Types
-// Cmd
-open Elmish
 // ? operator
 open Fable.Core.JsInterop
 // Html, IRefValue, React, ReactComponent, ReactElement
 open Feliz
-// useElmish
-open Feliz.UseElmish
 
 open Log
 open Transition
-open Transition_Types
 open Units_Of_Measure
 open Utilities
 
@@ -113,48 +108,36 @@ let private view_idle_visible
             ]
     ]
 
-let private view_fade_in_out
-    (is_pre_transition : bool)
-    (is_fade_in : bool)
-    (url : string)
-    (transition_time : Transition_Time)
-    : ReactElement =
-
-(* TODO2 It would probably be straightforward to generalize Fade to handle any kind of transition that can be expressed this way.
-1 Render with original value and specify transition property and time.
-2 Render again with final value to trigger transition.
-*)
-    let opacity =
-        match is_fade_in, is_pre_transition with
-        | true, true -> 0.0
-        | true, false -> 1.0
-        | false, true -> 1.0
-        | false, false -> 0.0
-
-    Html.img [
-        prop.id "image_map_image"
-        prop.key url
-        prop.src url
-        prop.style [
-            style.opacity opacity
-            style.custom ("transition", $"opacity {transition_time}s ease-in-out")
-        ]
-    ]
-
 let private view_2
-    (is_pre_transition : bool)
     (transition_data : Transition_Data<Image_Map_State, Image_Map_Transition_Type>)
+    (complete_transition : Complete_Transition_Func<Image_Map_State>)
     : ReactElement =
+
+    let complete_transition_2 = complete_transition (Some transition_data.command_queue_item_id) true
+    let get_transitionable_image_2 =
+        get_transitionable_image
+            None
+            (Some "image_map_image")
+            []
+            [
+                "zIndex", $"{background_z_index}"
+            ]
+            "opacity"
+            transition_data.transition_time
 
     match transition_data.old_data, transition_data.new_data with
-    | Hidden, Visible data -> view_fade_in_out is_pre_transition true data.url data.transition_time
-    | Visible data, Hidden -> view_fade_in_out is_pre_transition false data.url data.transition_time
+
+    | Hidden, Visible data -> get_transitionable_image_2 (fun () -> complete_transition_2 <| Visible data) data.url "0.0" "1.0"
+    
+    | Visible data, Hidden -> get_transitionable_image_2 (fun () -> complete_transition_2 Hidden) data.url "1.0" "0.0"
+
     | _ -> error "view_2" "Called with unexpected transition data." ["transition_data", transition_data] |> invalidOp
 
 let private view
     (element_ref : IRefValue<HTMLElement option>)
     (state : IRefValue<Transition_State<Image_Map_State, Image_Map_Transition_Type>>)
     (notify_image_map_selection : string -> int -> unit)
+    (complete_transition : Complete_Transition_Func<Image_Map_State>)
     : ReactElement =
 
     match state.current with
@@ -174,8 +157,7 @@ let private view
                 match state.current with
                 | Idle Hidden -> Html.none
                 | Idle (Visible data) -> yield! view_idle_visible data notify_image_map_selection
-                | Pre_Transition transition_data -> view_2 true transition_data
-                | In_Transition transition_Data -> view_2 false transition_Data 
+                | In_Transition transition_data -> view_2 transition_data complete_transition
             ]
         ]
 
@@ -190,30 +172,14 @@ let private get_state
     match state.current with
     | Idle Hidden -> Hidden
     | Idle (Visible data) -> Visible data
-    | Pre_Transition data -> data.new_data
     | In_Transition data -> data.new_data
 
-let private set_state
-    (fade_dispatch : Transition_Message<Image_Map_State, Image_Map_Transition_Type> -> unit)
+let private restore_saved_state
     (saved_state : Image_Map_State)
+    (complete_transition : Complete_Transition_Func<Image_Map_State>)
     : unit =
-
-    match saved_state with
 (* We do not notify Runner when the transition completes when the player loads a saved game or rolls back/forward, because we are not running a command. *)
-    | Visible data ->
-        fade_dispatch <| Skip_Transition {
-            transition_type = Fade
-            new_data = Visible data
-            is_notify_transition_complete = false
-            command_queue_item_id = None
-        }
-    | Hidden ->
-        fade_dispatch <| Skip_Transition {
-            transition_type = Fade
-            new_data = Hidden
-            is_notify_transition_complete = false
-            command_queue_item_id = None
-        }
+    do complete_transition None false saved_state
 
 (* Component *)
 
@@ -226,12 +192,11 @@ let Image_Map
 
 (* State *)
 
-    let fade_transition_timeout_function_handle = React.useRef None
     let fade_configuration : Transition_Configuration = ()
-    let state, dispatch = React.useElmish((Idle Hidden, Cmd.none), update fade_configuration fade_transition_timeout_function_handle notify_transition_complete, [||])
-
+    let state, set_state = React.useState (Idle Hidden)
     let state_ref = React.useRef state
     do state_ref.current <- state
+    let complete_transition_2 = complete_transition set_state notify_transition_complete
 
 (* Give focus to this component when it is visible. This is so we can prevent mouse click and key down events leaking to the game. *)
     let element_ref = React.useRef None
@@ -247,25 +212,20 @@ let Image_Map
     React.useImperativeHandle(props.expose, fun () ->
         {
             new I_Image_Map with
+// TODO1 #transitions Clicking during fade in is not completing transition.
                 member _.fade_in
                     (new_data : Image_Map_Data)
                     (transition_time : Transition_Time)
-                    (command_queue_item_id : int<runner_queue_item_id>) =
-                    dispatch (Transition {
-                        transition_type = Fade
-                        new_data = Visible new_data
-                        transition_time = transition_time
-                        command_queue_item_id = command_queue_item_id
-                    })
+                    (command_queue_item_id : int<runner_queue_item_id>)
+                    : unit =
+                    begin_transition set_state notify_transition_complete state_ref (Visible new_data) transition_time Fade command_queue_item_id
+
                 member _.fade_out
                     (transition_time : Transition_Time)
-                    (command_queue_item_id : int<runner_queue_item_id>) =
-                    dispatch (Transition {
-                        transition_type = Fade
-                        new_data = Hidden
-                        transition_time = transition_time
-                        command_queue_item_id = command_queue_item_id
-                    })
+                    (command_queue_item_id : int<runner_queue_item_id>)
+                    : unit =
+                    begin_transition set_state notify_transition_complete state_ref Hidden transition_time Fade command_queue_item_id
+
 (* Runner_UI.run () calls this method to determine whether to proceed. We want to handle the possible states as follows.
 Idle_Hidden - Proceed.
 Idle_Visible - Do not proceed. The player must select an image map item to continue.
@@ -280,14 +240,14 @@ The other three components with is_visible () methods (Menu, Save_Load, Configur
                     | Idle (Visible _) -> true
                     | _ -> false
                 member _.get_state () = get_state state_ref
-                member _.set_state (saved_state : Image_Map_State) = set_state dispatch saved_state
+                member _.set_state (saved_state : Image_Map_State) = restore_saved_state saved_state complete_transition_2
             interface I_Transitionable with
                 member _.is_running_transition () : bool = is_running_transition state_ref
-                member _.force_complete_transition () : unit = force_complete_transition state_ref dispatch
+                member _.force_complete_transition () : unit = force_complete_transition state_ref complete_transition_2
                 member _.get_name () : string = "Image_Map"
         }
     )
 
 (* Render *)
 
-    view element_ref state_ref notify_image_map_selection
+    view element_ref state_ref notify_image_map_selection complete_transition_2

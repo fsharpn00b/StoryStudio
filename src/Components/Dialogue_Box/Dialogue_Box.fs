@@ -16,7 +16,6 @@ open Dialogue_Box_Types
 open Dialogue_Box_Typing
 open Log
 open Transition
-open Transition_Types
 open Units_Of_Measure
 open Utilities
 
@@ -74,9 +73,10 @@ In this case, we do not need any dependencies. We can just run update whenever a
     let fade_transition_timeout_function_handle = React.useRef None
     let fade_configuration = ()
 (* We set the fade state to Idle_Visible at the start, but in the view function, that is overridden by the typing state of Empty. *)
-    let fade_state, fade_dispatch = React.useElmish((Idle Visible, Cmd.none), Transition.update fade_configuration fade_transition_timeout_function_handle notify_transition_complete, [||])
+    let fade_state, set_fade_state = React.useState (Idle Visible)
     let fade_state_ref = React.useRef fade_state
     do fade_state_ref.current <- fade_state
+    let complete_fade_transition_2 = complete_transition set_fade_state notify_transition_complete
 
 (* Interface *)
 
@@ -87,31 +87,23 @@ In this case, we do not need any dependencies. We can just run update whenever a
                     (is_notify_transition_complete : bool)
                     (command_queue_item_id : int<runner_queue_item_id> option)
                     : unit =
-                        fade_dispatch <| Skip_Transition {
-                            transition_type = Fade
-                            new_data = Visible
-                            is_notify_transition_complete = is_notify_transition_complete
-                            command_queue_item_id = command_queue_item_id
-                        }
+                    complete_fade_transition_2 command_queue_item_id is_notify_transition_complete Visible
+
                 member _.hide
                     (is_notify_transition_complete : bool)
                     (command_queue_item_id : int<runner_queue_item_id> option)
                     : unit =
-                        fade_dispatch <| Skip_Transition {
-                            transition_type = Fade
-                            new_data = Hidden
-                            is_notify_transition_complete = is_notify_transition_complete
-                            command_queue_item_id = command_queue_item_id
-                        }
+                    complete_fade_transition_2 command_queue_item_id is_notify_transition_complete Hidden
+
                 member _.is_visible () : bool = is_visible fade_state_ref
-                member _.type_dialogue (character : string) (text : string) (command_queue_item_id : int<runner_queue_item_id>) = type_dialogue typing_state_ref configuration fade_dispatch typing_dispatch reveal_next_timeout_function_handle character text command_queue_item_id
+                member _.type_dialogue (character : string) (text : string) (command_queue_item_id : int<runner_queue_item_id>) = type_dialogue typing_state_ref configuration complete_fade_transition_2 typing_dispatch reveal_next_timeout_function_handle character text command_queue_item_id
                 member _.set_configuration (new_configuration : Dialogue_Box_Configuration) = set_configuration configuration new_configuration
                 member _.get_configuration () : Dialogue_Box_Configuration = configuration.current
                 member _.get_state () = get_state typing_state_ref fade_state_ref
-                member _.set_state (state : Dialogue_Box_Saveable_State) = set_state typing_dispatch fade_dispatch state
+                member _.set_state (state : Dialogue_Box_Saveable_State) = restore_saved_state typing_dispatch complete_fade_transition_2 state
             interface I_Transitionable with
                 member _.is_running_transition (): bool = Dialogue_Box_Transition.is_running_transition fade_state_ref typing_state_ref
-                member _.force_complete_transition () : unit = Dialogue_Box_Transition.force_complete_transition fade_state_ref typing_state_ref fade_dispatch typing_dispatch
+                member _.force_complete_transition () : unit = Dialogue_Box_Transition.force_complete_transition fade_state_ref complete_fade_transition_2 typing_state_ref typing_dispatch
                 member _.get_name () : string = "Dialogue Box"
         }
     )

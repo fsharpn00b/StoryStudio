@@ -13,7 +13,7 @@ open Feliz
 open Dialogue_Box_Types
 open Dialogue_Box_Transition
 open Log
-open Transition_Types
+open Transition
 open Units_Of_Measure
 
 (* Debug *)
@@ -157,7 +157,7 @@ We also do not dispatch the Notify_Transition_Complete message here because we m
 let type_dialogue
     (state : IRefValue<Typing_State>)
     (configuration : IRefValue<Dialogue_Box_Configuration>)
-    (fade_dispatch : Transition_Message<Dialogue_Box_Visibility_State, Dialogue_Box_Transition_Type> -> unit)
+    (complete_fade_transition : Complete_Transition_Func<Dialogue_Box_Visibility_State>)
     (typing_dispatch : Typing_Message -> unit)
     (reveal_next_timeout_function_handle : IRefValue<float option>)
     (character : string)
@@ -175,7 +175,7 @@ let type_dialogue
 Our initial typing state is Empty. Dialogue_Box_Rendering.view () renders the Empty state as Html.none. However, our default fade state is Idle_Visible. Once our typing state is non-Empty, view () renders the dialogue box. If we set our fade state to Idle_Hidden, we must change it back by dispatching the Show message.
 *)
 (* We do not notify the Runner_Queue when we complete the Show transition, because it is an internal method call rather than a command. *)
-    fade_dispatch <| Skip_Transition { transition_type = Fade; new_data = Visible; is_notify_transition_complete = false; command_queue_item_id = None }
+    complete_fade_transition None false Visible
 
     match state.current with
 

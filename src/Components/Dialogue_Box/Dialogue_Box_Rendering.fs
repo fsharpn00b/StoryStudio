@@ -7,7 +7,7 @@ open Feliz
 
 open Dialogue_Box_Types
 open Log
-open Transition_Types
+open Transition
 open Utilities
 
 (* Debug *)

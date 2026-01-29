@@ -3,7 +3,7 @@ module Character_Types
 // IRefValue
 open Fable.React
 
-open Transition_Types
+open Transition
 open Units_Of_Measure
 
 (* Types - public *)

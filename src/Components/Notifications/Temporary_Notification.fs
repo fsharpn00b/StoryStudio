@@ -2,17 +2,13 @@ module Temporary_Notification
 
 // console, window
 open Browser.Dom
-// Cmd
-open Elmish
 // Html, IRefValue, React, ReactComponent, ReactElement
 open Feliz
-// useElmish
-open Feliz.UseElmish
 
 open Log
 open Transition
-open Transition_Types
 open Units_Of_Measure
+open Utilities
 
 (* Debug *)
 
@@ -72,84 +68,69 @@ let private view_idle_visible
         prop.text data.text
     ]
 
-let private view_fade_in_out
-    (is_pre_transition : bool)
-    (is_fade_in : bool)
-    (data : Notification_Data_2)
-    (transition_time : Transition_Time)
-    : ReactElement =
+[<ReactComponent>]
+let Fade_Label (
+    data : Notification_Data_2,
+    initial_value : string,
+    final_value : string,
+    transition_time : Transition_Time,
+    handle_transition_end : unit -> unit
+    ) : ReactElement =
 
-    let opacity =
-        match is_fade_in, is_pre_transition with
-        | true, true -> 0.0
-        | true, false -> 1.0
-        | false, true -> 1.0
-        | false, false -> 0.0
+    let opacity, set_opacity = React.useState initial_value
+
+    React.useEffectOnce (fun () ->
+        window.setTimeout ((fun () -> set_opacity final_value), int pre_transition_time) |> ignore
+    )
 
     Html.label [
         prop.key data.text
         prop.className "notification"
         prop.text data.text
         prop.style [
-            style.opacity opacity
+            style.custom ("opacity", opacity)
             style.custom ("transition", $"opacity {transition_time}s ease-in-out")
         ]
-    ]
-
-let private view_cross_fade
-    (is_pre_transition : bool)
-    (old_data : Notification_Data_2)
-    (new_data : Notification_Data_2)
-    (transition_time : Transition_Time)
-    : ReactElement seq =
-
-    [
-        Html.label [
-            prop.key old_data.text
-            prop.className "notification"
-            prop.text old_data.text
-            prop.style [
-                style.opacity <| if is_pre_transition then 1.0 else 0.0
-                style.custom ("transition", $"opacity {transition_time}s ease-in-out")
-            ]
-        ]
-        Html.label [
-            prop.key new_data.text
-            prop.className "notification"
-            prop.text new_data.text
-            prop.style [
-                style.opacity <| if is_pre_transition then 0.0 else 1.0
-                style.custom ("transition", $"opacity {transition_time}s ease-in-out")
-            ]
-        ]
+        prop.onTransitionEnd (fun _ ->
+            handle_transition_end ()
+        )
     ]
 
 let private view
     (fade_state : IRefValue<Transition_State<Notification_State, Notification_Transition_Type>>)
+    (notify : int<runner_queue_item_id> -> unit)
     : ReactElement =
 
     Html.div [
         match fade_state.current with
         | Idle Hidden -> Html.none
         | Idle (Visible data) -> view_idle_visible data
-        | Pre_Transition transition_data ->
-            match transition_data.old_data, transition_data.new_data with
-            | Hidden, Visible data -> view_fade_in_out true true data transition_data.transition_time
-            | Visible data, Hidden -> view_fade_in_out true false data transition_data.transition_time
-            | Visible old_data, Visible new_data -> yield! view_cross_fade true old_data new_data transition_data.transition_time
-            | _ -> error "view_2" "Called with unexpected transition data." ["transition_data", transition_data] |> invalidOp
         | In_Transition transition_data ->
             match transition_data.old_data, transition_data.new_data with
-            | Hidden, Visible data -> view_fade_in_out false true data transition_data.transition_time
-            | Visible data, Hidden -> view_fade_in_out false false data transition_data.transition_time
-            | Visible old_data, Visible new_data -> yield! view_cross_fade false old_data new_data transition_data.transition_time
-            | _ -> error "view_2" "Called with unexpected transition data." ["transition_data", transition_data] |> invalidOp
+
+            | Hidden, Visible data ->
+                Fade_Label (data, "0.0", "1.0",  transition_data.transition_time, (fun () -> notify notify_fade_in_complete))
+
+            | Visible data, Hidden ->
+                Fade_Label (data, "1.0", "0.0", transition_data.transition_time, (fun () -> notify notify_fade_out_complete))
+
+// TODO1 This is not used yet. We want to use it for permanent notification. Might not be needed here though. Permanent notification can have its own view function.
+(*
+            | Visible old_data, Visible new_data ->
+                yield! [
+                    Fade_Label (old_data, "1.0", "0.0", transition_data.transition_time, notify)
+                    Fade_Label (new_data, "0.0", "1.0", transition_data.transition_time, notify)
+                ]
+*)
+
+            | _ -> error "view" "Called with unexpected transition data." ["transition_data", transition_data] |> invalidOp
     ]
 
 (* Main functions - state *)
 
-let private notify_fade_in_or_fade_out_complete
-    (dispatch : IRefValue<Transition_Message<Notification_State, Notification_Transition_Type> -> unit>)
+let private handle_fade_in_or_fade_out_complete
+    (fade_state_ref : IRefValue<Transition_State<Notification_State, Notification_Transition_Type>>)
+    (set_fade_state : Transition_State<Notification_State, Notification_Transition_Type> -> unit)
     (configuration : IRefValue<Temporary_Notifications_Configuration>)
     (notify_queue : unit -> unit)
 (* This is not a valid Runner_Queue item ID. A component that supports fade transitions typically notifies Runner_Queue when a transition is complete, so Runner_Queue can run the next command. In this case, we have the Temporary_Notification component notify the Temporary_Notifications_Queue instead. *)
@@ -157,18 +138,31 @@ let private notify_fade_in_or_fade_out_complete
     : unit =
 
     if notify_fade_in_complete = fade_in_or_fade_out then
-        window.setTimeout ((fun () ->
-            dispatch.current (Transition {
-                transition_type = Fade
-                new_data = Hidden
-                transition_time = configuration.current.transition_time
-                command_queue_item_id = notify_fade_out_complete
-            })
-        ), int configuration.current.display_time * 1000) |> ignore
-    elif notify_fade_out_complete = fade_in_or_fade_out then
-        notify_queue ()
+        let new_data =
+            match fade_state_ref.current with
+            | In_Transition transition_data -> transition_data.new_data
+            | _ -> error "handle_fade_in_or_fade_out_complete" "Unexpected state. Expected In_Transition." ["state", fade_state_ref.current] |> invalidOp
 
-    else error "notify_fade_in_or_fade_out_complete" "Unexpected fade in/fade out notification. Expected 0 (fade in) or 1 (fade out)." ["fade_in_or_fade_out", int fade_in_or_fade_out] |> invalidOp
+        set_fade_state <| Idle new_data
+
+// TODO1 Add timeout function handles to cancel notifications.
+
+        window.setTimeout ((fun () ->
+            set_fade_state <| In_Transition {
+                old_data = new_data
+                new_data = Hidden
+                transition_type = Fade
+                transition_time = configuration.current.transition_time
+(* See comments in handle_fade_in_or_fade_out_complete (). *)
+                command_queue_item_id = notify_fade_out_complete
+            }
+        ), int configuration.current.display_time * 1000) |> ignore
+
+    elif notify_fade_out_complete = fade_in_or_fade_out then
+        set_fade_state <| Idle Hidden
+        window.setTimeout (notify_queue, int notify_transition_complete_delay_time) |> ignore
+
+    else error "handle_fade_in_or_fade_out_complete" "Unexpected fade in/fade out notification. Expected 0 (fade in) or 1 (fade out)." ["fade_in_or_fade_out", int fade_in_or_fade_out] |> invalidOp
 
 (* Component *)
 
@@ -185,20 +179,16 @@ let Temporary_Notification_Component
 (* We store the configuration in an IRefValue so the player can update it. *)
     let configuration_ref = React.useRef initial_configuration
 
-(* We need to pass the dispatch () function exposed by Temporary_Notification_Component to a callback (notify_fade_in_or_fade_out_complete ()) which we also need to instantiate the Temporary_Notification_Component. Therefore we use an IRefValue for the dispatch () function so we can "use" it before we have a working reference for it. *)
-    let dispatch_ref = React.useRef Unchecked.defaultof<_>
-(* Partially apply this function so we can pass it as a callback to the Temporary_Notification_Component constructor. *)
-    let notify_fade_in_or_fade_out_complete (fade_in_or_fade_out : int<runner_queue_item_id>) : unit = notify_fade_in_or_fade_out_complete dispatch_ref configuration_ref notify_queue fade_in_or_fade_out
-
 // TODO2 This currently does nothing, so we pass in a dummy implementation.
     let fade_configuration : Transition_Configuration = ()
-    let Transition_Timeout_function_handle = React.useRef None
-(* This component does not notify Runner_Queue when it completes a transition. Instead, it notifies Temporary_Notifications_Queue by calling notify_fade_in_or_fade_out_complete (). *)
-    let fade_state, dispatch = React.useElmish((Idle Hidden, Cmd.none), update fade_configuration Transition_Timeout_function_handle notify_fade_in_or_fade_out_complete, [||])
+(* This component does not notify Runner_Queue when it completes a transition. Instead, it notifies Temporary_Notifications_Queue by calling handle_fade_in_or_fade_out_complete (). *)
+    let fade_state, set_fade_state = React.useState (Idle Hidden)
     let fade_state_ref = React.useRef fade_state
     do fade_state_ref.current <- fade_state
-(* Save the dispatch () function exposed by Temporary_Notification_Component. See comments where this value is declared. *)
-    do dispatch_ref.current <- dispatch
+
+(* Partially apply this function so we can pass it as a callback to the Temporary_Notification_Component constructor. *)
+    let handle_fade_in_or_fade_out_complete_2 =
+        handle_fade_in_or_fade_out_complete fade_state_ref set_fade_state configuration_ref notify_queue
 
     do React.useImperativeHandle(props.expose, fun () ->
         {
@@ -206,17 +196,25 @@ let Temporary_Notification_Component
                 member _.show
                     (data : Notification_Data_2)
                     : unit =
-                    do dispatch (Transition {
-                        transition_type = Fade
+
+                    let old_data =
+                        match fade_state_ref.current with
+                        | Idle old_data -> old_data
+                        | _ -> error "show" "Unexpected state. Expected Idle." ["state", fade_state_ref.current] |> invalidOp
+
+                    set_fade_state <| In_Transition {
+                        old_data = old_data
                         new_data = Visible data
+                        transition_type = Fade
                         transition_time = configuration_ref.current.transition_time
-(* See comments in notify_fade_in_or_fade_out_complete (). *)
+(* See comments in handle_fade_in_or_fade_out_complete (). *)
                         command_queue_item_id = notify_fade_in_complete
-                    })
+                    }
+
                 member _.set_configuration (configuration : Temporary_Notifications_Configuration) : unit =
                     do configuration_ref.current <- configuration
         }
     )
 (* This component does not implement I_Transitionable. *)
 
-    view fade_state_ref
+    view fade_state_ref handle_fade_in_or_fade_out_complete_2

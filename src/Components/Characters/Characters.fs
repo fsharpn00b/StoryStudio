@@ -11,7 +11,7 @@ open Feliz
 open Character
 open Character_Types
 open Log
-open Transition_Types
+open Transition
 open Units_Of_Measure
 open Utilities
 

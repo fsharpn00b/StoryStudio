@@ -5,7 +5,8 @@ open Feliz
 
 open Dialogue_Box_Types
 open Log
-open Transition_Types
+open Transition
+open Units_Of_Measure
 
 (* Debug *)
 
@@ -53,19 +54,14 @@ let get_state
             | _ -> error "get_state" "Unexpected Fade_State. Ignoring." ["fade_state", fade_state] |> invalidOp
     }
 
-let set_state
+let restore_saved_state
     (typing_dispatch : Typing_Message -> unit)
-    (fade_dispatch : Transition_Message<Dialogue_Box_Visibility_State, Dialogue_Box_Transition_Type> -> unit)
+    (complete_fade_transition : Complete_Transition_Func<Dialogue_Box_Visibility_State>)
     (saved_state : Dialogue_Box_Saveable_State)
     : unit =
     do
 (* Runner_State.undo_redo () and .show_saved_game_screen () are now responsible for forcing transition completion. *)
-//        force_complete_transition current_fade_state current_typing_state fade_dispatch typing_dispatch
-
-        fade_dispatch <|
-            match saved_state.visible with
-            | Visible -> Skip_Transition { transition_type = Fade; new_data = Visible; is_notify_transition_complete = false; command_queue_item_id = None }
-            | Hidden -> Skip_Transition { transition_type = Fade; new_data = Hidden; is_notify_transition_complete = false; command_queue_item_id = None }
+        complete_fade_transition None false saved_state.visible
 (* Set_Dialogue and Set_Empty do not dispatch Notify_Transition_Complete. See notes in Dialogue_Box_Typing.update_typing_state. *)
         typing_dispatch <| match saved_state.dialogue with | Some dialogue -> Set_Dialogue dialogue | None -> Set_Empty
 

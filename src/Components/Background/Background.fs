@@ -14,7 +14,7 @@ open Fable.React
 open Feliz
 
 open Log
-open Transition_2
+open Transition
 open Units_Of_Measure
 open Utilities
 
@@ -104,22 +104,31 @@ let private view_2
     (complete_transition : Complete_Transition_Func<Background_State>)
     : ReactElement seq =
 
-    let complete_transition_2 = complete_transition transition_data.command_queue_item_id true
-    let get_transitionable_image_2 = get_transitionable_image "background_fade_image" [] "opacity" transition_data.transition_time
+    let complete_transition_2 = complete_transition (Some transition_data.command_queue_item_id) true
+    let get_transitionable_image_2 =
+        get_transitionable_image
+            (Some "background_fade_image")
+            None
+            []
+            [
+                "zIndex", $"{background_z_index}"
+            ]
+            "opacity"
+            transition_data.transition_time
 
     match transition_data.old_data, transition_data.new_data with
 
 // TODO1 #transitions In Transition_Data, augment 'transition_type to take an argument, the transition operation, which in takes takes arguments, old and new data. For example, Fade (In (old, new)). Then match on the transition operation instead of assuming what is going to happen based on old and new data.
-    | Hidden, Visible url -> get_transitionable_image_2 (fun () -> complete_transition_2 <| Visible url) url 0.0 1.0 |> Seq.singleton
+    | Hidden, Visible url -> get_transitionable_image_2 (fun () -> complete_transition_2 <| Visible url) url "0.0" "1.0" |> Seq.singleton
 
-    | Visible url, Hidden -> get_transitionable_image_2 (fun () -> complete_transition_2 Hidden) url 1.0 0.0 |> Seq.singleton
+    | Visible url, Hidden -> get_transitionable_image_2 (fun () -> complete_transition_2 Hidden) url "1.0" "0.0" |> Seq.singleton
 
     | Visible old_url, Visible new_url when 0 <> String.Compare (old_url, new_url) ->
         [
 (* We only want one of these transitions to report when it is complete. Otherwise, we will try to remove the command queue item id from the command queue twice, and get an error. *)
 // TODO2 #transitions Consider a separate component for cross fade.
-            get_transitionable_image_2 (fun () -> complete_transition 0<runner_queue_item_id> false Hidden) old_url 0.0 1.0
-            get_transitionable_image_2 (fun () -> complete_transition_2 <| Visible new_url) new_url 0.0 1.0
+            get_transitionable_image_2 (fun () -> complete_transition None false Hidden) old_url "0.0" "1.0"
+            get_transitionable_image_2 (fun () -> complete_transition_2 <| Visible new_url) new_url "0.0" "1.0"
         ]
 
 (* Transition.begin_transition () should not trigger a state change when old_data and new_data are the same (either Hidden/Hidden or Visible old_url/Visible new_url where old_url = new_url). *)
@@ -186,7 +195,7 @@ let private restore_saved_state
 - Since we are not running a command, we set is_notify_transition_complete to false.
 (end)
 *)
-    do complete_transition 0<runner_queue_item_id> false saved_state
+    do complete_transition None false saved_state
 
 (* Container component *)
 
