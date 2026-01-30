@@ -48,9 +48,9 @@ type Image_Map_State =
 
 type I_Image_Map =
 (* new_data, transition_time *)
-    abstract member fade_in : Image_Map_Data -> Transition_Time -> int<runner_queue_item_id> -> unit
+    abstract member fade_in : Image_Map_Data -> Transition_Time -> int<command_queue_item_id> -> unit
 (* transition_time *)
-    abstract member fade_out : Transition_Time -> int<runner_queue_item_id> -> unit
+    abstract member fade_out : Transition_Time -> int<command_queue_item_id> -> unit
 (*
     abstract member show : Image_Map_Data -> bool -> int<runner_queue_item_id> option -> unit
     abstract member hide : bool -> int<runner_queue_item_id> option -> unit
@@ -186,7 +186,7 @@ let private restore_saved_state
 [<ReactComponent>]
 let Image_Map
     (props : {| expose : IRefValue<I_Image_Map> |},
-    notify_transition_complete : int<runner_queue_item_id> -> unit,
+    notify_transition_complete : int<command_queue_item_id> -> unit,
     notify_image_map_selection : string -> int -> unit)
     : ReactElement =
 
@@ -216,13 +216,13 @@ let Image_Map
                 member _.fade_in
                     (new_data : Image_Map_Data)
                     (transition_time : Transition_Time)
-                    (command_queue_item_id : int<runner_queue_item_id>)
+                    (command_queue_item_id : int<command_queue_item_id>)
                     : unit =
                     begin_transition set_state notify_transition_complete state_ref (Visible new_data) transition_time Fade command_queue_item_id
 
                 member _.fade_out
                     (transition_time : Transition_Time)
-                    (command_queue_item_id : int<runner_queue_item_id>)
+                    (command_queue_item_id : int<command_queue_item_id>)
                     : unit =
                     begin_transition set_state notify_transition_complete state_ref Hidden transition_time Fade command_queue_item_id
 

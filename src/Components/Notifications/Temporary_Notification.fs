@@ -21,7 +21,7 @@ let private error : error_function = error log_module_name
 
 type Notification_Transition_Type = Fade
 
-type Temporary_Notifications_Configuration = {
+type Notifications_Configuration = {
     display_time : Temporary_Notification_Display_Time
     transition_time : Transition_Time
 }
@@ -44,32 +44,34 @@ type Notification_State =
 
 type I_Temporary_Notification =
     abstract member show : Notification_Data_2 -> unit
-    abstract member set_configuration : Temporary_Notifications_Configuration -> unit
+    abstract member set_configuration : Notifications_Configuration -> unit
 
 (* Consts *)
 
 let max_temporary_notification_display_time = 30<seconds>
 let min_temporary_notification_display_time = 1<seconds>
-let max_temporary_notification_transition_time = 5<seconds>
-let min_temporary_notification_transition_time = 0<seconds>
+let max_notification_transition_time = 5<seconds>
+let min_notification_transition_time = 0<seconds>
 
-let private notify_fade_in_complete = 0<runner_queue_item_id>
-let private notify_fade_out_complete = 1<runner_queue_item_id>
+let private notify_fade_in_complete = 0<command_queue_item_id>
+let private notify_fade_out_complete = 1<command_queue_item_id>
 
 (* Main functions - rendering *)
 
-let private view_idle_visible
+let view_idle_visible
     (data : Notification_Data_2)
+    (class_name : string)
     : ReactElement =
 
     Html.label [
         prop.key data.text
-        prop.className "notification"
+        prop.className class_name
         prop.text data.text
     ]
 
 [<ReactComponent>]
 let Fade_Label (
+    class_name : string,
     data : Notification_Data_2,
     initial_value : string,
     final_value : string,
@@ -85,9 +87,18 @@ let Fade_Label (
 
     Html.label [
         prop.key data.text
-        prop.className "notification"
+        prop.className class_name
         prop.text data.text
         prop.style [
+(* TODO1 #notification Multiline doesn't work. We need to replace \n with Html.br [] or dynamically create grid cells.
+    - Also trim white space from each line.
+*)
+(* TODO1 #notification We might need to re-add this.
+    - If so, add to view_idle_visible as well.
+*)
+(*
+            style.width (length.em (data.text.Length + 1))
+*)
             style.custom ("opacity", opacity)
             style.custom ("transition", $"opacity {transition_time}s ease-in-out")
         ]
@@ -98,30 +109,23 @@ let Fade_Label (
 
 let private view
     (fade_state : IRefValue<Transition_State<Notification_State, Notification_Transition_Type>>)
-    (notify : int<runner_queue_item_id> -> unit)
+    (notify : int<command_queue_item_id> -> unit)
     : ReactElement =
+
+    let class_name = "temporary_notification_label"
 
     Html.div [
         match fade_state.current with
         | Idle Hidden -> Html.none
-        | Idle (Visible data) -> view_idle_visible data
+        | Idle (Visible data) -> view_idle_visible data class_name
         | In_Transition transition_data ->
             match transition_data.old_data, transition_data.new_data with
 
             | Hidden, Visible data ->
-                Fade_Label (data, "0.0", "1.0",  transition_data.transition_time, (fun () -> notify notify_fade_in_complete))
+                Fade_Label (class_name, data, "0.0", "1.0", transition_data.transition_time, (fun () -> notify notify_fade_in_complete))
 
             | Visible data, Hidden ->
-                Fade_Label (data, "1.0", "0.0", transition_data.transition_time, (fun () -> notify notify_fade_out_complete))
-
-// TODO1 This is not used yet. We want to use it for permanent notification. Might not be needed here though. Permanent notification can have its own view function.
-(*
-            | Visible old_data, Visible new_data ->
-                yield! [
-                    Fade_Label (old_data, "1.0", "0.0", transition_data.transition_time, notify)
-                    Fade_Label (new_data, "0.0", "1.0", transition_data.transition_time, notify)
-                ]
-*)
+                Fade_Label (class_name, data, "1.0", "0.0", transition_data.transition_time, (fun () -> notify notify_fade_out_complete))
 
             | _ -> error "view" "Called with unexpected transition data." ["transition_data", transition_data] |> invalidOp
     ]
@@ -131,10 +135,10 @@ let private view
 let private handle_fade_in_or_fade_out_complete
     (fade_state_ref : IRefValue<Transition_State<Notification_State, Notification_Transition_Type>>)
     (set_fade_state : Transition_State<Notification_State, Notification_Transition_Type> -> unit)
-    (configuration : IRefValue<Temporary_Notifications_Configuration>)
+    (configuration : IRefValue<Notifications_Configuration>)
     (notify_queue : unit -> unit)
 (* This is not a valid Runner_Queue item ID. A component that supports fade transitions typically notifies Runner_Queue when a transition is complete, so Runner_Queue can run the next command. In this case, we have the Temporary_Notification component notify the Temporary_Notifications_Queue instead. *)
-    (fade_in_or_fade_out : int<runner_queue_item_id>)
+    (fade_in_or_fade_out : int<command_queue_item_id>)
     : unit =
 
     if notify_fade_in_complete = fade_in_or_fade_out then
@@ -145,7 +149,7 @@ let private handle_fade_in_or_fade_out_complete
 
         set_fade_state <| Idle new_data
 
-// TODO1 Add timeout function handles to cancel notifications.
+// TODO1 #notification Add timeout function handles to cancel notifications.
 
         window.setTimeout ((fun () ->
             set_fade_state <| In_Transition {
@@ -170,7 +174,7 @@ let private handle_fade_in_or_fade_out_complete
 let Temporary_Notification_Component
     (props : {| expose : IRefValue<I_Temporary_Notification> |},
     notify_queue : unit -> unit,
-    initial_configuration : Temporary_Notifications_Configuration
+    initial_configuration : Notifications_Configuration
     )
     : ReactElement =
 
@@ -211,7 +215,7 @@ let Temporary_Notification_Component
                         command_queue_item_id = notify_fade_in_complete
                     }
 
-                member _.set_configuration (configuration : Temporary_Notifications_Configuration) : unit =
+                member _.set_configuration (configuration : Notifications_Configuration) : unit =
                     do configuration_ref.current <- configuration
         }
     )

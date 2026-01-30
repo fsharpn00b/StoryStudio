@@ -38,14 +38,14 @@ type Transition_Data<'data_type, 'transition_type> = {
     new_data : 'data_type
     transition_type : 'transition_type
     transition_time : Transition_Time
-    command_queue_item_id : int<runner_queue_item_id>
+    command_queue_item_id : int<command_queue_item_id>
 }
 
 type Transition_State<'data_type, 'transition_type> =
     | Idle of 'data_type
     | In_Transition of Transition_Data<'data_type, 'transition_type>
 
-type Complete_Transition_Func<'data_type> = int<runner_queue_item_id> option -> bool -> 'data_type -> unit
+type Complete_Transition_Func<'data_type> = int<command_queue_item_id> option -> bool -> 'data_type -> unit
 type Set_State_Func<'data_type, 'transition_type> = Transition_State<'data_type, 'transition_type> -> unit
 
 (* Functions *)
@@ -69,12 +69,12 @@ let force_complete_transition
 
 let begin_transition
     (set_state : Set_State_Func<'data_type, 'transition_type>)
-    (notify_transition_complete : int<runner_queue_item_id> -> unit)
+    (notify_transition_complete : int<command_queue_item_id> -> unit)
     (state : IRefValue<Transition_State<'data_type, 'transition_type>>)
     (new_data : 'data_type)
     (transition_time : Transition_Time)
     (transition_type : 'transition_type)
-    (command_queue_item_id : int<runner_queue_item_id>)
+    (command_queue_item_id : int<command_queue_item_id>)
     : unit =
 
     match state.current with
@@ -104,8 +104,8 @@ Previously, if this method was called during a transition, we would skip the tra
 
 let complete_transition
     (set_state : Set_State_Func<'data_type, 'transition_type>)
-    (notify_transition_complete : int<runner_queue_item_id> -> unit)
-    (command_queue_item_id_1 : int<runner_queue_item_id> option)
+    (notify_transition_complete : int<command_queue_item_id> -> unit)
+    (command_queue_item_id_1 : int<command_queue_item_id> option)
     (is_notify_transition_complete : bool)
     (data : 'data_type)
     : unit =
@@ -162,6 +162,7 @@ let get_transitionable_image
     (additional_styles : (string * string) list)
     (transition_property_name : string)
     (transition_time : Transition_Time)
+(* This function exists so we can essentially close over the Transitionable_Image constructor for all arguments up to this point. *)
     (handle_transition_end : unit -> unit)
     (url: string)
     (transition_property_initial_value : string)

@@ -1,12 +1,50 @@
+/* See
+https://stackoverflow.com/a/58360992
+*/
+
 #notifications_container {
   position: absolute;
-  top: 0rem;
-  left: 0rem;
-  background: (0, 0, 0, 0.4);
-  backdrop-filter: blur(10px);          /* Frosted glass effect */
-  -webkit-backdrop-filter: blur(10px);  /* Safari support */
+  top: 0;
+  left: 0;
+
+  justify-items: start;
+
+/* TODO1 #notification See if we can size this to the contents of each individual label. */
+  display: grid;
+/* 2 rows, both sized automatically. */
+  grid-template-rows: auto auto;
+/* 1 column, taking up all available width. */
+  grid-template-columns: 1fr;
+
+  background: rgba(0, 0, 0, 0.4);
+  /* Frosted glass effect */
+  backdrop-filter: blur(10px);
+  /* Safari support */
+  -webkit-backdrop-filter: blur(10px);
 }
 
-.notification {
+#permanent_notification_container {
+  grid-row: 1;
+  grid-column: 1;
+
+/* Also use a grid here, so we can put multiple labels in the same cell to superimpose them. position: absolute does not work. */
+  display: grid;
+}
+
+.permanent_notification_label {
+/* Put each instance of this class in row 1, column 1, superimposing if needed. */
+  grid-row: 1;
+  grid-column: 1;
+  width: 100%;
+
+  padding: 0.25rem 1rem;
+}
+
+#temporary_notification_container {
+  grid-row: 2;
+  grid-column: 1;
+}
+
+.temporary_notification_label {
   padding: 0.25rem 1rem;
 }

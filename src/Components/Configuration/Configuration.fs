@@ -42,7 +42,7 @@ type Runner_Configuration = {
     background_configuration : Background_Configuration
     characters_configuration : Characters_Configuration
     dialogue_box_configuration : Dialogue_Box_Configuration
-    temporary_notifications_configuration : Temporary_Notifications_Configuration
+    temporary_notifications_configuration : Notifications_Configuration
     key_bindings_configuration : Key_Bindings_Configuration
 }
 
@@ -126,8 +126,8 @@ let private update_configuration
     match Int32.TryParse new_notification_transition_time_value_1.value with
     | true, new_value_2 ->
         let new_value_3 =
-            if new_value_2 < int min_temporary_notification_transition_time then int min_temporary_notification_transition_time
-            elif new_value_2 > int max_temporary_notification_transition_time then int max_temporary_notification_transition_time
+            if new_value_2 < int min_notification_transition_time then int min_notification_transition_time
+            elif new_value_2 > int max_notification_transition_time then int max_notification_transition_time
             else new_value_2
 
         do configuration.current <- { configuration.current with temporary_notifications_configuration = { configuration.current.temporary_notifications_configuration with transition_time = new_value_3 |> float |> LanguagePrimitives.FloatWithMeasure } }
@@ -207,7 +207,7 @@ let private view
                                 ]
 
                                 Html.label [
-                                    prop.text $"Notification fade in/fade out time (seconds, minimum {int min_temporary_notification_transition_time}, maximium {int max_temporary_notification_transition_time}): "
+                                    prop.text $"Notification fade in/fade out time (seconds, minimum {int min_notification_transition_time}, maximium {int max_notification_transition_time}): "
                                 ]
                                 Html.input [
                                     prop.id "txt_notification_transition_time"

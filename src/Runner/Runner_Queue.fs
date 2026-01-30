@@ -26,7 +26,7 @@ let private error : error_function = error debug_module_name
 
 (* Consts *)
 
-let initial_queue_id = 0<runner_queue_item_id>
+let initial_queue_id = 0<command_queue_item_id>
 
 (* Functions - helpers *)
 
@@ -69,7 +69,7 @@ We set autosave here because it can be set by commands with either type of behav
             components_used_by_command = command_data.components_used
         })
         next_command_data = {
-            next_command_queue_item_id = queue_data.next_command_data.next_command_queue_item_id + 1<runner_queue_item_id>
+            next_command_queue_item_id = queue_data.next_command_data.next_command_queue_item_id + 1<command_queue_item_id>
             next_command_scene_id = command_data.next_command_scene_id
             next_command_id = command_data.next_command_id
         }

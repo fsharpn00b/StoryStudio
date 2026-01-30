@@ -37,7 +37,7 @@ let private default_characters_configuration : Characters_Configuration = {
 let private default_dialogue_box_configuration : Dialogue_Box_Configuration = {
     typing_speed = 0<milliseconds>
 }
-let private default_temporary_notifications_configuration : Temporary_Notifications_Configuration = {
+let private default_temporary_notifications_configuration : Notifications_Configuration = {
     display_time = 5.0<seconds>
     transition_time = 1.0<seconds>
 }

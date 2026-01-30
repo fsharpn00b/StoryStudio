@@ -46,7 +46,7 @@ let Character
     (props : {| expose : IRefValue<I_Character> |},
     character : Character_Input,
     character_id : int<character_id>,
-    notify_transition_complete : int<runner_queue_item_id> -> unit)
+    notify_transition_complete : int<command_queue_item_id> -> unit)
     : ReactElement =
 
 (* State *)
@@ -71,7 +71,7 @@ Height is set in the character definition file and not changed afterward. It is 
                     (new_url : string)
                     (position : int<percent>)
                     (transition_time : Transition_Time)
-                    (command_queue_item_id : int<runner_queue_item_id>)
+                    (command_queue_item_id : int<command_queue_item_id>)
                     : unit =
                     
                     begin_transition
@@ -89,7 +89,7 @@ Height is set in the character definition file and not changed afterward. It is 
 
                 member _.fade_out
                     (transition_time : Transition_Time)
-                    (command_queue_item_id : int<runner_queue_item_id>)
+                    (command_queue_item_id : int<command_queue_item_id>)
                     : unit =
 
                     begin_transition
@@ -104,7 +104,7 @@ Height is set in the character definition file and not changed afterward. It is 
                 member _.cross_fade
                     (new_url : string)
                     (transition_time : Transition_Time)
-                    (command_queue_item_id : int<runner_queue_item_id>)
+                    (command_queue_item_id : int<command_queue_item_id>)
                     : unit =
 
 (* Character position is stored in the fade state (if the state is visible) so we need to extract it. *)
@@ -138,7 +138,7 @@ Height is set in the character definition file and not changed afterward. It is 
                     (direction : Character_Move_Direction)
                     (position : int<percent>)
                     (transition_time : Transition_Time)
-                    (command_queue_item_id : int<runner_queue_item_id>)
+                    (command_queue_item_id : int<command_queue_item_id>)
                     : unit =
 
                     begin_transition
@@ -160,7 +160,7 @@ Height is set in the character definition file and not changed afterward. It is 
                 member _.move_out
                     (direction : Character_Move_Direction)
                     (transition_time : Transition_Time)
-                    (command_queue_item_id : int<runner_queue_item_id>)
+                    (command_queue_item_id : int<command_queue_item_id>)
                     : unit =
 
                     begin_transition

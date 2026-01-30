@@ -42,7 +42,7 @@ On the other hand, a given component should only expect to have to process one m
 let Dialogue_Box (
     props : {| expose : IRefValue<I_Dialogue_Box> |},
     configuration : Dialogue_Box_Configuration,
-    notify_transition_complete : int<runner_queue_item_id> -> unit)
+    notify_transition_complete : int<command_queue_item_id> -> unit)
     : ReactElement =
 
 (* State *)
@@ -85,18 +85,18 @@ In this case, we do not need any dependencies. We can just run update whenever a
             new I_Dialogue_Box with
                 member _.show
                     (is_notify_transition_complete : bool)
-                    (command_queue_item_id : int<runner_queue_item_id> option)
+                    (command_queue_item_id : int<command_queue_item_id> option)
                     : unit =
                     complete_fade_transition_2 command_queue_item_id is_notify_transition_complete Visible
 
                 member _.hide
                     (is_notify_transition_complete : bool)
-                    (command_queue_item_id : int<runner_queue_item_id> option)
+                    (command_queue_item_id : int<command_queue_item_id> option)
                     : unit =
                     complete_fade_transition_2 command_queue_item_id is_notify_transition_complete Hidden
 
                 member _.is_visible () : bool = is_visible fade_state_ref
-                member _.type_dialogue (character : string) (text : string) (command_queue_item_id : int<runner_queue_item_id>) = type_dialogue typing_state_ref configuration complete_fade_transition_2 typing_dispatch reveal_next_timeout_function_handle character text command_queue_item_id
+                member _.type_dialogue (character : string) (text : string) (command_queue_item_id : int<command_queue_item_id>) = type_dialogue typing_state_ref configuration complete_fade_transition_2 typing_dispatch reveal_next_timeout_function_handle character text command_queue_item_id
                 member _.set_configuration (new_configuration : Dialogue_Box_Configuration) = set_configuration configuration new_configuration
                 member _.get_configuration () : Dialogue_Box_Configuration = configuration.current
                 member _.get_state () = get_state typing_state_ref fade_state_ref

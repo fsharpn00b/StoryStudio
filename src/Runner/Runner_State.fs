@@ -5,7 +5,7 @@ open Browser.Dom
 // IRefValue
 open Feliz
 
-open JavaScript_Interop
+open JavaScript_Interop_2
 open Log
 open Runner_Types
 

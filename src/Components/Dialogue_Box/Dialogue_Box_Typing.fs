@@ -29,8 +29,8 @@ let mutable private debug_state_update_counter = 1
 (* Helper functions *)
 
 let private update_continue
-    (notify_transition_complete : int<runner_queue_item_id> -> unit)
-    (command_queue_item_id : int<runner_queue_item_id>)
+    (notify_transition_complete : int<command_queue_item_id> -> unit)
+    (command_queue_item_id : int<command_queue_item_id>)
     : Cmd<'a> =
 
     do notify_transition_complete command_queue_item_id
@@ -42,7 +42,7 @@ let private reveal_next
     (state_1 : Typing_State)
     (reveal_next_timeout_function_handle : IRefValue<float option>)
     (configuration : IRefValue<Dialogue_Box_Configuration>)
-    (command_queue_item_id : int<runner_queue_item_id>)
+    (command_queue_item_id : int<command_queue_item_id>)
     : Typing_State * Cmd<Typing_Message> =
 
     #if debug
@@ -88,7 +88,7 @@ x Add a new message, Notify_Complete, that does not change the state or cancel t
 let update_typing_state
     (configuration : IRefValue<Dialogue_Box_Configuration>)
     (reveal_next_timeout_function_handle : IRefValue<float option>)
-    (notify_transition_complete : int<runner_queue_item_id> -> unit)
+    (notify_transition_complete : int<command_queue_item_id> -> unit)
     (message : Typing_Message)
     (state_1 : Typing_State)
     : Typing_State * Cmd<Typing_Message> =
@@ -114,7 +114,7 @@ let update_typing_state
         }
         reveal_next state_2 reveal_next_timeout_function_handle configuration data.command_queue_item_id
 
-    | Reveal_Next (command_queue_item_id : int<runner_queue_item_id>) ->
+    | Reveal_Next (command_queue_item_id : int<command_queue_item_id>) ->
         reveal_next state_1 reveal_next_timeout_function_handle configuration command_queue_item_id
 
     | Force_Complete_Typing ->
@@ -149,7 +149,7 @@ We also do not dispatch the Notify_Transition_Complete message here because we m
 (* This is dispatched by set_state if the saved dialogue was empty. So, again, any running transition should already have been canceled. *)
     | Set_Empty -> Empty, Cmd.none
 
-    | Dialogue_Box_Types.Notify_Transition_Complete (command_queue_item_id : int<runner_queue_item_id>) -> state_1, update_continue notify_transition_complete command_queue_item_id
+    | Dialogue_Box_Types.Notify_Transition_Complete (command_queue_item_id : int<command_queue_item_id>) -> state_1, update_continue notify_transition_complete command_queue_item_id
 
 (* TODO2 This component has a conflict between between the typing state and the view state.
 - Consider whether entering a typing state of Typing or Idle should change the fade state from a non-visible one to a visible one. But what if the player wanted to hide the UI? We should probably leave it to the author to show/hide the dialogue box (for example, when changing scenes).
@@ -162,7 +162,7 @@ let type_dialogue
     (reveal_next_timeout_function_handle : IRefValue<float option>)
     (character : string)
     (text : string)
-    (command_queue_item_id : int<runner_queue_item_id>)
+    (command_queue_item_id : int<command_queue_item_id>)
     : unit =
 
     let debug_data : (string * obj) list = ["state", state; "character", character; "text", text; "reveal_next_timeout_function_handle", reveal_next_timeout_function_handle]

@@ -51,11 +51,11 @@ type Background_Cross_Fade_Data = {
 
 type I_Background =
 (* new_data, transition_time *)
-    abstract member fade_in : string -> Transition_Time -> int<runner_queue_item_id> -> unit
+    abstract member fade_in : string -> Transition_Time -> int<command_queue_item_id> -> unit
 (* transition_time *)
-    abstract member fade_out : Transition_Time -> int<runner_queue_item_id> -> unit
+    abstract member fade_out : Transition_Time -> int<command_queue_item_id> -> unit
 (* new_data, transition_time *)
-    abstract member cross_fade : string -> Transition_Time -> int<runner_queue_item_id> -> unit
+    abstract member cross_fade : string -> Transition_Time -> int<command_queue_item_id> -> unit
     abstract member get_state : unit -> Background_State
     abstract member set_state : Background_State -> unit
     abstract member set_configuration : Background_Configuration -> unit
@@ -203,7 +203,7 @@ let private restore_saved_state
 let Background
     (props : {| expose : IRefValue<I_Background> |},
     configuration : Background_Configuration,
-    notify_transition_complete : int<runner_queue_item_id> -> unit)
+    notify_transition_complete : int<command_queue_item_id> -> unit)
     : ReactElement =
 
 (* State *)
@@ -224,6 +224,7 @@ let Background
         [| box state |]
     )
     #endif
+(* We need this because the React.useRef that initially links state_ref to the value of state runs only once. This runs every time the component is rendered. *)
     do state_ref.current <- state
 
     let complete_transition_2 = complete_transition set_state notify_transition_complete
@@ -238,20 +239,20 @@ let Background
                 member _.fade_in
                     (new_url : string)
                     (transition_time : Transition_Time)
-                    (command_queue_item_id : int<runner_queue_item_id>)
+                    (command_queue_item_id : int<command_queue_item_id>)
                     : unit =
                     begin_transition set_state notify_transition_complete state_ref (Visible new_url) transition_time Fade command_queue_item_id
 
                 member _.fade_out
                     (transition_time : Transition_Time)
-                    (command_queue_item_id : int<runner_queue_item_id>)
+                    (command_queue_item_id : int<command_queue_item_id>)
                     : unit =
                     begin_transition set_state notify_transition_complete state_ref Hidden transition_time Fade command_queue_item_id
 
                 member _.cross_fade
                     (new_url : string)
                     (transition_time : Transition_Time)
-                    (command_queue_item_id : int<runner_queue_item_id>)
+                    (command_queue_item_id : int<command_queue_item_id>)
                     : unit =
                     begin_transition set_state notify_transition_complete state_ref (Visible new_url) transition_time Fade command_queue_item_id
 

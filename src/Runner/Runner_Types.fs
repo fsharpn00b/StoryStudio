@@ -12,7 +12,7 @@ open Command_Types
 open Configuration
 open Dialogue_Box_Types
 open Image_Map
-open JavaScript_Interop
+open JavaScript_Interop_1
 open Key_Bindings
 open Menu
 open Music
@@ -62,7 +62,7 @@ type Runner_Saveable_State_Component_Data = {
 }
 
 type Runner_Saveable_State_Running_Data = {
-    next_command_queue_item_id : int<runner_queue_item_id>
+    next_command_queue_item_id : int<command_queue_item_id>
     scene_id : int<scene_id>
     next_command_id : int<command_id> option
 (* We clear the history when we load a saved game. This determines whether, when we load a saved game, we re-add the current state to the history. *)
@@ -94,7 +94,7 @@ type Runner_Component_Names =
     | Image_Map
 
 type Runner_Command_Data = {
-    command : (int<runner_queue_item_id> -> unit) option
+    command : (int<command_queue_item_id> -> unit) option
     debug_data : string
     behavior : Command_Behavior
     components_used : Runner_Component_Names Set
@@ -104,12 +104,12 @@ type Runner_Command_Data = {
 
 type Runner_Queue_Item = {
     command_data : Runner_Command_Data
-    order_in_queue : int<runner_queue_order>
+    order_in_queue : int<command_queue_order>
     components_used_by_command : Runner_Component_Names Set
 }
 
 type Runner_Queue_Next_Command_Data = {
-    next_command_queue_item_id : int<runner_queue_item_id>
+    next_command_queue_item_id : int<command_queue_item_id>
     next_command_scene_id : int<scene_id>
     next_command_id : int<command_id> option
 }
@@ -126,7 +126,7 @@ See also notes in Runner_Transition.get_notify_menu_selection ().
     menu_variables : Menu_Variables
 }
 
-type Runner_Queue_Command_Map = Map<int<runner_queue_item_id>, Runner_Queue_Item>
+type Runner_Queue_Command_Map = Map<int<command_queue_item_id>, Runner_Queue_Item>
 
 type Runner_Queue_State_Loading_Data = {
     commands : Runner_Queue_Command_Map

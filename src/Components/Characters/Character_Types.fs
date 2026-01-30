@@ -122,15 +122,15 @@ type I_Character =
     abstract member get_id : unit -> int<character_id>
     abstract member get_full_name : unit -> string
 (* url, position, transition_time, command_queue_item_id *)
-    abstract member fade_in : string -> int<percent> -> Transition_Time -> int<runner_queue_item_id> -> unit
+    abstract member fade_in : string -> int<percent> -> Transition_Time -> int<command_queue_item_id> -> unit
 (* transition_time, command_queue_item_id *)
-    abstract member fade_out : Transition_Time -> int<runner_queue_item_id> -> unit
+    abstract member fade_out : Transition_Time -> int<command_queue_item_id> -> unit
 (* url, transition_time, command_queue_item_id *)
-    abstract member cross_fade : string -> Transition_Time -> int<runner_queue_item_id> -> unit
+    abstract member cross_fade : string -> Transition_Time -> int<command_queue_item_id> -> unit
 (* url, direction, position, transition_time, command_queue_item_id *)
-    abstract member move_in : string -> Character_Move_Direction -> int<percent> -> Transition_Time -> int<runner_queue_item_id> -> unit
+    abstract member move_in : string -> Character_Move_Direction -> int<percent> -> Transition_Time -> int<command_queue_item_id> -> unit
 (* direction, transition_time, command_queue_item_id *)
-    abstract member move_out : Character_Move_Direction -> Transition_Time -> int<runner_queue_item_id> -> unit
+    abstract member move_out : Character_Move_Direction -> Transition_Time -> int<command_queue_item_id> -> unit
     abstract member get_state : unit -> Character_State
     abstract member set_state : Character_State -> unit
 (* This is for debugging. *)
@@ -144,17 +144,17 @@ type I_Character =
 
 type I_Characters =
 (* character_short_name, url, position, transition_time, command_queue_item_id *)
-    abstract member fade_in : string -> string -> int<percent> -> Transition_Time -> int<runner_queue_item_id> -> unit
+    abstract member fade_in : string -> string -> int<percent> -> Transition_Time -> int<command_queue_item_id> -> unit
 (* character_short_name, transition_time, command_queue_item_id *)
-    abstract member fade_out : string -> Transition_Time -> int<runner_queue_item_id> -> unit
+    abstract member fade_out : string -> Transition_Time -> int<command_queue_item_id> -> unit
 (* transition_time, command_queue_item_id *)
-    abstract member fade_out_all : Transition_Time -> int<runner_queue_item_id> -> unit
+    abstract member fade_out_all : Transition_Time -> int<command_queue_item_id> -> unit
 (* character_short_name, url, transition_time, command_queue_item_id *)
-    abstract member cross_fade : string -> string -> Transition_Time -> int<runner_queue_item_id> -> unit
+    abstract member cross_fade : string -> string -> Transition_Time -> int<command_queue_item_id> -> unit
 (* character_short_name, url, direction, position, transition_time, command_queue_item_id *)
-    abstract member move_in : string -> string -> Character_Move_Direction -> int<percent> -> Transition_Time -> int<runner_queue_item_id> -> unit
+    abstract member move_in : string -> string -> Character_Move_Direction -> int<percent> -> Transition_Time -> int<command_queue_item_id> -> unit
 (* character_short_name, direction, transition_time, command_queue_item_id *)
-    abstract member move_out : string -> Character_Move_Direction -> Transition_Time -> int<runner_queue_item_id> -> unit
+    abstract member move_out : string -> Character_Move_Direction -> Transition_Time -> int<command_queue_item_id> -> unit
     abstract member get_state : unit -> Characters_Saveable_State
     abstract member set_state : Characters_Saveable_State -> unit
     abstract member set_configuration : Characters_Configuration -> unit

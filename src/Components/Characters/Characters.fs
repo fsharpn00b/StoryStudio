@@ -69,11 +69,11 @@ let private force_complete_transition
 let private get_notify_character_transition_complete
     (character_id : int<character_id>)
     (characters_in_transition : IRefValue<int<character_id> Set>)
-    (notify_transition_complete : int<runner_queue_item_id> -> unit)
-    : int<runner_queue_item_id> -> unit =
+    (notify_transition_complete : int<command_queue_item_id> -> unit)
+    : int<command_queue_item_id> -> unit =
 
     lock (remove_character_transition_lock :> obj) (fun () ->
-        fun (command_queue_item_id : int<runner_queue_item_id>) ->
+        fun (command_queue_item_id : int<command_queue_item_id>) ->
             if characters_in_transition.current.Contains character_id then
                 characters_in_transition.current <- characters_in_transition.current.Remove character_id
                 if Set.isEmpty characters_in_transition.current then
@@ -118,7 +118,7 @@ let private fade_in
     (url : string)
     (position : int<percent>)
     (transition_time : Transition_Time)
-    (command_queue_item_id : int<runner_queue_item_id>)
+    (command_queue_item_id : int<command_queue_item_id>)
     : unit =
 
     #if debug
@@ -138,7 +138,7 @@ let private fade_out
     (configuration : Characters_Configuration)
     (character_short_name : string)
     (transition_time : Transition_Time)
-    (command_queue_item_id : int<runner_queue_item_id>)
+    (command_queue_item_id : int<command_queue_item_id>)
     : unit =
 
     #if debug
@@ -159,7 +159,7 @@ let private cross_fade
     (character_short_name : string)
     (url : string)
     (transition_time : Transition_Time)
-    (command_queue_item_id : int<runner_queue_item_id>)
+    (command_queue_item_id : int<command_queue_item_id>)
     : unit =
 
     #if debug
@@ -177,7 +177,7 @@ let private fade_out_all
     (characters : IRefValue<Character_Map>)
     (characters_in_transition : IRefValue<int<character_id> Set>)
     (transition_time : Transition_Time)
-    (command_queue_item_id : int<runner_queue_item_id>)
+    (command_queue_item_id : int<command_queue_item_id>)
     : unit =
 
     #if debug
@@ -200,7 +200,7 @@ let private move_in
     (direction : Character_Move_Direction)
     (position : int<percent>)
     (transition_time : Transition_Time)
-    (command_queue_item_id : int<runner_queue_item_id>)
+    (command_queue_item_id : int<command_queue_item_id>)
     : unit =
 
     #if debug
@@ -221,7 +221,7 @@ let private move_out
     (character_short_name : string)
     (direction : Character_Move_Direction)
     (transition_time : Transition_Time)
-    (command_queue_item_id : int<runner_queue_item_id>)
+    (command_queue_item_id : int<command_queue_item_id>)
     : unit =
 
     #if debug
@@ -241,7 +241,7 @@ let private move_out
 let Characters
     (props : {| expose : IRefValue<I_Characters> |},
     characters_configuration : Characters_Configuration,
-    notify_transition_complete : int<runner_queue_item_id> -> unit,
+    notify_transition_complete : int<command_queue_item_id> -> unit,
 (* The character list is separate from the configuration because the former is set by the player, and can be updated, whereas the character list is set by the author, and cannot be updated. *)
 (* Duplicate character short names should already have been detected by Scripts.get_character_inputs (). *)
     characters_1 : Character_Input_Map)
@@ -283,25 +283,25 @@ let Characters
                     (url : string)
                     (position : int<percent>)
                     (transition_time : Transition_Time)
-                    (command_queue_item_id : int<runner_queue_item_id>)
+                    (command_queue_item_id : int<command_queue_item_id>)
                     : unit =
                     fade_in characters_2 characters_in_transition configuration.current character_short_name url position transition_time command_queue_item_id
                 member _.fade_out
                     (character_short_name : string)
                     (transition_time : Transition_Time)
-                    (command_queue_item_id : int<runner_queue_item_id>)
+                    (command_queue_item_id : int<command_queue_item_id>)
                     : unit =
                     fade_out characters_2 characters_in_transition configuration.current character_short_name transition_time command_queue_item_id
                 member _.cross_fade
                     (character_short_name : string)
                     (url : string)
                     (transition_time : Transition_Time)
-                    (command_queue_item_id : int<runner_queue_item_id>)
+                    (command_queue_item_id : int<command_queue_item_id>)
                     : unit =
                     cross_fade characters_2 characters_in_transition configuration.current character_short_name url transition_time command_queue_item_id                  
                 member _.fade_out_all
                     (transition_time : Transition_Time)
-                    (command_queue_item_id : int<runner_queue_item_id>)
+                    (command_queue_item_id : int<command_queue_item_id>)
                     : unit =
                     fade_out_all characters_2 characters_in_transition transition_time command_queue_item_id
                 member _.move_in
@@ -310,14 +310,14 @@ let Characters
                     (direction : Character_Move_Direction)
                     (position : int<percent>)
                     (transition_time : Transition_Time)
-                    (command_queue_item_id : int<runner_queue_item_id>)
+                    (command_queue_item_id : int<command_queue_item_id>)
                     : unit =
                     move_in characters_2 characters_in_transition configuration.current character_short_name url direction position transition_time command_queue_item_id
                 member _.move_out
                     (character_short_name : string)
                     (direction : Character_Move_Direction)
                     (transition_time : Transition_Time)
-                    (command_queue_item_id : int<runner_queue_item_id>)
+                    (command_queue_item_id : int<command_queue_item_id>)
                     : unit =
                     move_out characters_2 characters_in_transition configuration.current character_short_name direction transition_time command_queue_item_id
                 member _.get_state () : Characters_Saveable_State = get_state characters_2

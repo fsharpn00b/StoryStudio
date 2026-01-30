@@ -9,9 +9,8 @@
     <Compile Include="Misc/Units_Of_Measure.fs" />
     <Compile Include="Misc/Utilities.fs" />
     <Compile Include="Misc/Log.fs" />
+    <Compile Include="JavaScript/JavaScript_Interop_1.fs" />
     <Compile Include="Components/Music/Music.fs" />
-    
-    
     <Compile Include="Components/Transition/Transition.fs" />
     <Compile Include="Components/Background/Background.fs" />
     <Compile Include="Components/Characters/Character_Types.fs" />
@@ -28,6 +27,7 @@
     <Compile Include="Components/Image_Map/Image_Map.fs" />
     <Compile Include="Components/Menu/Menu.fs" />
     <Compile Include="Components/Notifications/Temporary_Notification.fs" />
+    <Compile Include="Components/Notifications/Permanent_Notification_Render.fs" />
     <Compile Include="Components/Notifications/Notifications.fs" />
     <Compile Include="Components/Configuration/Key_Bindings.fs" />
     <Compile Include="Components/Configuration/Configuration.fs" />
@@ -40,7 +40,7 @@
     <Compile Include="Save_Load/Save_Load.fs" />
     <Compile Include="Runner/Scripts.fs" />
     <Compile Include="JavaScript/JavaScript_Parser.fs" />
-    <Compile Include="JavaScript/JavaScript_Interop.fs" />
+    <Compile Include="JavaScript/JavaScript_Interop_2.fs" />
     <Compile Include="Parser/Parser_1_Helpers.fs" />
     <Compile Include="Parser/Parser_1_Grammar.fs" />
     <Compile Include="Parser/Parser_1_Semantics.fs" />

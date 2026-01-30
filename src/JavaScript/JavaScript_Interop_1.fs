@@ -1,4 +1,4 @@
-module JavaScript_Interop
+module JavaScript_Interop_1
 
 // String.Empty
 open System
@@ -9,22 +9,14 @@ open Browser.Dom
 open Fable.Core
 
 open Log
-open Scripts
 
 (* Debug *)
 
-let debug_module_name = "JavaScript_Interop"
+let debug_module_name = "JavaScript_Interop_1"
 
 let private debug : log_function = debug debug_module_name
 let private warn : warn_function = warn debug_module_name
 let private error : error_function = error debug_module_name
-
-(* Types *)
-
-type private TypeScript_Compile_Result = {
-    js_code : string
-    errors : string []
-}
 
 (* TODO1 #future Make it so value can be any type. Including discriminated unions.
 Replace this with a JavaScript_Environment type to which the author can add arbitrary variable definitions.
@@ -34,7 +26,7 @@ type Menu_Variables = Map<string, int>
 (* Functions - JavaScript *)
 
 [<Emit("eval($0)")>]
-let private eval_js (code : string) : obj =
+let eval_js (code : string) : obj =
     try jsNative
     with exn -> error "eval_js" exn.Message ["code", code] |> invalidOp
 
@@ -52,14 +44,6 @@ let private eval_js_string (code : string) : string =
         unbox<string> result
     with exn -> error "eval_js_string" exn.Message ["code", code] |> invalidOp
 
-(* We need to copy the state by value, not by reference. *)
-let get_state_from_js () : obj = eval_js $"JSON.parse(JSON.stringify(window.{game_state_name}));"
-
-[<Emit(set_state_in_js_emit)>]
-let set_state_in_js (code : obj) : unit =
-    try jsNative
-    with exn -> error "set_state_in_js" exn.Message ["code", code] |> invalidOp
-
 let private emit_menu_variables (menu_variables : Menu_Variables) : string =
     (String.Empty, menu_variables) ||> Seq.fold (fun acc kv ->
         $"{acc}var {kv.Key} = {kv.Value};{Environment.NewLine}"
@@ -75,18 +59,13 @@ let eval_js_string_with_menu_variables (code : string) (menu_variables : Menu_Va
     eval_js_string $"{emit_menu_variables menu_variables}{code}"
 
 (* In some cases we must run JavaScript code that might fail. If the JavaScript code fails, eval_js_string returns null, which is a valid value of System.String. We check for that here and return String.Empty instead. *)
-let try_eval_js_string_with_menu_variables (code : string) (menu_variables : Menu_Variables) =
+(* We do not use this for now. *)
+(*
+let try_eval_js_string_with_menu_variables (code : string) (menu_variables : Menu_Variables) : string option =
     let result = eval_js_string $"{emit_menu_variables menu_variables}{code}"
-    if isNull result then String.Empty
-    else result
-
-(* This is for debugging. *)
-let show_js_state () : unit =
-    do
-        console.log "JavaScript state:"
-        console.log (eval_js $"window.{game_state_name};")
-// This also works.
-//    do console.log (eval_js <| $"window.{game_state_name};")
+    if isNull result then None
+    else Some result
+*)
 
 (* Functions - TypeScript *)
 

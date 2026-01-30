@@ -33,7 +33,7 @@ let private remove_transition_2
     (scenes : Scene_Map)
     (runner_component_interfaces : IRefValue<Runner_Component_Interfaces>)
     (queue_data : Runner_Queue_State_Running_Data)
-    (command_queue_item_id : int<runner_queue_item_id>)
+    (command_queue_item_id : int<command_queue_item_id>)
     (command : Runner_Queue_Item)
     : unit =
 
@@ -84,7 +84,7 @@ let remove_transition_1
     (history : IRefValue<Runner_History>)
     (scenes : Scene_Map)
     (runner_component_interfaces : IRefValue<Runner_Component_Interfaces>)
-    (command_queue_item_id : int<runner_queue_item_id>)
+    (command_queue_item_id : int<command_queue_item_id>)
     (component_id : Runner_Component_Names)
     : unit =
 

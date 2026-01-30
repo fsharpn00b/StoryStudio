@@ -36,12 +36,12 @@ type Dialogue_Box_Saveable_State = {
 (* Interfaces *)
 
 type I_Dialogue_Box =
-    abstract member show : bool -> int<runner_queue_item_id> option -> unit
-    abstract member hide : bool -> int<runner_queue_item_id> option -> unit
+    abstract member show : bool -> int<command_queue_item_id> option -> unit
+    abstract member hide : bool -> int<command_queue_item_id> option -> unit
     abstract member is_visible : unit -> bool
     abstract member get_configuration : unit -> Dialogue_Box_Configuration
     abstract member set_configuration : Dialogue_Box_Configuration -> unit
-    abstract member type_dialogue : string -> string -> int<runner_queue_item_id> -> unit
+    abstract member type_dialogue : string -> string -> int<command_queue_item_id> -> unit
     abstract member get_state : unit -> Dialogue_Box_Saveable_State
     abstract member set_state : Dialogue_Box_Saveable_State -> unit
 
@@ -53,7 +53,7 @@ type Typing_State_Data = {
     typing_speed : Dialogue_Box_Typing_Speed
     index : int
     visible_text : string
-    command_queue_item_id : int<runner_queue_item_id>
+    command_queue_item_id : int<command_queue_item_id>
 }
 
 type Typing_State =
@@ -65,14 +65,14 @@ type Begin_Typing_Message_Data = {
     character : string
     text : string
     typing_speed : Dialogue_Box_Typing_Speed
-    command_queue_item_id : int<runner_queue_item_id>
+    command_queue_item_id : int<command_queue_item_id>
 }
 
 type Typing_Message =
     | Begin_Typing of Begin_Typing_Message_Data
-    | Reveal_Next of int<runner_queue_item_id>
+    | Reveal_Next of int<command_queue_item_id>
     | Force_Complete_Typing
 (* Set_Dialogue and Set_Empty do not dispatch Notify_Transition_Complete. See notes in Dialogue_Box_Typing.update_typing_state. *)
     | Set_Dialogue of Dialogue
     | Set_Empty
-    | Notify_Transition_Complete of int<runner_queue_item_id>
+    | Notify_Transition_Complete of int<command_queue_item_id>

@@ -18,6 +18,7 @@ fadein day 0.0
 fadein night 0.0
 */
 
+// TODO0 #transition Running this twice causes the status to disappear.
 // Display status (permanent notification).
 status ${window.is_lost ()} endstatus
 
@@ -67,7 +68,8 @@ if 1 === direction
 // If the player goes left, they get lost.
     js window.state.player_state.is_lost = true;
 /* TODO2 #parsing In case the author forgets to close the notify block, we might warn them (with alert = false) if we find known commands inside it. */
-    notify You are now lost. endnotify
+    notify You are now lost.
+    This is a test of multi-line status updates. endnotify
     notify You can find your way out of the woods by going right instead of left. endnotify
 // Fade out all characters and background over 2 seconds.
     fadeoutall 2.0

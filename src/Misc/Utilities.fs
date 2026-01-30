@@ -25,6 +25,7 @@ let dialogue_box_character_name_z_index = 3
 let image_map_z_index = 4
 let menu_z_index = 4
 let image_map_hotspot_z_index = 5
+// TODO1 #notification Notifications can obstruct image map hotspots. Let them pass through mouse clicks.
 let notifications_z_index = 6
 let configuration_z_index = 7
 let save_load_screen_z_index = 7

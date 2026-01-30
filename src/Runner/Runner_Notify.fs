@@ -41,12 +41,12 @@ let get_notify_transition_complete
     (queue : IRefValue<Runner_Queue>)
     (history : IRefValue<Runner_History>)
     (component_id : Runner_Component_Names)
-    : int<runner_queue_item_id> -> unit =
+    : int<command_queue_item_id> -> unit =
 (* Close over all these parameters so it becomes a unit -> unit that we can pass to UI components.
 We also need to delay the evaluation of this function until runner_component_interfaces is not null. The delayed result of this function is passed to the constructors of these components.
 We can close over queue because it is a reference.
 *)
-    fun (command_queue_item_id : int<runner_queue_item_id>) ->
+    fun (command_queue_item_id : int<command_queue_item_id>) ->
 (* If we do not delay here, and a transition is short enough, this notification can set the queue state to Queue_Idle *before* the transition sets it to Queue_Running. As a result, it is not possible to start any more transitions. *)
         do window.setTimeout ((fun () ->
             do remove_transition_1 queue history scenes runner_component_interfaces command_queue_item_id component_id
