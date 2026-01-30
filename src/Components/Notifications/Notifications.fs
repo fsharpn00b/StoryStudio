@@ -124,15 +124,18 @@ let update_permanent_notification
 (* Previously, we called try_eval_js_string_with_menu_variables (). This was because the start script might run JavaScript functions, which would trigger an evaluation of the permanent notification text, which might contain JavaScript expressions with values that were not defined yet. As a result, trying to evalate those expressions would fail. This should not be an issue now. We do not evaluate the permanent notification text until the author first sets it. By that point, they should have defined all JavaScript values they intend to use.
 *)
         let value_2 = eval_js_string_with_menu_variables value_1 menu_variables
+        let new_data = Visible { text = value_2 }
 
-        do set_permanent_notification_data_after_js_eval <| In_Transition {
-            old_data = old_data
-            new_data = Visible { text = value_2 }
-            transition_type = Fade
-            transition_time = configuration_ref.current.transition_time
+(* This comparison is valid because old_data and new_data are type Notification_State, which, in case Visible, contains Notification_Data_2, which contains the notification text after evaluating any JavaScript expressions in it. *)
+        if old_data <> new_data then
+            do set_permanent_notification_data_after_js_eval <| In_Transition {
+                old_data = old_data
+                new_data = new_data
+                transition_type = Fade
+                transition_time = configuration_ref.current.transition_time
 (* See comments in handle_fade_in_or_fade_out_complete (). *)
-            command_queue_item_id = 0<command_queue_item_id>
-        }
+                command_queue_item_id = 0<command_queue_item_id>
+            }
 
 (* Component *)
 

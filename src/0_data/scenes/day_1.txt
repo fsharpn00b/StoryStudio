@@ -18,7 +18,6 @@ fadein day 0.0
 fadein night 0.0
 */
 
-// TODO0 #transition Running this twice causes the status to disappear.
 // Display status (permanent notification).
 status ${window.is_lost ()} endstatus
 

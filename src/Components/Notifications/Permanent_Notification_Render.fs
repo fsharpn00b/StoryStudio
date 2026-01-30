@@ -46,11 +46,9 @@ let permanent_notification_view
                     prop.children [
                         match permanent_notification_data_ref.current with
 
-                        | Idle (Visible data) -> view_idle_visible data class_name
-
                         | Idle Hidden -> yield! []
 
-                        | In_Transition transition_data when transition_data.old_data = transition_data.new_data -> yield! []
+                        | Idle (Visible data) -> view_idle_visible data class_name
 
                         | In_Transition transition_data ->
 
