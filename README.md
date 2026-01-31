@@ -82,7 +82,7 @@ Story Studio is a visual novel framework written in [F#](https://fsharp.org/) th
 
 # Notes
 
-I wrote Story Studio to have a visual novel framework with better support for finding errors in my scripts at compile time instead of at run time. I previously tried and failed to find a way to do this in Ren'py, as described [https://github.com/fsharpn00b/Snippets/tree/main/renpy](here).
+I wrote Story Studio to have a visual novel framework with better support for finding errors in my scripts at compile time instead of at run time. I previously tried and failed to find a way to do this in Ren'py, as described in [https://github.com/fsharpn00b/Snippets/tree/main/renpy](here).
 
 Development is ongoing as there are more features I want to add.
 

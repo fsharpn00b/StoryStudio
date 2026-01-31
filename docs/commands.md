@@ -15,7 +15,7 @@ Example:
 fadein day 2.0
 ```
 
-Background names and URLs are specified in `[/src/0_data/bgs.txt](https://github.com/fsharpn00b/StoryStudio/blob/main/src/0_data/bgs.txt)`. For example:
+Background names and URLs are specified in [/src/0_data/bgs.txt](https://github.com/fsharpn00b/StoryStudio/blob/main/src/0_data/bgs.txt)`. For example:
 
 ```
 {
@@ -68,7 +68,7 @@ Example:
 fadein l happy 25 1.0
 ```
 
-Character short names, full names, and sprite URLs are specified in `[/src/0_data/chars.txt](https://github.com/fsharpn00b/StoryStudio/blob/main/src/0_data/chars.txt)`. For example:
+Character short names, full names, and sprite URLs are specified in [/src/0_data/chars.txt](https://github.com/fsharpn00b/StoryStudio/blob/main/src/0_data/chars.txt). For example:
 
 ```
 {
@@ -193,7 +193,7 @@ Example:
 play autumn
 ```
 
-Music tracks are specified in `[/src/0_data/music.txt](https://github.com/fsharpn00b/StoryStudio/blob/main/src/0_data/music.txt)`. For example:
+Music tracks are specified in [/src/0_data/music.txt](https://github.com/fsharpn00b/StoryStudio/blob/main/src/0_data/music.txt). For example:
 
 ```
 {
@@ -274,7 +274,7 @@ Notes:
 - An image map must contain at least one item that does not depend on a conditional.
 - As with [Menu](#menu), after the player chooses an image map item, the image map item index of the player's choice is assigned to a variable named after the image map. In the example, if the player chooses the first item, a variable named `direction` is created with the value `1`.
 
-Background names and URLs are specified in `[/src/0_data/bgs.txt](https://github.com/fsharpn00b/StoryStudio/blob/main/src/0_data/bgs.txt)`. For example:
+Background names and URLs are specified in [/src/0_data/bgs.txt](https://github.com/fsharpn00b/StoryStudio/blob/main/src/0_data/bgs.txt). For example:
 
 ```
 {
@@ -299,9 +299,9 @@ jump day_2
 ```
 
 Notes:
-- Scene scripts are in `[/src/0_data/scenes/](https://github.com/fsharpn00b/StoryStudio/tree/main/src/0_data/scenes)`.
+- Scene scripts are in [/src/0_data/scenes/](https://github.com/fsharpn00b/StoryStudio/tree/main/src/0_data/scenes).
 - A scene name is simply the script filename without the `.txt` extension. For example, if you have a script with filename `day_1.txt`, the scene name is `day_1`.
-- The first script to run is always `[start.txt](https://github.com/fsharpn00b/StoryStudio/blob/main/src/0_data/scenes/start.txt)`. In general, you should not jump to this scene.
+- The first script to run is always [start.txt](https://github.com/fsharpn00b/StoryStudio/blob/main/src/0_data/scenes/start.txt). In general, you should not jump to this scene.
 
 ## Branching
 
