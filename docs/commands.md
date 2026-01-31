@@ -15,7 +15,7 @@ Example:
 fadein day 2.0
 ```
 
-Background names and URLs are specified in [/src/0_data/bgs.txt](https://github.com/fsharpn00b/StoryStudio/blob/main/src/0_data/bgs.txt)`. For example:
+Background names and URLs are specified in [/src/0_data/bgs.txt](https://github.com/fsharpn00b/StoryStudio/blob/main/src/0_data/bgs.txt). For example:
 
 ```
 {
