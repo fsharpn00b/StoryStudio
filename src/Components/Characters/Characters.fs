@@ -190,7 +190,7 @@ let private fade_out_all
             kv.Value.current.fade_out transition_time command_queue_item_id
     )
 
-// TODO1 #transitions Reduce this proliferation of types, functions, and parameters.
+// TODO1 #transitions Reduce this proliferation of types, functions, parameters, and call layers.
 let private move_in
     (characters : IRefValue<Character_Map>)
     (characters_in_transition : IRefValue<int<character_id> Set>)

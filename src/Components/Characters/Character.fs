@@ -127,8 +127,8 @@ Height is set in the character definition file and not changed afterward. It is 
 
 (* TODO1 #transitions Verify:
 - For backgrounds and characters:
-- Hidden -> cross fade -> fade in
-- Visible -> fade in -> cross fade
+- Hidden -> cross fade = fade in
+- Visible -> fade in = cross fade
 - and so on.
 
 - Should moving in an already visible character fail? We could simply move the character to the new position.

@@ -103,8 +103,8 @@ Script {
     fade_out_character = "fadeout" sp+ string_param sp+ float_param
     cross_fade_character = "fadeout" sp+ string_param sp+ string_param sp+ float_param 
     fade_out_all = "fadeoutall" sp+ float_param
-    move_in_character = "movein" sp+ string_param sp+ string_param sp+ ("left" | "right" | "bottom") sp+ int_param sp+ float_param
-    move_out_character = "moveout" sp+ string_param sp+ ("left" | "right" | "bottom") sp+ float_param
+    move_in_character = "movein" sp+ string_param sp+ string_param sp+ ("left" | "right") sp+ int_param sp+ float_param
+    move_out_character = "moveout" sp+ string_param sp+ ("left" | "right") sp+ float_param
     play_music = "playmusic" sp+ string_param
     stop_music = "stopmusic" 
     show_dialogue_box = "showdialogue"
@@ -137,7 +137,7 @@ Script {
     menu_item_conditional = sp+ "/" sp+ (~nl any)+
     end_menu = sp* "endmenu"
 
-/* TODO1 #future
+/* TODO1 #future #image_map
 - Allow clicking on an image map item to be associated with some JS action.
 - Allow clicking on an image map item to not hide the image map.
 */
@@ -148,6 +148,7 @@ Script {
     image_map_item_conditional = sp+ "/" sp+ (~nl any)+
     end_image_map = sp* "endimagemap"
 
+/* TODO2 #parsing In case the author forgets to close the notify block, we might warn them (with alert = false) if we find known commands inside it. */
     temporary_notification = "notify" sp+ (~"endnotify" any)* "endnotify"
     permanent_notification = "status" sp+ (~"endstatus" any)* "endstatus"
 }

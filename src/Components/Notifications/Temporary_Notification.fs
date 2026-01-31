@@ -90,10 +90,10 @@ let Fade_Label (
         prop.className class_name
         prop.text data.text
         prop.style [
-(* TODO1 #notification Multiline doesn't work. We need to replace \n with Html.br [] or dynamically create grid cells.
+(* TODO1 #notification Multiline doesn't work. We need to replace \n with Html.br [] or dynamically create grid cells. Putting <br/> in script does not work.
     - Also trim white space from each line.
 *)
-(* TODO1 #notification We might need to re-add this.
+(* TODO1 #notification We might need to re-add this so we can size background blur to the contents of each individual label.
     - If so, add to view_idle_visible as well.
 *)
 (*
@@ -149,7 +149,7 @@ let private handle_fade_in_or_fade_out_complete
 
         set_fade_state <| Idle new_data
 
-// TODO1 #notification Add timeout function handles to cancel notifications.
+// TODO1 #notification Add timeout function handles to cancel notification transitions?
 
         window.setTimeout ((fun () ->
             set_fade_state <| In_Transition {

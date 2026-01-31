@@ -63,7 +63,7 @@ Keys tell React which array item each component corresponds to, so that it can m
         prop.style (get_character_fade_style character_sprite.position character_sprite.height |> List.map style.custom)
     ]
 
-// TODO1 #transitions Add move in/out at bottom.
+// TODO2 #transitions Add move in/out at bottom.
 let view_2_move
     (transition_data : Transition_Data<Character_State, Character_Transition_Type>)
     (complete_transition : Complete_Transition_Func<Character_State>)
@@ -87,7 +87,7 @@ Unlike with Fade, we do not use the old and new data (which can be either Visibl
     let complete_transition_2 = complete_transition (Some transition_data.command_queue_item_id) true
 
 // TODO1 #transitions This assumes the character width is no more than 20%.
-    let from_left = $"-20%%"
+    let from_left = "-20%"
     let from_right = "100%"
     let position = $"{float position}%%"
 

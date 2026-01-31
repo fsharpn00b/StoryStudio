@@ -24,7 +24,7 @@ open Units_Of_Measure
 
 type Plugin_Data = {
     component_ : ReactElement
-(* TODO1 We must store the interface as an obj because each component exposes a different interface and we do not know how to statically determine the interface type. If we did, we are not sure how we would store different interface types in a single map. Presumably they would all need to inherit from a base interface type, but there are no base interface methods we require, so they might as well inherit from obj.
+(* TODO1 #plugins We must store the interface as an obj because each component exposes a different interface and we do not know how to statically determine the interface type. If we did, we are not sure how we would store different interface types in a single map. Presumably they would all need to inherit from a base interface type, but there are no base interface methods we require, so they might as well inherit from obj.
 In any case, we do not use these interfaces inside the framework. Instead, they are used by JavaScript written by the author. JavaScript does not need to cast the obj to the interface type. It is enough to say, for example:
 window.Interfaces.<interface>.current.<method>
 (end)

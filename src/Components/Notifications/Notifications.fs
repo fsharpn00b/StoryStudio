@@ -181,7 +181,7 @@ let Notifications (
                 member _.update_permanent_notification (menu_variables : Menu_Variables) : unit =
                     do update_permanent_notification configuration_ref permanent_notification_data_before_eval_js_ref permanent_notification_data_after_eval_js_ref set_permanent_notification_data_after_js_eval menu_variables
 
-(* TODO1 #notification If we back up and re-do a notify command, the temporary notification does not appear again, and the stale label remains in the content tree instead of being. This only seems to happen if we change the code or CSS and Fable recompiles on the fly, though. *)
+(* TODO2 #notification If we back up and re-do a notify command, the temporary notification does not appear again, and the stale label remains in the content tree instead of being removed. This only seems to happen when we change the code or CSS and cause Fable to recompile on the fly, though. So far we have not reproduced it in normal conditions. *)
                 member _.get_state () : Notifications_Saveable_State =
                     {
                         permanent_notification_before_eval_js = permanent_notification_data_before_eval_js_ref.current

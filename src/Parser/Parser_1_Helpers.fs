@@ -141,7 +141,8 @@ let get_move_in_semantics
             match direction with
             | "left" -> Character_Move_Direction.Left
             | "right" -> Character_Move_Direction.Right
-            | "bottom" -> Character_Move_Direction.Bottom
+// TODO2 #transitions Add this.
+//            | "bottom" -> Character_Move_Direction.Bottom
             | _ -> raise <| Semantic_Error {
                     message = "Unknown character move in direction."
                     index = script_text_index
@@ -164,7 +165,8 @@ let get_move_out_semantics
             match direction with
             | "left" -> Character_Move_Direction.Left
             | "right" -> Character_Move_Direction.Right
-            | "bottom" -> Character_Move_Direction.Bottom
+// TODO2 #transitions Add this.
+//            | "bottom" -> Character_Move_Direction.Bottom
             | _ -> raise <| Semantic_Error {
                     message = "Unknown character move in direction."
                     index = script_text_index

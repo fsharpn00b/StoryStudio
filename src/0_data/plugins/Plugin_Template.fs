@@ -96,3 +96,17 @@ let private Plugin_Template
 
 (* Note plugins_registry_name won't work for plugins written outside the framework. *)
 window?(plugins_registry_name)?Plugin_Template <- Plugin_Template
+
+(* To call these methods in a script: *)
+(*
+js
+window.Interfaces.<plugin_name>.current.show ()
+endjs
+*)
+(* For example: *)
+(*
+js
+window.Interfaces.Plugin_Template.current.show ()
+endjs
+*)
+(* The plugin name is configured in 0_data/plugins.txt. *)

@@ -18,7 +18,7 @@ let private debug : log_function = debug debug_module_name
 let private warn : warn_function = warn debug_module_name
 let private error : error_function = error debug_module_name
 
-(* TODO1 #future Make it so value can be any type. Including discriminated unions.
+(* TODO1 #future #javascript Make it so value can be any type. Including discriminated unions.
 Replace this with a JavaScript_Environment type to which the author can add arbitrary variable definitions.
 *)
 type Menu_Variables = Map<string, int>

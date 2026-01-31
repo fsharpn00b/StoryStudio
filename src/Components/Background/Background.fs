@@ -20,7 +20,7 @@ open Utilities
 
 (* Types - public *)
 
-// TODO1 This could be used to set the background size.
+// TODO1 #background This could be used to set the background size.
 type Background_Configuration = {
     placeholder : unit
 }
@@ -118,7 +118,7 @@ let private view_2
 
     match transition_data.old_data, transition_data.new_data with
 
-// TODO1 #transitions In Transition_Data, augment 'transition_type to take an argument, the transition operation, which in takes takes arguments, old and new data. For example, Fade (In (old, new)). Then match on the transition operation instead of assuming what is going to happen based on old and new data.
+// TODO1 #transitions In Transition_Data, augment 'transition_type to take an argument, the transition operation, which in turn takes arguments, old and new data. For example, Fade (In (old, new)). Then match on the transition operation instead of assuming what is going to happen based on old and new data.
     | Hidden, Visible url -> get_transitionable_image_2 (fun () -> complete_transition_2 <| Visible url) url "0.0" "1.0" |> Seq.singleton
 
     | Visible url, Hidden -> get_transitionable_image_2 (fun () -> complete_transition_2 Hidden) url "1.0" "0.0" |> Seq.singleton

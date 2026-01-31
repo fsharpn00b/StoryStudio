@@ -18,6 +18,8 @@ open Log
 open Runner_Types
 open Utilities
 
+// TODO1 #plugins Allow author-configurable hotkeys for players to interact with plugins (for example, press "i" for inventory).
+
 (* Consts *)
 
 [<Literal>]

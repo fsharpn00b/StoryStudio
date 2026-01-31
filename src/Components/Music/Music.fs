@@ -17,7 +17,7 @@ open Feliz
 // useElmish
 open Feliz.UseElmish
 
-(* TODO1 Add music.
+(* TODO1 #music
 - Bug. Music stops if we reload page.
 - Add fade in/fade out/cross fade.
 *)

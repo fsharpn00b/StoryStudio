@@ -1,22 +1,8 @@
 // Play music.
 //playmusic autumn
 
-// This shows how to use the interface of a dynamically loaded React component.
-/*
-js
-window.Interfaces.Plugin_Template.current.show ()
-endjs
-*/
-
 // Fade in daytime background over 2 seconds.
 fadein day 2.0 // Comment after statement.
-
-// Test old data = new data and transition time 0.
-/*
-fadein day 2.0
-fadein day 0.0
-fadein night 0.0
-*/
 
 // Display status (permanent notification).
 status ${window.is_lost ()} endstatus
@@ -24,21 +10,14 @@ status ${window.is_lost ()} endstatus
 // If/then example.
 if true === window.state.player_state.is_lost
 // Fade in the character Laura, with a sad expression, at horizontal position 25%, over 1 second.
-//    fadein l sad 25 1.0
-    movein l sad left 25 2.0
+    fadein l sad 25 1.0
 else
-//    fadein l happy 25 1.0
-    movein l happy left 25 2.0
+    fadein l happy 25 1.0
 endif
-
-// These are to test the error reporting.
-//test no_such_command
-//fadein no_such_signature
 
 // JS interpolation in dialogue.
 l Which way should we go? (Lost: ${window.state.player_state.is_lost})
 
-/*
 // Create a menu whose result is stored in a variable named direction.
 menu direction Which way?
 // This menu option is dependent on a JS expression.
@@ -46,29 +25,17 @@ menu direction Which way?
 1 left / false === window.state.player_state.is_lost // Comment after menu item.
 2 right
 endmenu
-*/
-
-/* TODO1 #future We should let the author define a shape we can pass straight through to HTML. Depends on what shapes a div supports.
-That would also let the user put labels or onMouseOver handlers in the hotspot.
-*/
-imagemap direction overhead 1.0
-1 0 0 25 25 / false === window.state.player_state.is_lost // Comment after image map item with conditional.
-2 25 25 50 50
-endimagemap
-hideimagemap 1.0
 
 // Fade in the character Tom, with a happy expression, at horizontal position 75%, over 1 second.
 fadein t happy 75 1.0
 t Great idea!
-moveout t right 2.0
 
 if 1 === direction
 // JS statement to change state.
 // If the player goes left, they get lost.
     js window.state.player_state.is_lost = true;
-/* TODO2 #parsing In case the author forgets to close the notify block, we might warn them (with alert = false) if we find known commands inside it. */
-    notify You are now lost.
-    This is a test of multi-line status updates. endnotify
+
+    notify You are now lost. endnotify
     notify You can find your way out of the woods by going right instead of left. endnotify
 // Fade out all characters and background over 2 seconds.
     fadeoutall 2.0
