@@ -299,7 +299,7 @@ jump day_2
 ```
 
 Notes:
-- Scene scripts are in [/src/0_data/scenes/](https://github.com/fsharpn00b/StoryStudio/tree/main/src/0_data/scenes).
+- Scene scripts are in [/src/0_data/scenes/](https://github.com/fsharpn00b/StoryStudio/tree/main/src/0_data/scenes/).
 - A scene name is simply the script filename without the `.txt` extension. For example, if you have a script with filename `day_1.txt`, the scene name is `day_1`.
 - The first script to run is always [start.txt](https://github.com/fsharpn00b/StoryStudio/blob/main/src/0_data/scenes/start.txt). In general, you should not jump to this scene.
 

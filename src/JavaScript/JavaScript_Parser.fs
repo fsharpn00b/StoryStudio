@@ -10,6 +10,7 @@ open Command_Types
 open Image_Map
 open Menu
 open Log
+open Save_Load_Storage_Helpers
 open Scripts
 open Units_Of_Measure
 
@@ -205,9 +206,27 @@ let private get_javascript_paths (scenes : Scene_Map) : string list =
     results.paths_tried |> List.map (fun path -> path.javascript |> String.concat String.Empty)
 
 let check_javascript (scenes : Scene_Map) : unit =
-    let javascript =
+    let javascript_1 =
         scenes
         |> get_javascript_paths
         |> List.map enclose_javascript_in_function
         |> String.concat Environment.NewLine
-    do console.log $"{get_typescript_types ()}{Environment.NewLine}{javascript}"
+    let file_name = $"{get_current_timestamp ()}.ts"
+    let javascript_2 =
+        $"""
+/*
+To validate this file, run
+npx tsc --noEmit --strict {file_name}
+(end)
+If you saved it with a different name than the default, make sure it has a .ts extension.
+To install TypeScript, run
+npm install typescript --save-dev
+(end)
+The --save-dev means you are installing the package only for dev purposes, not to be deployed with the application.
+*/
+
+{get_typescript_types ()}
+
+{javascript_1}
+"""
+    download_file file_name "application/x-typescript" javascript_2

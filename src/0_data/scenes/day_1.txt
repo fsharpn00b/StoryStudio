@@ -22,7 +22,7 @@ l Which way should we go? (Lost: ${window.state.player_state.is_lost})
 menu direction Which way?
 // This menu option is dependent on a JS expression.
 // If the player is already lost, they cannot go left.
-1 left / false === window.state.player_state.is_lost // Comment after menu item.
+1 left / false === window.state.player_state.is_lost
 2 right
 endmenu
 

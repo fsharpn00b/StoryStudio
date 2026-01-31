@@ -322,8 +322,8 @@ let handle_key_down
         | "queue" -> runner.current.show_queue ()
         | "characters" -> runner.current.show_characters ()
         | "background" -> runner.current.show_background ()
-(* After dumping the JavaScript to the browser console, copy it to a .ts file and run
-npx tsc --noEmit --strict <file>
+(* Save JavaScript to a .ts file and run
+npx tsc --noEmit --strict <filename>
 (end)
 To install TypeScript, run
 npm install typescript --save-dev

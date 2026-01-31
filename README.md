@@ -19,8 +19,8 @@ Story Studio is a visual novel framework written in [F#](https://fsharp.org/) th
 	    c This is some dialogue.
         r This is a reply.
         ```
-	- Use conditionals (If, ElseIf, Else).
-	- Break your script into scenes and jump between them.
+	- Branch using conditionals (if, elseif, else).
+	- Break your story into scenes and jump between them.
 	- Give players choices with menus and image maps.
 
 - JavaScript support lets you:
@@ -105,3 +105,9 @@ https://fuelli.itch.io/free-to-use-character-sprites
 
 Background music:
 https://stocktune.com/free-music/whispers-of-autumn-love-292013-173203
+
+# TODO1
+
+- Validating JavaScript. TS definitions in [/src/0_data/ts/](https://github.com/fsharpn00b/StoryStudio/blob/main/src/0_data/ts/).
+- Configuration screen.
+- Hotkeys, including debug hotkeys.
