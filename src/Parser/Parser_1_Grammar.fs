@@ -101,7 +101,7 @@ Script {
     cross_fade_background = "fadeto" sp+ string_param sp+ float_param
     fade_in_character = "fadein" sp+ string_param sp+ string_param sp+ int_param sp+ float_param
     fade_out_character = "fadeout" sp+ string_param sp+ float_param
-    cross_fade_character = "fadeout" sp+ string_param sp+ string_param sp+ float_param 
+    cross_fade_character = "fadeto" sp+ string_param sp+ string_param sp+ float_param 
     fade_out_all = "fadeoutall" sp+ float_param
     move_in_character = "movein" sp+ string_param sp+ string_param sp+ ("left" | "right") sp+ int_param sp+ float_param
     move_out_character = "moveout" sp+ string_param sp+ ("left" | "right") sp+ float_param
@@ -151,6 +151,7 @@ Script {
 /* TODO2 #parsing In case the author forgets to close the notify block, we might warn them (with alert = false) if we find known commands inside it. */
     temporary_notification = "notify" sp+ (~"endnotify" any)* "endnotify"
     permanent_notification = "status" sp+ (~"endstatus" any)* "endstatus"
+// TODO1 #notifications We need a hidestatus or clearstatus command. 
 }
 """
 

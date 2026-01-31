@@ -6,7 +6,7 @@ Story Studio is a visual novel framework written in [F#](https://fsharp.org/) th
 
 - Adjustable dialogue reveal speed.
 - Undo and redo by scrolling the mouse wheel.
-- Save and load progress.
+- Save and load progress. Export and import saved games to and from local files.
 - Skip transitions (background fade in/out, dialogue reveal) by clicking the mouse.
 
 ## For authors
@@ -15,15 +15,20 @@ Story Studio is a visual novel framework written in [F#](https://fsharp.org/) th
 	- Fade backgrounds and characters in and out.
 	- Play music.
 	- Specify dialogue with a single-letter abbrevation for the character name and without needing quotes. For example:
-	    `c This is some dialogue.`
+        ```
+	    c This is some dialogue.
+        r This is a reply.
+        ```
 	- Use conditionals (If, ElseIf, Else).
 	- Break your script into scenes and jump between them.
-	- Give players choices with menus.
+	- Give players choices with menus and image maps.
 
 - JavaScript support lets you:
 	- Use JavaScript in dialogue, conditionals, and menus (for instance, you can show certain menu options only if their corresponding JavaScript expressions are true).
 	- Store game state such as character statistics and inventory.
 	- Include TypeScript types and lint your code before you run it.
+
+[Scripting language reference](https://github.com/fsharpn00b/StoryStudio/tree/main/docs/commands.md)
 
 # How to Run
 
@@ -43,7 +48,13 @@ Story Studio is a visual novel framework written in [F#](https://fsharp.org/) th
     cd StoryStudio
     ```
 
-1. Restore the .NET solution.
+1. Restore .NET tools.
+
+    ```bash
+	dotnet tool restore
+    ```
+
+1. Restore .NET dependencies.
 
     ```bash
     dotnet restore
@@ -71,7 +82,7 @@ Story Studio is a visual novel framework written in [F#](https://fsharp.org/) th
 
 # Notes
 
-I wrote Story Studio to have a visual novel framework with better support for finding errors in my scripts at compile time instead of at run time. I previously tried and failed to find a way to do this in Ren'py, as described in [https://github.com/fsharpn00b/Snippets/tree/main/renpy](here).
+I wrote Story Studio to have a visual novel framework with better support for finding errors in my scripts at compile time instead of at run time. I previously tried and failed to find a way to do this in Ren'py, as described [https://github.com/fsharpn00b/Snippets/tree/main/renpy](here).
 
 Development is ongoing as there are more features I want to add.
 
