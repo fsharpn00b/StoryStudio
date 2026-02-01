@@ -427,7 +427,7 @@ npm install typescript --save-dev
 Notes:
 
 - `Shift + J` also exports JavaScript conditionals in:
-    - `if` and `elseif` branches
+    - [`if` and `elseif` branches](#branching)
     - [menu](#menu) items
     - [image map](#image-map) items
 - `Shift + J` includes any TypeScript files you have in [/src/0_data/ts/](https://github.com/fsharpn00b/StoryStudio/blob/main/src/0_data/ts/). These files are loaded in alphanumeric order. You can use these files to define types to check your JavaScript code for type safety, but this isn't required.
