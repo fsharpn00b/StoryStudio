@@ -25,38 +25,28 @@ type Menu_Variables = Map<string, int>
 
 (* Functions - JavaScript *)
 
-[<Emit("eval($0)")>]
-let eval_js (code : string) : obj =
-    try jsNative
-    with exn -> error "eval_js" exn.Message ["code", code] |> invalidOp
-
-[<Emit("eval($0)")>]
-let private eval_js_boolean (code : string) : bool =
-    try
-        let result = jsNative code
-        unbox<bool> result
-    with exn -> error "eval_js_boolean" exn.Message ["code", code] |> invalidOp
-
-[<Emit("eval($0)")>]
-let private eval_js_string (code : string) : string =
-    try
-        let result = jsNative code
-        unbox<string> result
-    with exn -> error "eval_js_string" exn.Message ["code", code] |> invalidOp
+(* Notes
+- window.report_error is the error () function defined in Log, not the version we have defined here that is closed over the module name (JavaScript_Interop_1), so we still have to provide that.
+- We cannot get Fable to emit an F# tuple to JavaScript correctly, so we must leave the data parameter to window.report_error ()/Log.error () empty.
+*)
+[<Emit("""
+(function() {
+    try {
+        return eval($0);
+    } catch (exn) {
+        throw (window.report_error("JavaScript_Interop_1", "eval_js", `\nJavaScript error:\n${exn.message}\nCode:\n${$0}`, []));
+    }
+})()
+""")>]
+let eval_js (code : string) : obj = jsNative
 
 let private emit_menu_variables (menu_variables : Menu_Variables) : string =
     (String.Empty, menu_variables) ||> Seq.fold (fun acc kv ->
         $"{acc}var {kv.Key} = {kv.Value};{Environment.NewLine}"
     )
 
-let eval_js_with_menu_variables (code : string) (menu_variables : Menu_Variables) =
-    eval_js $"{emit_menu_variables menu_variables}{code}"
-
-let eval_js_boolean_with_menu_variables (code : string) (menu_variables : Menu_Variables) =
-    eval_js_boolean $"{emit_menu_variables menu_variables}{code}"
-
-let eval_js_string_with_menu_variables (code : string) (menu_variables : Menu_Variables) =
-    eval_js_string $"{emit_menu_variables menu_variables}{code}"
+let eval_js_with_menu_variables<'T> (code : string) (menu_variables : Menu_Variables) : 'T =
+    eval_js $"{emit_menu_variables menu_variables}{code}" |> unbox<'T>
 
 (* In some cases we must run JavaScript code that might fail. If the JavaScript code fails, eval_js_string returns null, which is a valid value of System.String. We check for that here and return String.Empty instead. *)
 (* We do not use this for now. *)

@@ -36,9 +36,19 @@ let entry_scene_id = 0<scene_id>
 let scene_initial_command_id = 1<command_id>
 
 let game_state_name = "state"
-(* This is used by JavaScript_Interop.set_state_in_js (). *)
+(* This is used by JavaScript_Interop_2.set_state_in_js (). We define it close to game_state_name so that if we change game_state_name, we won't forget to change set_state_in_js_emit accordingly. We can't insert a variable into a constant expression, and we need a constant expression to define an attribute. *)
+(* Note window.report_error is the error () function defined in Log, not the version we have defined here that is closed over the module name (JavaScript_Interop_1), so we still have to provide that. *)
 [<Literal>]
-let set_state_in_js_emit = "window.state = $0"
+let set_state_in_js_emit = """
+(function() {
+    try {
+        window.state = $0;
+    } catch (exn) {
+        window.report_error("JavaScript_Interop_2", "set_state_in_js", "JavaScript error: " + exn.message, [["code", $0]]);
+        throw exn;
+    }
+})()
+"""
 
 (* See Parser_1_Grammar.get_grammar_text (). *)
 let keywords =

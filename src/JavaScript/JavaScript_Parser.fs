@@ -205,6 +205,9 @@ let private get_javascript_paths (scenes : Scene_Map) : string list =
     let results = try_javascript_paths initial_acc scenes
     results.paths_tried |> List.map (fun path -> path.javascript |> String.concat String.Empty)
 
+(* TODO1 #javascript Again, Scene_Map doesn't give us individual scene/script names, so we can't include that in the output.
+This argues in favor of expanding Scene/Scene map to include script name/contents.
+*)
 let check_javascript (scenes : Scene_Map) : unit =
     let javascript_1 =
         scenes

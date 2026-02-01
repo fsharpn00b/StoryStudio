@@ -108,6 +108,7 @@ https://stocktune.com/free-music/whispers-of-autumn-love-292013-173203
 
 # TODO1
 
-- Validating JavaScript. TS definitions in [/src/0_data/ts/](https://github.com/fsharpn00b/StoryStudio/blob/main/src/0_data/ts/).
+Document:
+- Plugins.
 - Configuration screen.
 - Hotkeys, including debug hotkeys.

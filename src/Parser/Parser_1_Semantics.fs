@@ -136,7 +136,11 @@ We do not currently use this. *)
     semantics?stop_music <- fun _ -> Music_Stop |> Command_Pre_Parse.Command
     semantics?show_dialogue_box <- fun _ -> Dialogue_Box_Show |> Command_Pre_Parse.Command
     semantics?hide_dialogue_box <- fun _ -> Dialogue_Box_Hide |> Command_Pre_Parse.Command
-    semantics?single_line_javascript <- fun _ _ code -> code?sourceString |> JavaScript_Inline |> Command_Pre_Parse.Command
+    semantics?single_line_javascript <- fun _ _ code ->
+        {
+            code = code?sourceString
+            script_text_index = code?source?startIdx
+        } |> JavaScript_Inline |> Command_Pre_Parse.Command
     semantics?``if`` <- fun _ _ conditional -> conditional?sourceString |> Command_Pre_Parse.If
     semantics?else_if <- fun _ _ conditional -> conditional?sourceString |> Command_Pre_Parse.Else_If
     semantics?``else`` <- fun _ -> Command_Pre_Parse.Else
@@ -175,8 +179,13 @@ We could add a dynamic eval command.
 (* Ignore all comments. *)
     semantics?comment <- fun _ -> null
 
-    semantics?multi_line_javascript <- fun _ code _ ->
-        code?sourceString |> JavaScript_Block |> Command_Pre_Parse.Command
+    semantics?multi_line_javascript <- fun _ code_1 _ ->
+        let code_2 = code_1?sourceString |> unbox<string>
+        {
+(* Remove leading and trailing whitespace from the code block. *)
+            code = code_2.Trim ()
+            script_text_index = code_1?source?startIdx
+        } |> JavaScript_Block |> Command_Pre_Parse.Command
 
 (* Notes
 - menu_item_conditional? is an optional parameter to menu_item.
@@ -302,6 +311,11 @@ let private parse_script_2
     let semantics_2 : obj =
         emitJsExpr (semantics_1, grammar_match_result) "$0($1)"
 
+(* TODO1 #javascript To add script name and line number to JavaScript commands for error reporting, we would need to transform them here. This is the simplest place to do it, as we have the script text and can get the script name. The down side is we must split the JavaScript_Data and maybe Command and Command_Pre_Parse with it. Or we could add option fields to JavaScript_Data. This is simplest, at the cost of allowing a potentially invalid state. Given these fields will only be used for error reporting and can be checked first for safety, that might be acceptable.
+
+Or, when we hit a JS exception, look up the script name and text in Runner_Queue_Helpers.handle_command () using the scene id and scene map?
+*)
+
     let semantics_application_result =
         semantics_2?ast()
             |> unbox<obj array>
@@ -326,7 +340,7 @@ let parse_script_1
 
     try parse_script_2 grammar semantics script_text
     with
-        | Semantic_Error exn ->    
-            let line_number = Regex.Matches(script_text.Substring (0, exn.index), Regex.Escape Environment.NewLine).Count
+        | Semantic_Error exn ->
+            let line_number = get_script_line_number script_text exn.script_text_index
             error "parse_script_1" exn.message (exn.data @ ["script_name", script_name; "line_number", line_number]) |> invalidOp
         | exn -> error "parse_script_1" exn.Message ["script_name", script_name] |> invalidOp

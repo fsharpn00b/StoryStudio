@@ -14,6 +14,11 @@ type Dialogue_Data = {
     javascript_interpolations : string list
 }
 
+type JavaScript_Data = {
+    code : string
+    script_text_index : int
+}
+
 type Command =
     | Music_Play of string
     | Music_Stop
@@ -30,8 +35,8 @@ type Command =
     | Dialogue of Dialogue_Data
     | Temporary_Notification of Notification_Data_1
     | Permanent_Notification of Notification_Data_1
-    | JavaScript_Inline of string
-    | JavaScript_Block of string
+    | JavaScript_Inline of JavaScript_Data
+    | JavaScript_Block of JavaScript_Data
     | Jump of int<scene_id>
 
 type Wait_For_Callback_Behavior = {

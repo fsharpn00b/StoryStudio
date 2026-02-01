@@ -22,10 +22,13 @@ let private error : error_function = error debug_module_name
 
 (* Types *)
 
+(* We do not use this for now. *)
+(*
 type private TypeScript_Compile_Result = {
     js_code : string
     errors : string []
 }
+*)
 
 (* We need to copy the state by value, not by reference. *)
 let get_state_from_js () : obj = eval_js $"JSON.parse(JSON.stringify(window.{game_state_name}));"

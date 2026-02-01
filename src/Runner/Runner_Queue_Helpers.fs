@@ -105,7 +105,7 @@ let private handle_command
             Some <| fun _ -> do runner_component_interfaces.current.music.current.stop ()
 
         | Temporary_Notification command_2 ->
-            Some <| fun _ -> do runner_component_interfaces.current.notifications.current.add_temporary_notification { text = eval_js_string_with_menu_variables command_2.text menu_variables }
+            Some <| fun _ -> do runner_component_interfaces.current.notifications.current.add_temporary_notification { text = eval_js_with_menu_variables<string> command_2.text menu_variables }
 
         | Permanent_Notification command_2 ->
             Some <| fun _ -> do runner_component_interfaces.current.notifications.current.set_permanent_notification command_2.text menu_variables
@@ -147,18 +147,22 @@ let private handle_command
             Some <| fun (command_queue_item_id : int<command_queue_item_id>) -> runner_component_interfaces.current.dialogue_box.current.hide true <| Some command_queue_item_id
 
         | Dialogue command_2 ->
-            Some <| fun (command_queue_item_id : int<command_queue_item_id>) -> runner_component_interfaces.current.dialogue_box.current.type_dialogue command_2.character_full_name (eval_js_string_with_menu_variables command_2.text menu_variables) command_queue_item_id
+            Some <| fun (command_queue_item_id : int<command_queue_item_id>) -> runner_component_interfaces.current.dialogue_box.current.type_dialogue command_2.character_full_name (eval_js_with_menu_variables<string> command_2.text menu_variables) command_queue_item_id
 
         | JavaScript_Inline command_2 ->
             Some <| fun _ ->
                 do
-                    eval_js_with_menu_variables command_2 menu_variables |> ignore
+(* TODO1 #javascript So we have a scene ID. Can we get the script name and text from that?
+We would need to add Script name and content to Scene in Command_Types.
+Script is already assigned a Scene ID. Can we have a Script map instead?
+*)
+                    eval_js_with_menu_variables<unit> command_2.code menu_variables
                     runner_component_interfaces.current.notifications.current.update_permanent_notification menu_variables
 
         | JavaScript_Block command_2 ->
             Some <| fun _ ->
                 do
-                    eval_js_with_menu_variables command_2 menu_variables |> ignore
+                    eval_js_with_menu_variables<unit> command_2.code menu_variables
                     runner_component_interfaces.current.notifications.current.update_permanent_notification menu_variables
 
         | Jump _ -> None
@@ -189,12 +193,12 @@ let private handle_if
 
     let next_command_id_2 : int<command_id> =
 (* If the If conditional is true, the next command ID is the If child command ID. *)
-        if eval_js_boolean_with_menu_variables command.conditional menu_variables then
+        if eval_js_with_menu_variables<bool> command.conditional menu_variables then
             command.child_command_id
         else
 (* Otherwise, see if any of the Else_If conditionals are true. The next command ID is the child command ID of the first Else_If whose conditional is true. *)
             let next_command_id_3 = command.else_if_blocks |> List.tryPick (fun block ->
-                if eval_js_boolean_with_menu_variables block.conditional menu_variables then Some block.child_command_id else None
+                if eval_js_with_menu_variables<bool> block.conditional menu_variables then Some block.child_command_id else None
             )
             match next_command_id_3 with
             | Some next_command_id_4 -> next_command_id_4
@@ -230,16 +234,16 @@ let private handle_menu
 
         let menu_data_2 = {
             name = menu_data_1.name
-            text = eval_js_string_with_menu_variables menu_data_1.text menu_variables
+            text = eval_js_with_menu_variables<string> menu_data_1.text menu_variables
             items = menu_data_1.items |> List.choose (fun item_1 ->
 (* TODO2 We do not remember why we needed to delay eval of menu item text. Presumably because otherwise we evaluate the JavaScript too soon. *)
                 let item_2 = lazy {
                     value = item_1.value
-                    text = eval_js_string_with_menu_variables item_1.text menu_variables
+                    text = eval_js_with_menu_variables<string> item_1.text menu_variables
                 }
                 match item_1.conditional with
                     | Some conditional ->
-                        if eval_js_boolean_with_menu_variables conditional menu_variables then Some item_2.Value
+                        if eval_js_with_menu_variables<bool> conditional menu_variables then Some item_2.Value
                         else None
                     | None -> Some item_2.Value
             )
@@ -269,7 +273,7 @@ let private handle_image_map
             image_map_data_1 with
                 items = image_map_data_1.items |> List.filter (fun item ->
                     match item.conditional with
-                    | Some conditional -> eval_js_boolean_with_menu_variables conditional menu_variables
+                    | Some conditional -> eval_js_with_menu_variables<bool> conditional menu_variables
                     | None -> true
                 )
         }

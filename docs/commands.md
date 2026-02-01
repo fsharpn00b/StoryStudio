@@ -376,6 +376,70 @@ js
 endjs
 ```
 
+### Persistence
+
+Story Studio evaluates each JavaScript statement or block independently. This means the local environment does not persist from one evaluation to the next. For example, the following code:
+
+```
+js
+var x = 1;
+endjs
+
+js
+console.log (x);
+endjs
+```
+
+results in error: `x is not defined`.
+
+To address this, use the `window` namespace:
+
+```
+js
+window.x = 1;
+endjs
+
+js
+console.log (window.x);
+endjs
+```
+
+Also, when you show a [menu](#menu) or [image map](#image-map), the resulting variable is automatically added to the local environment for each JavaScript statement or block from then on.
+
+### Validating JavaScript
+
+To validate your JavaScript:
+
+1. Press `Shift + J` (default key binding). This extracts all JavaScript from your scripts and exports it to a file.
+    - If you save the file with a different name than the default, make sure the file name has the `.ts` extension.
+2. Run:
+
+```
+npx tsc --noEmit --strict <filename>
+```
+
+To install TypeScript, run:
+
+```
+npm install typescript --save-dev
+```
+
+Notes:
+
+- `Shift + J` also exports JavaScript conditionals in:
+    - `if` and `elseif` branches
+    - [menu](#menu) items
+    - [image map](#image-map) items
+- `Shift + J` includes any TypeScript files you have in [/src/0_data/ts/](https://github.com/fsharpn00b/StoryStudio/blob/main/src/0_data/ts/). These files are loaded in alphanumeric order. You can use these files to define types to check your JavaScript code for type safety, but this isn't required.
+- If, after installing TypeScript, you run `npx tsc...` and get the message:
+
+    ```
+    Need to install the following packages:
+    tsc@<version>
+    ```
+
+    you might have saved the exported JavaScript file to a folder outside where you installed TypeScript.
+
 ## Notifications
 
 ### Temporary notification

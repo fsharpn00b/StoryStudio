@@ -27,7 +27,7 @@ let private error : error_function = error debug_module_name
 
 type Semantic_Error_Data = {
     message : string
-    index : int
+    script_text_index : int
     data : (string * obj) list
 }
 
@@ -47,6 +47,12 @@ let convert_string_to_use_javascript_interpolation (text : string) : string = $"
 
 (* Helper functions *)
 
+let get_script_line_number
+    (script_text : string)
+    (script_text_index: int)
+    : int =
+    Regex.Matches(script_text.Substring (0, script_text_index), Regex.Escape Environment.NewLine).Count
+
 let get_music_track_url
     (music_tracks : Map<string, string>)
     (track_name : string)
@@ -58,7 +64,7 @@ let get_music_track_url
     | None ->
         raise <| Semantic_Error {
             message = "Unknown music track name."
-            index = script_text_index
+            script_text_index = script_text_index
             data = ["music track name", track_name; "known music tracks", music_tracks]
         }
 
@@ -73,7 +79,7 @@ let get_background_url
     | None ->
         raise <| Semantic_Error {
             message = "Unknown background name."
-            index = script_text_index
+            script_text_index = script_text_index
             data = ["background name", background_name; "known backgrounds", backgrounds]
         }
 
@@ -88,7 +94,7 @@ let get_character_input_data
     | None ->
         raise <| Semantic_Error {
             message = "Unknown character."
-            index = script_text_index
+            script_text_index = script_text_index
             data = ["character_short_name", character_short_name; "known characters", characters]
         }
 
@@ -105,7 +111,7 @@ let get_character_sprite_url
     | None ->
         raise <| Semantic_Error {
             message = "Unknown character sprite."
-            index = script_text_index
+            script_text_index = script_text_index
             data = ["sprite", character_sprite_name; "character data", character]
         }
 
@@ -120,7 +126,7 @@ let get_script_id
     | None ->
         raise <| Semantic_Error {
             message = "Jump destination not found."
-            index = script_text_index
+            script_text_index = script_text_index
             data = ["destination", destination; "scripts", scripts]
         }
 
@@ -145,7 +151,7 @@ let get_move_in_semantics
 //            | "bottom" -> Character_Move_Direction.Bottom
             | _ -> raise <| Semantic_Error {
                     message = "Unknown character move in direction."
-                    index = script_text_index
+                    script_text_index = script_text_index
                     data = ["direction", direction]
                 }
         position = position
@@ -169,7 +175,7 @@ let get_move_out_semantics
 //            | "bottom" -> Character_Move_Direction.Bottom
             | _ -> raise <| Semantic_Error {
                     message = "Unknown character move in direction."
-                    index = script_text_index
+                    script_text_index = script_text_index
                     data = ["direction", direction]
                 }
         transition_time = transition_time
@@ -185,7 +191,7 @@ let check_menu_items
     if Seq.isEmpty items_1 then
         raise <| Semantic_Error {
             message = "Menu must contain at least one item."
-            index = script_text_index
+            script_text_index = script_text_index
             data = ["menu_name", menu_name]
         }
     else
@@ -193,7 +199,7 @@ let check_menu_items
         if Seq.isEmpty items_2 then
             raise <| Semantic_Error {
                 message = "Menu must contain at least one item with no conditional."
-                index = script_text_index
+                script_text_index = script_text_index
                 data = ["menu_name", menu_name]
             }
 
@@ -206,7 +212,7 @@ let check_image_map_items
     if Seq.isEmpty items_1 then
         raise <| Semantic_Error {
             message = "Image map must contain at least one item."
-            index = script_text_index
+            script_text_index = script_text_index
             data = ["image_map_name", image_map_name]
         }
     else
@@ -214,6 +220,6 @@ let check_image_map_items
         if Seq.isEmpty items_2 then
             raise <| Semantic_Error {
                 message = "Image map must contain at least one item with no conditional."
-                index = script_text_index
+                script_text_index = script_text_index
                 data = ["image_map_name", image_map_name]
             }

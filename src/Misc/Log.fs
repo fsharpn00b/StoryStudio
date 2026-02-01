@@ -2,11 +2,11 @@ module Log
 
 // Environment.NewLine
 open System
-// StringBuilder
-open System.Text
 
 // console, window
 open Browser.Dom
+// ? operator
+open Fable.Core.JsInterop
 
 open Utilities
 
@@ -33,8 +33,8 @@ let private log
         | Error -> "ERROR: "
 
 (* When calling log (), be sure to convert any sequences in data_1 to lists before upcasting them to objects, or else they will show as "{}". *)
-    let data_2 = (new StringBuilder (), data_1) ||> List.fold (fun acc item ->
-        acc.AppendLine (value = $"{fst item}:{Environment.NewLine}{item |> snd |> json_stringify}")
+    let data_2 = (String.Empty, data_1) ||> List.fold (fun acc (name, value) ->
+        $"{acc}{name}:{Environment.NewLine}{json_stringify value}{Environment.NewLine}"
     )
 
     $"{severity_2}{module_name}.{function_name}: {message}{Environment.NewLine}{data_2}"
@@ -51,3 +51,5 @@ let error (module_name : string) (function_name : string) (message : string) (da
 (* Given that an error stops the program, we always alert the player. *)
     do window.alert $"{message}{Environment.NewLine}See browser console for more information."
     log module_name function_name Error message data
+
+do window?report_error <- error
