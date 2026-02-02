@@ -121,12 +121,12 @@ let rec private handle_next_command
         | Some scene ->
 
 (* Get the next command from its scene using the command ID. *)
-            match scene.TryFind next_command_id with
+            match scene.commands.TryFind next_command_id with
 
             | None -> error "add_commands_to_queue" "Next command ID not found in current scene." ["scene", queue_data.next_command_data.next_command_scene_id; "next_command_id", next_command_id] |> invalidOp
 
             | Some command ->
-                let command_data = get_command_data queue_data.next_command_data.next_command_scene_id runner_component_interfaces command queue_data.menu_variables
+                let command_data = get_command_data runner_component_interfaces scenes queue_data.next_command_data.next_command_scene_id command queue_data.menu_variables
                 let queue_data_2 = add_command_to_queue queue_data command_data
                 match command_data.behavior with
 

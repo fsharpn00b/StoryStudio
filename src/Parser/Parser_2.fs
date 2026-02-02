@@ -20,42 +20,74 @@ let private error : error_function = error debug_module_name
 
 (* Main functions - parsing *)
 
-let private handle_command (acc : Parser_2_Accumulator) (command : Command_Post_Parse_Type) (next_token : Command_Pre_Parse) : Parser_2_Accumulator =
+let private handle_command
+    (acc : Parser_2_Accumulator)
+    (command : Command_Post_Parse_Type)
+    (next_token : Command_Pre_Parse)
+    : Parser_2_Accumulator =
+
     let next_id_for_command, next_available_id = get_next_command_id next_token acc.parent_command_ids acc.current_command_id
+    let parent_command_id = match acc.parent_command_ids with | head :: _ -> Some head | _ -> None
+
     {
         acc with
-            scene = acc.scene.Add (acc.current_command_id, {
-                id = acc.current_command_id
-                next_command_id = next_id_for_command
-                parent_command_id = match acc.parent_command_ids with | head :: _ -> Some head | _ -> None
-                command = command
-            })
+            scene = {
+                acc.scene with
+                    commands = acc.scene.commands.Add (acc.current_command_id, {
+                        id = acc.current_command_id
+                        next_command_id = next_id_for_command
+                        parent_command_id = parent_command_id
+                        command = command
+                    })
+            }
             current_command_id = next_available_id
     }
 
-let private handle_if (acc : Parser_2_Accumulator) (conditional : string) : Parser_2_Accumulator =
+let private handle_if
+    (acc : Parser_2_Accumulator)
+    (conditional : string)
+    : Parser_2_Accumulator =
+
 (* Reserve the next available ID for the End_If token. That way, when we encounter the End_If token, we can assign its ID by getting the ID of its parent, which is this If token, then adding 1. *)
     let next_command_id = acc.current_command_id + 1<command_id>
 (* Use the ID after next_command_id for the first command in the If block. *)
     let child_command_id = next_command_id + 1<command_id>
-    {
-        scene = acc.scene.Add (acc.current_command_id, {
-            id = acc.current_command_id
-            next_command_id = Some next_command_id
-            parent_command_id = match acc.parent_command_ids with | head :: _ -> Some head | _ -> None
-            command = Command_Post_Parse_Type.If {
-                conditional = conditional
-                child_command_id = child_command_id
-                else_if_blocks = []
-                else_block = None
-            }
-        })
-        current_command_id = child_command_id
+    let command = Command_Post_Parse_Type.If {
+        conditional = conditional
+        child_command_id = child_command_id
+        else_if_blocks = []
+        else_block = None
+    }
+    let parent_command_id = match acc.parent_command_ids with | head :: _ -> Some head | _ -> None
 (* Set the parent ID for the If block's commands to the current ID. *)
-        parent_command_ids = acc.current_command_id :: acc.parent_command_ids
+    let parent_command_ids = acc.current_command_id :: acc.parent_command_ids
+
+    {
+        acc with
+            scene = {
+                acc.scene with
+                    commands = acc.scene.commands.Add (acc.current_command_id, {
+                        id = acc.current_command_id
+                        next_command_id = Some next_command_id
+                        parent_command_id = parent_command_id
+                        command = Command_Post_Parse_Type.If {
+                            conditional = conditional
+                            child_command_id = child_command_id
+                            else_if_blocks = []
+                            else_block = None
+                        }
+                    })
+            }
+            current_command_id = child_command_id
+(* Set the parent ID for the If block's commands to the current ID. *)
+            parent_command_ids = parent_command_ids
     }
 
-let private handle_else_if (acc : Parser_2_Accumulator) (conditional : string) : Parser_2_Accumulator =
+let private handle_else_if
+    (acc : Parser_2_Accumulator)
+    (conditional : string)
+    : Parser_2_Accumulator =
+
     let child_command_id = acc.current_command_id + 1<command_id>
 (* Get the If block to which this Else_If token belongs. Add the Else_If branch to the If block. *)
     let parent, parent_command_id, if_block = get_parent_if acc.scene acc.parent_command_ids
@@ -63,15 +95,22 @@ let private handle_else_if (acc : Parser_2_Accumulator) (conditional : string) :
         if_block with
             else_if_blocks = if_block.else_if_blocks @ [{ conditional = conditional; child_command_id = child_command_id }]
     }
+
     {
         acc with
-            scene = acc.scene.Add (parent_command_id, {
-                parent with command = Command_Post_Parse_Type.If if_block
-            })
+            scene = {
+                acc.scene with
+                    commands = acc.scene.commands.Add (parent_command_id, {
+                        parent with command = Command_Post_Parse_Type.If if_block
+                    })
+            }
             current_command_id = child_command_id
     }
 
-let private handle_else (acc : Parser_2_Accumulator) : Parser_2_Accumulator = 
+let private handle_else
+    (acc : Parser_2_Accumulator)
+    : Parser_2_Accumulator =
+
     let child_command_id = acc.current_command_id + 1<command_id>
 (* Get the If block to which this Else token belongs. Add the Else branch to the If block. *)
     let parent, parent_command_id, if_block = get_parent_if acc.scene acc.parent_command_ids
@@ -81,15 +120,23 @@ let private handle_else (acc : Parser_2_Accumulator) : Parser_2_Accumulator =
         if_block with
             else_block = Some child_command_id
     }
+
     {
         acc with
-            scene = acc.scene.Add (parent_command_id, {
-                parent with command = Command_Post_Parse_Type.If if_block
-            })
+            scene = {
+                acc.scene with
+                    commands = acc.scene.commands.Add (parent_command_id, {
+                        parent with command = Command_Post_Parse_Type.If if_block
+                    })
+            }
             current_command_id = child_command_id
     }
 
-let private handle_end_if (acc : Parser_2_Accumulator) (next_token : Command_Pre_Parse) : Parser_2_Accumulator =
+let private handle_end_if
+    (acc : Parser_2_Accumulator)
+    (next_token : Command_Pre_Parse)
+    : Parser_2_Accumulator =
+
 (* Get the ID for the If token to which this End_If token corresponds. Remove the ID from parent_command_ids. *)
     let parent_command_id, parent_command_ids =
         match acc.parent_command_ids with
@@ -98,24 +145,34 @@ let private handle_end_if (acc : Parser_2_Accumulator) (next_token : Command_Pre
 (* parent_command_id + 1 is the ID we reserved earlier for the End_If. *)
     let id_for_command = parent_command_id + 1<command_id>
     let next_id_for_command, next_available_id = get_next_command_id next_token parent_command_ids acc.current_command_id
+
     {
         acc with
-            scene = acc.scene.Add (id_for_command, {
-                id = id_for_command
-                next_command_id = next_id_for_command
-                parent_command_id = Some parent_command_id
-                command = Command_Post_Parse_Type.End_If
-            })
+            scene = {
+                acc.scene with
+                    commands = acc.scene.commands.Add (id_for_command, {
+                        id = id_for_command
+                        next_command_id = next_id_for_command
+                        parent_command_id = Some parent_command_id
+                        command = Command_Post_Parse_Type.End_If
+                    })
+            }
             current_command_id = next_available_id
             parent_command_ids = parent_command_ids
     }
 
 let parse_commands
+    (script_name : string)
+    (script_content : string)
     (tokens_1: Command_Pre_Parse list)
-    : Scene =
+    : Scene_Data =
 
     let initial_value = {
-        scene = Map.empty
+        scene = {
+            commands = Map.empty
+            name = script_name
+            content = script_content
+        }
         current_command_id = 1<command_id>
         parent_command_ids = []
     }
@@ -144,12 +201,16 @@ let parse_commands
     | Command_Pre_Parse.Command command ->
         if result.parent_command_ids.Length > 0 then
             error "parse_commands" "Parser reached last command, which is not EndIf, but there are still parent_command_ids, meaning an If block was not closed." ["parent_command_ids", result.parent_command_ids; "command", command; "scene", result.scene] |> invalidOp
-        let scene = result.scene.Add (result.current_command_id, {
-            id = result.current_command_id
-            next_command_id = None
-            parent_command_id = None
-            command = Command_Post_Parse_Type.Command command
-        })
+        let scene =
+            {
+                result.scene with
+                    commands = result.scene.commands.Add (result.current_command_id, {
+                        id = result.current_command_id
+                        next_command_id = None
+                        parent_command_id = None
+                        command = Command_Post_Parse_Type.Command command
+                    })
+            }
         scene
 
     | Command_Pre_Parse.End_If ->
@@ -160,12 +221,16 @@ let parse_commands
                 error "parse_commands" "Parser reached last command, which is EndIf, but parent_command_ids has length <> 1, meaning either an If block was not closed, or the End_If does not have a corresponding If block." ["parent_command_ids", result.parent_command_ids; "scene", result.scene] |> invalidOp
 (* parent_command_id + 1 is the ID we reserved earlier for the End_If. *)
         let id_for_command = parent_command_id + 1<command_id>
-        let scene = result.scene.Add (id_for_command, {
-            id = id_for_command
-            next_command_id = None
-            parent_command_id = Some parent_command_id
-            command = Command_Post_Parse_Type.End_If
-        })
+        let scene =
+            {
+                result.scene with
+                    commands = result.scene.commands.Add (id_for_command, {
+                        id = id_for_command
+                        next_command_id = None
+                        parent_command_id = Some parent_command_id
+                        command = Command_Post_Parse_Type.End_If
+                    })
+            }
         scene
 
     | _ -> error "parse" "Invalid last token. Last token should be a command or EndIf." ["Last token", List.last tokens_1 :> obj] |> invalidOp
@@ -185,7 +250,7 @@ let get_scene_map_and_javascript
 (* parse_script_1 simply wraps parse_script_2 in a try/catch block. *)
             match parse_script_1 grammar semantics script.name script.content with
             | [] -> error "get_scene_map_and_javascript" "Script is empty or contains only comments." ["script name", script.name] |> invalidOp
-            | commands -> script.id, commands |> parse_commands
+            | commands -> script.id, parse_commands script.name script.content commands
         )
         |> Map.ofList
 

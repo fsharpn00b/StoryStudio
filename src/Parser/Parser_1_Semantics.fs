@@ -275,6 +275,15 @@ Therefore, this is not the place to see whether menu_item_conditional is present
             javascript_interpolations = extract_javascript_interpolations text?sourceString
         } |> Permanent_Notification |> Command_Pre_Parse.Command
 
+(* TODO1 #javascript 20260202
+- Find a chokepoint in get_semantics () where, for any given command, we can also record the sourceString and source?startIdx.
+- When we run a command, find a chokepoint where we can catch exceptions and get the line number for the command in question.
+
+- When checking JS, emit the source string and line number for each command.
+
+- Throw exceptions normally, adding the data array to the Exception.Data field. Then handle all exceptions at the top level. Show the window.alert there.
+*)
+
     semantics
 
 // TODO1 #parsing How can we get clearer error messages from the parser?
@@ -313,7 +322,7 @@ let private parse_script_2
 
 (* TODO1 #javascript To add script name and line number to JavaScript commands for error reporting, we would need to transform them here. This is the simplest place to do it, as we have the script text and can get the script name. The down side is we must split the JavaScript_Data and maybe Command and Command_Pre_Parse with it. Or we could add option fields to JavaScript_Data. This is simplest, at the cost of allowing a potentially invalid state. Given these fields will only be used for error reporting and can be checked first for safety, that might be acceptable.
 
-Or, when we hit a JS exception, look up the script name and text in Runner_Queue_Helpers.handle_command () using the scene id and scene map?
+Or, when we hit a JS exception, look up the script name and text in Runner_Queue_Helpers.handle_command () using the scene id and scene map? We opted for that since we can also use that information when checking JS.
 *)
 
     let semantics_application_result =

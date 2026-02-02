@@ -62,7 +62,7 @@ let private combine_javascript_conditionals (javascript_conditionals : string li
 let private handle_command_javascript (command_1 : Command) : string option =
     match command_1 with
     | JavaScript_Inline command_2
-    | JavaScript_Block command_2 -> Some $"{command_2}{Environment.NewLine}"
+    | JavaScript_Block command_2 -> Some $"{command_2.code}{Environment.NewLine}"
     | Dialogue command_2 -> combine_javascript_interpolations command_2.javascript_interpolations |> Some
     | Temporary_Notification command_2 -> combine_javascript_interpolations command_2.javascript_interpolations |> Some
     | Permanent_Notification command_2 -> combine_javascript_interpolations command_2.javascript_interpolations |> Some
@@ -125,29 +125,37 @@ let rec private try_javascript_path
     (acc : Parser_JavaScript_Path_Accumulator)
     (scenes : Scene_Map)
     (scene_id : int<scene_id>)
-    (scene : Scene)
+    (scene : Scene_Data)
     (command_id_1 : int<command_id> option)
     : Parser_JavaScript_Path_Accumulator =
+
     match command_id_1 with
 
     | None -> acc
 
     | Some command_id_2 ->
 
-        let command = scene.[command_id_2]
+        let command =
+            match scene.commands.TryFind command_id_2 with
+            | Some command -> command
+            | None -> error "try_javascript_path" "Command not found." ["current_scene", scene.name; "command_id", command_id_2; "commands", scene.commands] |> invalidOp
         match command.command with
 
         | Command command_2 ->
             match command_2 with
 
-            | Jump destination ->
-                if acc.scenes_encountered.Contains destination then acc
+            | Jump destination_scene_id ->
+                if acc.scenes_encountered.Contains destination_scene_id then acc
                 else
+                    let destination_scene_name =
+                        match scenes.TryFind destination_scene_id with
+                        | Some scene -> scene.name
+                        | None -> error "try_javascript_path" "Jump destination scene ID not found." ["current_scene", scene.name; "destination_scene_id", destination_scene_id; "Known scene IDs and names", scenes |> Seq.map (fun kv -> kv.Key, kv.Value.name) :> obj] |> invalidOp
                     try_javascript_path {
                         acc with
-                            javascript = $"// {destination}{Environment.NewLine}" :: acc.javascript
-                            scenes_encountered = acc.scenes_encountered.Add destination
-                    } scenes destination scenes.[destination] <| Some scene_initial_command_id
+                            javascript = $"{Environment.NewLine}// Scene: {destination_scene_name}{Environment.NewLine}{Environment.NewLine}" :: acc.javascript
+                            scenes_encountered = acc.scenes_encountered.Add destination_scene_id
+                    } scenes destination_scene_id scenes.[destination_scene_id] <| Some scene_initial_command_id
 
             | _ ->
                 let javascript_1 =
@@ -205,13 +213,11 @@ let private get_javascript_paths (scenes : Scene_Map) : string list =
     let results = try_javascript_paths initial_acc scenes
     results.paths_tried |> List.map (fun path -> path.javascript |> String.concat String.Empty)
 
-(* TODO1 #javascript Again, Scene_Map doesn't give us individual scene/script names, so we can't include that in the output.
-This argues in favor of expanding Scene/Scene map to include script name/contents.
-*)
 let check_javascript (scenes : Scene_Map) : unit =
     let javascript_1 =
         scenes
         |> get_javascript_paths
+// TODO1 #javascript Insert path demarcator.
         |> List.map enclose_javascript_in_function
         |> String.concat Environment.NewLine
     let file_name = $"{get_current_timestamp ()}.ts"
@@ -228,8 +234,23 @@ npm install typescript --save-dev
 The --save-dev means you are installing the package only for dev purposes, not to be deployed with the application.
 */
 
+// TypeScript types:
+
+// TODO1 #javascript Trim leading/trailing whitespace from each code string we insert. Then re-add newlines to space everything as desired.
 {get_typescript_types ()}
 
+// Scene: {entry_scene_name}
 {javascript_1}
 """
     download_file file_name "application/x-typescript" javascript_2
+
+(* TODO1 #javascript Think again about letting the author write the entire VN in JavaScript/TypeScript, with our commands available to them - essentially turning our commands into a JS-facing API - now that we no longer parse line by line.
+
+We would be essentially embedding a DSL into JS. How to contain the DSL? Quoted strings? Comments?
+The parser could then read the scripts and transform the DSLs into JS? That doesn't make sense.
+
+- We also want the author to be able to use JS interpolation anywhere. For example
+fadein ${character} ${sprite} ${position} ${transition_time}
+However, this makes it impossible to check the correctness of commands early.
+We need to remember we're writing a DSL for scripting a VN, not a new programming language.
+*)

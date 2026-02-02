@@ -145,7 +145,7 @@ Example:
 moveout l right 1.0
 ```
 
-## Fade out background and all characters
+## Fade out background, all characters, and dialogue box
 
 Syntax:
 
@@ -156,7 +156,7 @@ fadeoutall <transition time>
 Example:
 
 ```
-// Fade out the current background and all characters over 1 second.
+// Fade out the current background, all characters, and the dialogue box over 1 second.
 fadeoutall 1.0
 ```
 

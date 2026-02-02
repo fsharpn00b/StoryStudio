@@ -107,8 +107,12 @@ type Command_Post_Parse =
         command : Command_Post_Parse_Type
     }
 
-type Scene = Map<int<command_id>, Command_Post_Parse>
-type Scene_Map = Map<int<scene_id>, Scene>
+type Scene_Data = {
+    name : string
+    content : string
+    commands : Map<int<command_id>, Command_Post_Parse>
+}
+type Scene_Map = Map<int<scene_id>, Scene_Data>
 
 type Script = {
     id : int<scene_id>

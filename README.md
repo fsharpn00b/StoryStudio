@@ -106,9 +106,7 @@ https://fuelli.itch.io/free-to-use-character-sprites
 Background music:
 https://stocktune.com/free-music/whispers-of-autumn-love-292013-173203
 
-# TODO1
-
-Document:
+# TODO1 Document:
 - Plugins.
 - Configuration screen.
 - Hotkeys, including debug hotkeys.

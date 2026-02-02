@@ -132,7 +132,7 @@ Script {
 /* Note nl gets its own parameter in the semantics even though it is part of a group. */
     menu_items = ((menu_item | comment | menu_empty_line) nl)+
     menu_empty_line = sp*
-/* TODO1 #javascript #parsing If the author includes both a conditional and a single-line comment, the match for the former will consume the latter. However, since the conditional is in JavaScript, this should not be an issue. If it becomes an issue, we can have menu_item_conditional/image_map_conditional include a negative lookahead for "//".
+/* TODO1 #javascript If the author includes both a conditional and a single-line comment, the match for the former will consume the latter. However, since the conditional is in JavaScript, this should not be an issue. If it becomes an issue, we can have menu_item_conditional/image_map_conditional include a negative lookahead for "//".
 
 It is an issue. It interferes with JS checking.
 1 left / false === window.state.player_state.is_lost
@@ -144,7 +144,7 @@ if (false === window.state.player_state.is_lost // Comment after menu item.) {}
     menu_item_conditional = sp+ "/" sp+ (~nl any)+
     end_menu = sp* "endmenu"
 
-/* TODO1 #future #image_map
+/* TODO1 #image_map #future
 - Allow clicking on an image map item to be associated with some JS action.
 - Allow clicking on an image map item to not hide the image map.
 */

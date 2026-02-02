@@ -37,11 +37,6 @@ let private error : error_function = error debug_module_name
 let character_inputs= get_character_inputs ()
 let scenes = get_scene_map_and_javascript (get_scripts ()) (get_backgrounds ()) character_inputs (get_music ())
 
-(* TODO1 #javascript We would need to create the script map here and pass it to I_Runner.run ().
-
-TODO1 #javascript Also, when we check JavaScript, we need to include script names in the output.
-*)
-
 (* Component *)
 
 [<ReactComponent>]

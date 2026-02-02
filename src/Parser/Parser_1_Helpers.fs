@@ -51,7 +51,7 @@ let get_script_line_number
     (script_text : string)
     (script_text_index: int)
     : int =
-    Regex.Matches(script_text.Substring (0, script_text_index), Regex.Escape Environment.NewLine).Count
+    Regex.Matches(script_text.Substring (0, script_text_index), Regex.Escape Environment.NewLine).Count + 1
 
 let get_music_track_url
     (music_tracks : Map<string, string>)

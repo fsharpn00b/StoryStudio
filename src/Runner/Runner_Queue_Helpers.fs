@@ -11,6 +11,7 @@ open JavaScript_Interop_1
 open Image_Map
 open Log
 open Menu
+open Parser_1_Helpers
 open Runner_Types
 open Scripts
 open Units_Of_Measure
@@ -84,6 +85,7 @@ let private command_to_component_ids (command : Command) : Runner_Component_Name
 
 let private handle_command 
     (runner_component_interfaces : IRefValue<Runner_Component_Interfaces>)
+    (scenes : Scene_Map)
 (* This function can change both scene and next_command_id if we get a Jump command. *)
     (current_scene_id : int<scene_id>)
     (next_command_id_1 : int<command_id> option)
@@ -152,18 +154,25 @@ let private handle_command
         | JavaScript_Inline command_2 ->
             Some <| fun _ ->
                 do
-(* TODO1 #javascript So we have a scene ID. Can we get the script name and text from that?
-We would need to add Script name and content to Scene in Command_Types.
-Script is already assigned a Scene ID. Can we have a Script map instead?
-*)
                     eval_js_with_menu_variables<unit> command_2.code menu_variables
                     runner_component_interfaces.current.notifications.current.update_permanent_notification menu_variables
 
+(* TODO1 #javascript Need to decide where to handle the exception.
+
+- handle_if, handle_menu, etc will need these as well.
+*)
         | JavaScript_Block command_2 ->
             Some <| fun _ ->
                 do
-                    eval_js_with_menu_variables<unit> command_2.code menu_variables
-                    runner_component_interfaces.current.notifications.current.update_permanent_notification menu_variables
+                    try eval_js_with_menu_variables<unit> command_2.code menu_variables
+                    with | exn ->
+                        let scene =
+                            match scenes.TryFind current_scene_id with
+                            | Some scene -> scene
+                            | None -> "TODO1 #javascript Additional error" |> invalidOp
+                        let line_number = get_script_line_number scene.content command_2.script_text_index
+                        console.log $"Error in scene {scene.name}, line number {line_number}:"
+                        raise exn
 
         | Jump _ -> None
 
@@ -291,15 +300,16 @@ let private handle_image_map
 (* Main functions *)
 
 let get_command_data
-    (scene_id : int<scene_id>)
     (runner_component_interfaces : IRefValue<Runner_Component_Interfaces>)
+    (scenes : Scene_Map)
+    (scene_id : int<scene_id>)
     (command : Command_Post_Parse)
     (menu_variables : Menu_Variables)
     : Runner_Command_Data =
 
     match command.command with
 
-    | Command_Post_Parse_Type.Command command_1 -> handle_command runner_component_interfaces scene_id   command.next_command_id command_1 menu_variables
+    | Command_Post_Parse_Type.Command command_1 -> handle_command runner_component_interfaces scenes scene_id command.next_command_id command_1 menu_variables
 
     | Command_Post_Parse_Type.If command_2 -> handle_if scene_id command.next_command_id command_2 menu_variables
 

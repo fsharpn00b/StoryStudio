@@ -18,7 +18,7 @@ open Utilities
 
 type Image_Map_Transition_Type = Fade
 
-(* TODO1 #future #image_map We should let the author define a shape we can pass straight through to HTML. Depends on what shapes a div supports.
+(* TODO1 #image_map #future We should let the author define a shape we can pass straight through to HTML. Depends on what shapes a div supports.
 That would also let the user put labels or onMouseOver handlers in the hotspot.
 *)
 type Image_Map_Item_Data = {

@@ -18,7 +18,7 @@ let private error : error_function = error debug_module_name
 (* Types *)
 
 type Parser_2_Accumulator = {
-    scene : Scene
+    scene : Scene_Data
     current_command_id : int<command_id>
     parent_command_ids : int<command_id> list
 }
@@ -92,13 +92,13 @@ When we encounter End_If as the current token, we set its ID to the previously r
 *)
 
 (* Get the parent If block for an Else_If or Else token. *)
-let get_parent_if (command_map : Scene) (parent_command_ids : int<command_id> list) : Command_Post_Parse * int<command_id> * If_Block =
+let get_parent_if (command_map : Scene_Data) (parent_command_ids : int<command_id> list) : Command_Post_Parse * int<command_id> * If_Block =
     let parent_command_id =
         match parent_command_ids with
         | head :: _ -> head
         | _ -> error "get_parent_if" "Tried to get parent ID (If block ID) for ElseIf, Else, or EndIf, but there is no parent ID." ["command_map", command_map] |> invalidOp
     let parent =
-        match command_map.TryFind parent_command_id with
+        match command_map.commands.TryFind parent_command_id with
         | Some parent -> parent
         | None -> error "get_parent_if" "Tried to get parent (If block) for ElseIf, Else, or EndIf, but the parent was not found." ["parent_command_id", parent_command_id; "command_map", command_map] |> invalidOp
     match parent.command with
