@@ -138,7 +138,7 @@ let get_move_in_semantics
     (position : int<percent>)
     (transition_time : Transition_Time)
     (script_text_index : int)
-    : Command_Pre_Parse =
+    : Command_Pre_Parse_Type =
 
     {
         Character_Move_In_Data.character_short_name = character_short_name
@@ -156,14 +156,14 @@ let get_move_in_semantics
                 }
         position = position
         transition_time = transition_time
-    } |> Character_Move_Data_2.In |> Character_Move |> Command_Pre_Parse.Command
+    } |> Character_Move_Data_2.In |> Character_Move |> Command_Pre_Parse_Type.Command
 
 let get_move_out_semantics
     (character_short_name : string) 
     (direction : string)
     (transition_time : Transition_Time)
     (script_text_index : int)
-    : Command_Pre_Parse =
+    : Command_Pre_Parse_Type =
 
     {
         Character_Move_Out_Data.character_short_name = character_short_name
@@ -179,7 +179,7 @@ let get_move_out_semantics
                     data = ["direction", direction]
                 }
         transition_time = transition_time
-    } |> Character_Move_Data_2.Out |> Character_Move |> Command_Pre_Parse.Command
+    } |> Character_Move_Data_2.Out |> Character_Move |> Command_Pre_Parse_Type.Command
 
 (* These checks either would be too complex to do with the grammar (for example, a menu could contain only comments, yet appear non-empty) or detect errors for which we prefer more descriptive error messages. *)
 let check_menu_items

@@ -14,11 +14,13 @@ type Dialogue_Data = {
     javascript_interpolations : string list
 }
 
+// TODO1 #javascript Revert this to being just a string. Or just remove script_text_index?
 type JavaScript_Data = {
     code : string
     script_text_index : int
 }
 
+// TODO1 #parsing Rename to Command_Type?
 type Command =
     | Music_Play of string
     | Music_Stop
@@ -67,7 +69,7 @@ type Command_Behavior =
     | Continue_Immediately of Continue_Immediately_Behavior
 
 (* This is after we have matched a command but before we have parsed it. Parsing mostly means to assign command IDs and deal with If/Else_If/Else/End_If statements. *)
-type Command_Pre_Parse =
+type Command_Pre_Parse_Type =
     | Command of Command
     | If of string
     | Else_If of string
@@ -76,6 +78,12 @@ type Command_Pre_Parse =
     | Menu of Menu_Data_1
     | Image_Map of Image_Map_Data
     | End_Image_Map of Transition_Time
+
+type Command_Pre_Parse = {
+    source : string
+    script_text_index : int
+    command : Command_Pre_Parse_Type
+}
 
 (* We cannot simply use next_command_id for an Else_If block's commands because it is not a full Command_Post_Parse. It is just part of If_Block. *)
 type Else_If_Block_With_Id = {
@@ -99,6 +107,7 @@ type Command_Post_Parse_Type =
     | Image_Map of Image_Map_Data
     | End_Image_Map of Transition_Time
 
+// TODO1 #parsing We'll need to copy the source and script_text_index here also.
 type Command_Post_Parse =
     {
         id : int<command_id>

@@ -32,24 +32,24 @@ Parser_1_Match_Patterns.match_if_start (), match_else_if (), match_else (), and 
 let check_current_token_and_next_token (token : Command_Pre_Parse) (next_token : Command_Pre_Parse) : unit =
     let tokens = ["token", token :> obj; "next_token", next_token :> obj]
 
-    match token with
+    match token.command with
 
-    | Command_Pre_Parse.If _ ->
-        match next_token with
-        | Command_Pre_Parse.Command _
-        | Command_Pre_Parse.If _ -> ()
+    | Command_Pre_Parse_Type.If _ ->
+        match next_token.command with
+        | Command_Pre_Parse_Type.Command _
+        | Command_Pre_Parse_Type.If _ -> ()
         | _ -> error "check_current_token_and_next_token" "If must be followed by command or another If." tokens |> invalidOp
 
-    | Command_Pre_Parse.Else_If _ ->
-        match next_token with
-        | Command_Pre_Parse.Command _
-        | Command_Pre_Parse.If _ -> ()
+    | Command_Pre_Parse_Type.Else_If _ ->
+        match next_token.command with
+        | Command_Pre_Parse_Type.Command _
+        | Command_Pre_Parse_Type.If _ -> ()
         | _ -> error "check_current_token_and_next_token" "ElseIf must be followed by command or If." tokens |> invalidOp
 
-    | Command_Pre_Parse.Else ->
-        match next_token with
-        | Command_Pre_Parse.Command _
-        | Command_Pre_Parse.If _ -> ()
+    | Command_Pre_Parse_Type.Else ->
+        match next_token.command with
+        | Command_Pre_Parse_Type.Command _
+        | Command_Pre_Parse_Type.If _ -> ()
         | _ -> error "check_current_token_and_next_token" "Else must be followed by command or another If." tokens |> invalidOp
 
     | _ -> ()
@@ -57,16 +57,16 @@ let check_current_token_and_next_token (token : Command_Pre_Parse) (next_token :
 (* The first return parameter is the next_command_id for the current command. The second is the ID to be used for the next command. These are not always the same. See the Else_If/Else/End_If case.
 *)
 let get_next_command_id (next_token : Command_Pre_Parse) (parent_command_ids : int<command_id> list) (id : int<command_id>) : int<command_id> option * int<command_id> =
-    match next_token with
+    match next_token.command with
 
-    | Command_Pre_Parse.Command _
-    | Command_Pre_Parse.If _
-    | Command_Pre_Parse.Menu _
-    | Command_Pre_Parse.Image_Map _
-    | Command_Pre_Parse.End_Image_Map _ -> Some <| id + 1<command_id>, id + 1<command_id>
-    | Command_Pre_Parse.Else_If _
-    | Command_Pre_Parse.Else
-    | Command_Pre_Parse.End_If ->
+    | Command_Pre_Parse_Type.Command _
+    | Command_Pre_Parse_Type.If _
+    | Command_Pre_Parse_Type.Menu _
+    | Command_Pre_Parse_Type.Image_Map _
+    | Command_Pre_Parse_Type.End_Image_Map _ -> Some <| id + 1<command_id>, id + 1<command_id>
+    | Command_Pre_Parse_Type.Else_If _
+    | Command_Pre_Parse_Type.Else
+    | Command_Pre_Parse_Type.End_If ->
         let parent_command_id =
             match parent_command_ids with
             | head :: _ -> head

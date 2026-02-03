@@ -184,21 +184,21 @@ let parse_commands
         #endif
 
         do check_current_token_and_next_token token next_token
-        match token with
-        | Command_Pre_Parse.Command command -> handle_command acc (Command_Post_Parse_Type.Command command) next_token
-        | Command_Pre_Parse.If conditional -> handle_if acc conditional
-        | Command_Pre_Parse.Else_If conditional -> handle_else_if acc conditional
-        | Command_Pre_Parse.Else -> handle_else acc
-        | Command_Pre_Parse.End_If -> handle_end_if acc next_token
-        | Command_Pre_Parse.Menu menu -> handle_command acc (Command_Post_Parse_Type.Menu menu) next_token
-        | Command_Pre_Parse.Image_Map image_map_data -> handle_command acc (Command_Post_Parse_Type.Image_Map image_map_data) next_token
-        | Command_Pre_Parse.End_Image_Map transition_time -> handle_command acc (Command_Post_Parse_Type.End_Image_Map transition_time) next_token
+        match token.command with
+        | Command_Pre_Parse_Type.Command command -> handle_command acc (Command_Post_Parse_Type.Command command) next_token
+        | Command_Pre_Parse_Type.If conditional -> handle_if acc conditional
+        | Command_Pre_Parse_Type.Else_If conditional -> handle_else_if acc conditional
+        | Command_Pre_Parse_Type.Else -> handle_else acc
+        | Command_Pre_Parse_Type.End_If -> handle_end_if acc next_token
+        | Command_Pre_Parse_Type.Menu menu -> handle_command acc (Command_Post_Parse_Type.Menu menu) next_token
+        | Command_Pre_Parse_Type.Image_Map image_map_data -> handle_command acc (Command_Post_Parse_Type.Image_Map image_map_data) next_token
+        | Command_Pre_Parse_Type.End_Image_Map transition_time -> handle_command acc (Command_Post_Parse_Type.End_Image_Map transition_time) next_token
     )
 
 (* The last token should be either a command or End_If. *)
-    match List.last tokens_1 with
+    match (List.last tokens_1).command with
 
-    | Command_Pre_Parse.Command command ->
+    | Command_Pre_Parse_Type.Command command ->
         if result.parent_command_ids.Length > 0 then
             error "parse_commands" "Parser reached last command, which is not EndIf, but there are still parent_command_ids, meaning an If block was not closed." ["parent_command_ids", result.parent_command_ids; "command", command; "scene", result.scene] |> invalidOp
         let scene =
@@ -213,7 +213,7 @@ let parse_commands
             }
         scene
 
-    | Command_Pre_Parse.End_If ->
+    | Command_Pre_Parse_Type.End_If ->
         let parent_command_id =
             match result.parent_command_ids with
             | head :: [] -> head
