@@ -10,6 +10,18 @@ open Fable.Core.JsInterop
 
 open Utilities
 
+(* We use these custom exception handling functions instead of .NET exceptions because:
+1 In Fable, .NET exceptions do not support the Data field.
+2 .NET exceptions appear in the browser console log, but do not alert the user.
+3 .NET exceptions show the stack trace in terms of our generated *.fs.js files, but that is not helpful to the user. Instead, they need to know which of their scripts, and which line in that script, caused the error.
+(end)
+
+When we catch a .NET exception, we extract the message.
+TODO1 #exceptions Verify that.
+*)
+
+(* Types *)
+
 type log_function = string -> string -> (string * obj) list -> unit
 type warn_function = string -> bool -> string -> (string * obj) list -> unit 
 type error_function = string -> string -> (string * obj) list -> string
@@ -18,6 +30,8 @@ type private Severity =
     | Debug
     | Warning
     | Error
+
+(* Functions *)
 
 let private log
     (module_name : string) 
@@ -52,4 +66,5 @@ let error (module_name : string) (function_name : string) (message : string) (da
     do window.alert $"{message}{Environment.NewLine}See browser console for more information."
     log module_name function_name Error message data
 
+(* This makes the error () function accessible from JavaScript. *)
 do window?report_error <- error

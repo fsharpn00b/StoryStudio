@@ -59,7 +59,7 @@ let private combine_javascript_interpolations (javascript_interpolations : strin
 let private combine_javascript_conditionals (javascript_conditionals : string list) : string =
     javascript_conditionals |> List.map (fun x -> $"if ({x}) {{}}{Environment.NewLine}") |> String.concat String.Empty
 
-let private handle_command_javascript (command_1 : Command) : string option =
+let private handle_command_javascript (command_1 : Command_Type) : string option =
     match command_1 with
     | JavaScript_Inline command_2
     | JavaScript_Block command_2 -> Some $"{command_2.code}{Environment.NewLine}"
@@ -217,7 +217,7 @@ let check_javascript (scenes : Scene_Map) : unit =
     let javascript_1 =
         scenes
         |> get_javascript_paths
-// TODO1 #javascript Insert path demarcator.
+(* TODO1 #javascript Insert path demarcator here? *)
         |> List.map enclose_javascript_in_function
         |> String.concat Environment.NewLine
     let file_name = $"{get_current_timestamp ()}.ts"
@@ -236,13 +236,16 @@ The --save-dev means you are installing the package only for dev purposes, not t
 
 // TypeScript types:
 
-// TODO1 #javascript Trim leading/trailing whitespace from each code string we insert. Then re-add newlines to space everything as desired.
 {get_typescript_types ()}
 
 // Scene: {entry_scene_name}
 {javascript_1}
 """
     download_file file_name "application/x-typescript" javascript_2
+
+// TODO1 #javascript When checking JS, emit the source string and line number for each command.
+
+// TODO1 #javascript Trim leading/trailing whitespace from each code string we insert. Then re-add newlines to space everything as desired.
 
 (* TODO1 #javascript Think again about letting the author write the entire VN in JavaScript/TypeScript, with our commands available to them - essentially turning our commands into a JS-facing API - now that we no longer parse line by line.
 
@@ -251,6 +254,17 @@ The parser could then read the scripts and transform the DSLs into JS? That does
 
 - We also want the author to be able to use JS interpolation anywhere. For example
 fadein ${character} ${sprite} ${position} ${transition_time}
-However, this makes it impossible to check the correctness of commands early.
+
+However, this makes it impossible to check the correctness of commands early, because the variables can't be replaced by values until runtime.
 We need to remember we're writing a DSL for scripting a VN, not a new programming language.
+
+We could add a dynamic eval command.
+1 Grammar: eval/endeval
+2 In semantics, apply convert_string_to_use_javascript_interpolation.
+3 In runner, run eval_js. That returns a new command.
+4 Apply grammar to command.
+5 Apply semantics to grammar match.
+6 Run resulting command.
+
+- Problem, resulting command won't have a command ID. We could assign it the next available, in case it for example starts a transition. It can't be an If or other control statement.
 *)

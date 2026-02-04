@@ -25,7 +25,7 @@ open Menu
 open Temporary_Notification
 open Parser_1_Helpers
 open Parser_1_Grammar
-open Utilities
+open Units_Of_Measure
 
 (* Debug *)
 
@@ -45,6 +45,8 @@ let private get_children<'T> (node : obj) : 'T list =
         |> Seq.toList
 
 (* Semantics *)
+
+// TODO2 #parsing It seems using ?ast() overrides type checking on the result. We can assign the result to a value or field of any type, including to an option field without using Some or None. See if we can get better type safety here. We have somewhat done this as of 20260202.
 
 let private get_semantics
     (scripts : Script list)
@@ -93,8 +95,10 @@ We do not currently use this. *)
         | None -> None
         | Some command ->
             {
-                Command_Pre_Parse.source = line?sourceString
-                script_text_index = line?source?startIdx
+                Command_Pre_Parse_1.error_data = {
+                    source = line?sourceString
+                    script_text_index = line?source?startIdx
+                }
                 command = command
             } |> Some
 
@@ -158,7 +162,7 @@ We do not currently use this. *)
     semantics?end_if <- fun _ -> Command_Pre_Parse_Type.End_If |> Some
     semantics?jump <- fun _ _ destination ->
         let script_id = get_script_id scripts destination?sourceString destination?source?startIdx
-        script_id |> Command.Jump |> Command_Pre_Parse_Type.Command |> Some
+        script_id |> Command_Type.Jump |> Command_Pre_Parse_Type.Command |> Some
     semantics?hide_image_map <- fun _ _ transition_time ->
         transition_time?ast() |> Command_Pre_Parse_Type.End_Image_Map |> Some
 
@@ -170,20 +174,7 @@ We do not currently use this. *)
                 character.full_name
             text = text?sourceString |> convert_string_to_use_javascript_interpolation
             javascript_interpolations = extract_javascript_interpolations text?sourceString
-        } |> Command.Dialogue |> Command_Pre_Parse_Type.Command |> Some
-
-(* TODO1 #parsing We want the author to be able to use js for arbitrary commands, for example fadein ${background_name} ${fade_in_time}. That would be cumbersome and ugly, even under the old line-by-line parser, because the variables can't be replaced by values until runtime.
-
-We could add a dynamic eval command.
-1 Grammar: eval/endeval
-2 In semantics, apply convert_string_to_use_javascript_interpolation.
-3 In runner, run eval_js. That returns a new command.
-4 Apply grammar to command.
-5 Apply semantics to grammar match.
-6 Run resulting command.
-
-- Problem, resulting command won't have a command ID. We could assign it the next available, in case it for example starts a transition. It can't be an If or other control statement.
-*)
+        } |> Command_Type.Dialogue |> Command_Pre_Parse_Type.Command |> Some
 
 (* Multi-line patterns *)
 
@@ -197,8 +188,6 @@ We could add a dynamic eval command.
             code = code_2.Trim ()
             script_text_index = code_1?source?startIdx
         } |> JavaScript_Block |> Command_Pre_Parse_Type.Command |> Some
-
-// TODO1 #parsing It seems using ?ast() overrides type checking on the result. We can assign the result to a value or field of any type, including to an option field without using Some or None. See if we can get better type safety here.
 
 (* Note It seems if a menu item has no conditional, its children property is empty, and this semantic is never applied. *)
     semantics?menu_item_conditional <- fun _ _ _ conditional -> Some conditional?sourceString
@@ -274,15 +263,6 @@ We could add a dynamic eval command.
             javascript_interpolations = extract_javascript_interpolations text?sourceString
         } |> Permanent_Notification |> Command_Pre_Parse_Type.Command |> Some
 
-(* TODO1 #javascript 20260202
-- Find a chokepoint in get_semantics () where, for any given command, we can also record the sourceString and source?startIdx.
-- When we run a command, find a chokepoint where we can catch exceptions and get the line number for the command in question.
-
-- When checking JS, emit the source string and line number for each command.
-
-- Throw exceptions normally, adding the data array to the Exception.Data field. Then handle all exceptions at the top level. Show the window.alert there.
-*)
-
     semantics
 
 // TODO1 #parsing How can we get clearer error messages from the parser?
@@ -294,55 +274,66 @@ let get_grammar_and_semantics
     (characters : Character_Input_Map)
     : obj * obj =
 
-    try
-        let grammar_text = get_grammar_text characters
-        let grammar = ohm?grammar(grammar_text)
+    let grammar_text = get_grammar_text characters
+    let grammar = ohm?grammar(grammar_text)
 
-        let semantics_1 = get_semantics scripts music_tracks backgrounds characters
-        let semantics_2 = grammar?createSemantics()?addOperation("ast", semantics_1)
+    let semantics_1 = get_semantics scripts music_tracks backgrounds characters
+    let semantics_2 = grammar?createSemantics()?addOperation("ast", semantics_1)
 
-        grammar, semantics_2
-(* This should not happen, but get_semantics uses the ? operator, which prevents type checking, so we handle exceptions to be safe. *)
-// TODO1 #parsing We can't serialize the exn with json_stringify. Should probably just add our message and rethrow.
-    with exn -> error "get_grammar_and_semantics" exn.Message [] |> invalidOp
+    grammar, semantics_2
 
 let private parse_script_2
     (grammar : obj)
     (semantics_1 : obj)
+    (script_id : int<scene_id>)
     (script_text : string)
-    : Command_Pre_Parse list =
+    : Command_Pre_Parse_2 list =
 
     let grammar_match_result : obj = grammar?``match``(script_text)
 
     if grammar_match_result?failed() then
+// TODO1 #exceptions Use Log.error () here.
         raise <| Exception grammar_match_result?message
 
     let semantics_2 : obj =
         emitJsExpr (semantics_1, grammar_match_result) "$0($1)"
 
-(* TODO1 #javascript To add script name and line number to JavaScript commands for error reporting, we would need to transform them here. This is the simplest place to do it, as we have the script text and can get the script name. The down side is we must split the JavaScript_Data and maybe Command and Command_Pre_Parse with it. Or we could add option fields to JavaScript_Data. This is simplest, at the cost of allowing a potentially invalid state. Given these fields will only be used for error reporting and can be checked first for safety, that might be acceptable.
-
-Or, when we hit a JS exception, look up the script name and text in Runner_Queue_Helpers.handle_command () using the scene id and scene map? We opted for that since we can also use that information when checking JS.
-*)
-
-    let semantics_application_result = semantics_2?ast()
+    let semantics_application_result = semantics_2?ast() |> unbox<Command_Pre_Parse_1 list>
 
     #if debug
     debug "parse_script_2" String.Empty ["semantics_application_result", json_stringify semantics_application_result]
     #endif
 
+(* Add the scene ID to each command. *)
     semantics_application_result
+        |> List.map (fun command ->
+            {
+                error_data = {
+                    source = command.error_data.source
+                    scene_id = script_id
+                    script_text_index = command.error_data.script_text_index
+                }
+                command = command.command
+            })
 
 let parse_script_1
     (grammar : obj)
     (semantics : obj)
-    (script_name : string)
-    (script_text : string)
-    : Command_Pre_Parse list =
+    (script : Script)
+    : Command_Pre_Parse_2 list =
 
-    try parse_script_2 grammar semantics script_text
+    try parse_script_2 grammar semantics script.id script.content
     with
-        | Semantic_Error exn ->
-            let line_number = get_script_line_number script_text exn.script_text_index
-            error "parse_script_1" exn.message (exn.data @ ["script_name", script_name; "line_number", line_number]) |> invalidOp
-        | exn -> error "parse_script_1" exn.Message ["script_name", script_name] |> invalidOp
+// TODO1 #exceptions We should probably call Log.error () instead of re-raising this. Who do we expect to catch this? If we use Log.error (), we can get rid of Parsing_Semantics_Error_2 and rename Parsing_Semantics_Error_1.
+        | Parsing_Semantics_Error_1 e ->
+            let script_line_number = get_script_line_number script.content e.script_text_index
+            {
+                message = e.message
+                script_name = script.name
+                script_line_number = script_line_number
+                data = e.data
+            } |> Parsing_Semantics_Error_2 |> raise
+        | e ->
+// TODO1 #exceptions Make sure this is right. We should not see a generic exception here.
+            error "parse_script_1" "Failed to parse script." ["script_name", script.name; "message", e.Message] |> invalidOp
+

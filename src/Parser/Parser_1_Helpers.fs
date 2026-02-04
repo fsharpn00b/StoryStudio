@@ -25,13 +25,22 @@ let private error : error_function = error debug_module_name
 
 (* Types *)
 
-type Semantic_Error_Data = {
+(* TODO1 #exceptions As in JavaScript_Interop_1, explain we raise a custom error type because we still need to gather more data, namely the script name and line number that caused the error. Those data are not available to the semantics functions.
+*)
+type Parsing_Semantics_Error_Data_1 = {
     message : string
     script_text_index : int
     data : (string * obj) list
 }
+exception Parsing_Semantics_Error_1 of Parsing_Semantics_Error_Data_1
 
-exception Semantic_Error of Semantic_Error_Data
+type Parsing_Semantics_Error_Data_2 = {
+    message : string
+    script_name : string
+    script_line_number : int
+    data : (string * obj) list
+}
+exception Parsing_Semantics_Error_2 of Parsing_Semantics_Error_Data_2
 
 (* Helper functions - javascript. These are used to parse all commands that allow javascript interpolation. *)
 
@@ -53,6 +62,7 @@ let get_script_line_number
     : int =
     Regex.Matches(script_text.Substring (0, script_text_index), Regex.Escape Environment.NewLine).Count + 1
 
+(* We cannot wait to get the script_text_index from Command_Pre_Parse, because these functions are called to help create a Command_Pre_Parse instance. *)
 let get_music_track_url
     (music_tracks : Map<string, string>)
     (track_name : string)
@@ -62,11 +72,11 @@ let get_music_track_url
     match music_tracks.TryFind track_name with
     | Some url -> url
     | None ->
-        raise <| Semantic_Error {
+        {
             message = "Unknown music track name."
             script_text_index = script_text_index
             data = ["music track name", track_name; "known music tracks", music_tracks]
-        }
+        } |> Parsing_Semantics_Error_1 |> raise
 
 let get_background_url
     (backgrounds : Map<string, string>)
@@ -77,11 +87,11 @@ let get_background_url
     match backgrounds.TryFind background_name with
     | Some url -> url
     | None ->
-        raise <| Semantic_Error {
+        {
             message = "Unknown background name."
             script_text_index = script_text_index
             data = ["background name", background_name; "known backgrounds", backgrounds]
-        }
+        } |> Parsing_Semantics_Error_1 |> raise
 
 let get_character_input_data
     (characters : Character_Input_Map)
@@ -92,11 +102,11 @@ let get_character_input_data
     match characters.TryFind character_short_name with
     | Some character -> character
     | None ->
-        raise <| Semantic_Error {
-            message = "Unknown character."
+        {
+            message = "Unknown character short name."
             script_text_index = script_text_index
             data = ["character_short_name", character_short_name; "known characters", characters]
-        }
+        } |> Parsing_Semantics_Error_1 |> raise
 
 let get_character_sprite_url
     (characters : Character_Input_Map)
@@ -109,11 +119,11 @@ let get_character_sprite_url
     match character.sprites.TryFind character_sprite_name with
     | Some url -> url
     | None ->
-        raise <| Semantic_Error {
-            message = "Unknown character sprite."
+        {
+            message = "Unknown character sprite name."
             script_text_index = script_text_index
             data = ["sprite", character_sprite_name; "character data", character]
-        }
+        } |> Parsing_Semantics_Error_1 |> raise
 
 let get_script_id
     (scripts : Script list)
@@ -124,11 +134,11 @@ let get_script_id
     match scripts |> List.tryFind (fun script -> script.name = destination) with
     | Some script -> script.id
     | None ->
-        raise <| Semantic_Error {
-            message = "Jump destination not found."
+        {
+            message = "Jump destination name not found."
             script_text_index = script_text_index
-            data = ["destination", destination; "scripts", scripts]
-        }
+            data = ["destination_name", destination; "Known destinations", scripts |> List.map (fun script -> script.name) :> obj]
+        } |> Parsing_Semantics_Error_1 |> raise
 
 let get_move_in_semantics
     (characters : Character_Input_Map)
@@ -149,11 +159,12 @@ let get_move_in_semantics
             | "right" -> Character_Move_Direction.Right
 // TODO2 #transitions Add this.
 //            | "bottom" -> Character_Move_Direction.Bottom
-            | _ -> raise <| Semantic_Error {
+            | _ ->
+                {
                     message = "Unknown character move in direction."
                     script_text_index = script_text_index
                     data = ["direction", direction]
-                }
+                } |> Parsing_Semantics_Error_1 |> raise
         position = position
         transition_time = transition_time
     } |> Character_Move_Data_2.In |> Character_Move |> Command_Pre_Parse_Type.Command
@@ -173,11 +184,12 @@ let get_move_out_semantics
             | "right" -> Character_Move_Direction.Right
 // TODO2 #transitions Add this.
 //            | "bottom" -> Character_Move_Direction.Bottom
-            | _ -> raise <| Semantic_Error {
-                    message = "Unknown character move in direction."
+            | _ ->
+                {
+                    message = "Unknown character move out direction."
                     script_text_index = script_text_index
                     data = ["direction", direction]
-                }
+                } |> Parsing_Semantics_Error_1 |> raise
         transition_time = transition_time
     } |> Character_Move_Data_2.Out |> Character_Move |> Command_Pre_Parse_Type.Command
 
@@ -189,19 +201,19 @@ let check_menu_items
     : unit =
 
     if Seq.isEmpty items_1 then
-        raise <| Semantic_Error {
-            message = "Menu must contain at least one item."
+        {
+            message = "Menu must contain at least one item with no conditional."
             script_text_index = script_text_index
             data = ["menu_name", menu_name]
-        }
+        } |> Parsing_Semantics_Error_1 |> raise
     else
         let items_2 = items_1 |> Seq.filter (fun item -> item.conditional.IsNone)
         if Seq.isEmpty items_2 then
-            raise <| Semantic_Error {
+            {
                 message = "Menu must contain at least one item with no conditional."
                 script_text_index = script_text_index
                 data = ["menu_name", menu_name]
-            }
+            } |> Parsing_Semantics_Error_1 |> raise
 
 let check_image_map_items
     (image_map_name : string)
@@ -210,16 +222,16 @@ let check_image_map_items
     : unit =
 
     if Seq.isEmpty items_1 then
-        raise <| Semantic_Error {
+        {
             message = "Image map must contain at least one item."
             script_text_index = script_text_index
             data = ["image_map_name", image_map_name]
-        }
+        } |> Parsing_Semantics_Error_1 |> raise
     else
         let items_2 = items_1 |> Seq.filter (fun item -> item.conditional.IsNone)
         if Seq.isEmpty items_2 then
-            raise <| Semantic_Error {
+            {
                 message = "Image map must contain at least one item with no conditional."
                 script_text_index = script_text_index
                 data = ["image_map_name", image_map_name]
-            }
+            } |> Parsing_Semantics_Error_1 |> raise

@@ -95,6 +95,7 @@ type Runner_Component_Names =
 
 type Runner_Command_Data = {
     command : (int<command_queue_item_id> -> unit) option
+    error_data : Command_Error_Data_2
     debug_data : string
     behavior : Command_Behavior
     components_used : Runner_Component_Names Set

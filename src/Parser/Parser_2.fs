@@ -23,7 +23,8 @@ let private error : error_function = error debug_module_name
 let private handle_command
     (acc : Parser_2_Accumulator)
     (command : Command_Post_Parse_Type)
-    (next_token : Command_Pre_Parse)
+    (token : Command_Pre_Parse_2)
+    (next_token : Command_Pre_Parse_2)
     : Parser_2_Accumulator =
 
     let next_id_for_command, next_available_id = get_next_command_id next_token acc.parent_command_ids acc.current_command_id
@@ -37,6 +38,7 @@ let private handle_command
                         id = acc.current_command_id
                         next_command_id = next_id_for_command
                         parent_command_id = parent_command_id
+                        error_data = token.error_data
                         command = command
                     })
             }
@@ -45,6 +47,7 @@ let private handle_command
 
 let private handle_if
     (acc : Parser_2_Accumulator)
+    (token : Command_Pre_Parse_2)
     (conditional : string)
     : Parser_2_Accumulator =
 
@@ -70,6 +73,7 @@ let private handle_if
                         id = acc.current_command_id
                         next_command_id = Some next_command_id
                         parent_command_id = parent_command_id
+                        error_data = token.error_data
                         command = Command_Post_Parse_Type.If {
                             conditional = conditional
                             child_command_id = child_command_id
@@ -134,7 +138,8 @@ let private handle_else
 
 let private handle_end_if
     (acc : Parser_2_Accumulator)
-    (next_token : Command_Pre_Parse)
+    (token : Command_Pre_Parse_2)
+    (next_token : Command_Pre_Parse_2)
     : Parser_2_Accumulator =
 
 (* Get the ID for the If token to which this End_If token corresponds. Remove the ID from parent_command_ids. *)
@@ -154,6 +159,7 @@ let private handle_end_if
                         id = id_for_command
                         next_command_id = next_id_for_command
                         parent_command_id = Some parent_command_id
+                        error_data = token.error_data
                         command = Command_Post_Parse_Type.End_If
                     })
             }
@@ -161,10 +167,10 @@ let private handle_end_if
             parent_command_ids = parent_command_ids
     }
 
-let parse_commands
+let private parse_commands
     (script_name : string)
     (script_content : string)
-    (tokens_1: Command_Pre_Parse list)
+    (tokens_1: Command_Pre_Parse_2 list)
     : Scene_Data =
 
     let initial_value = {
@@ -185,18 +191,19 @@ let parse_commands
 
         do check_current_token_and_next_token token next_token
         match token.command with
-        | Command_Pre_Parse_Type.Command command -> handle_command acc (Command_Post_Parse_Type.Command command) next_token
-        | Command_Pre_Parse_Type.If conditional -> handle_if acc conditional
+        | Command_Pre_Parse_Type.Command command -> handle_command acc (Command_Post_Parse_Type.Command command) token next_token
+        | Command_Pre_Parse_Type.If conditional -> handle_if acc token conditional
         | Command_Pre_Parse_Type.Else_If conditional -> handle_else_if acc conditional
         | Command_Pre_Parse_Type.Else -> handle_else acc
-        | Command_Pre_Parse_Type.End_If -> handle_end_if acc next_token
-        | Command_Pre_Parse_Type.Menu menu -> handle_command acc (Command_Post_Parse_Type.Menu menu) next_token
-        | Command_Pre_Parse_Type.Image_Map image_map_data -> handle_command acc (Command_Post_Parse_Type.Image_Map image_map_data) next_token
-        | Command_Pre_Parse_Type.End_Image_Map transition_time -> handle_command acc (Command_Post_Parse_Type.End_Image_Map transition_time) next_token
+        | Command_Pre_Parse_Type.End_If -> handle_end_if acc token next_token
+        | Command_Pre_Parse_Type.Menu menu -> handle_command acc (Command_Post_Parse_Type.Menu menu) token next_token
+        | Command_Pre_Parse_Type.Image_Map image_map_data -> handle_command acc (Command_Post_Parse_Type.Image_Map image_map_data) token next_token
+        | Command_Pre_Parse_Type.End_Image_Map transition_time -> handle_command acc (Command_Post_Parse_Type.End_Image_Map transition_time) token next_token
     )
 
+    let last_token = List.last tokens_1
 (* The last token should be either a command or End_If. *)
-    match (List.last tokens_1).command with
+    match last_token.command with
 
     | Command_Pre_Parse_Type.Command command ->
         if result.parent_command_ids.Length > 0 then
@@ -208,6 +215,7 @@ let parse_commands
                         id = result.current_command_id
                         next_command_id = None
                         parent_command_id = None
+                        error_data = last_token.error_data
                         command = Command_Post_Parse_Type.Command command
                     })
             }
@@ -228,6 +236,7 @@ let parse_commands
                         id = id_for_command
                         next_command_id = None
                         parent_command_id = Some parent_command_id
+                        error_data = last_token.error_data
                         command = Command_Post_Parse_Type.End_If
                     })
             }
@@ -248,7 +257,7 @@ let get_scene_map_and_javascript
     scripts
         |> List.map (fun script ->
 (* parse_script_1 simply wraps parse_script_2 in a try/catch block. *)
-            match parse_script_1 grammar semantics script.name script.content with
+            match parse_script_1 grammar semantics script with
             | [] -> error "get_scene_map_and_javascript" "Script is empty or contains only comments." ["script name", script.name] |> invalidOp
             | commands -> script.id, parse_commands script.name script.content commands
         )

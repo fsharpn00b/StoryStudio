@@ -29,7 +29,11 @@ type Parser_2_Accumulator = {
 For Menu and Image_Map, we check for invalid token sequences with Parser_1_Match_Functions.collect_menu () and collect_image_map (). Menu and Image_Map cannot have nested commands, whereas If/Else_If/Else can.
 Parser_1_Match_Patterns.match_if_start (), match_else_if (), match_else (), and match_if_end () do not check for invalid token sequences. They just get the corresponding conditionals.
 *)
-let check_current_token_and_next_token (token : Command_Pre_Parse) (next_token : Command_Pre_Parse) : unit =
+let check_current_token_and_next_token
+    (token : Command_Pre_Parse_2)
+    (next_token : Command_Pre_Parse_2)
+    : unit =
+
     let tokens = ["token", token :> obj; "next_token", next_token :> obj]
 
     match token.command with
@@ -56,7 +60,13 @@ let check_current_token_and_next_token (token : Command_Pre_Parse) (next_token :
 
 (* The first return parameter is the next_command_id for the current command. The second is the ID to be used for the next command. These are not always the same. See the Else_If/Else/End_If case.
 *)
-let get_next_command_id (next_token : Command_Pre_Parse) (parent_command_ids : int<command_id> list) (id : int<command_id>) : int<command_id> option * int<command_id> =
+let get_next_command_id
+    (next_token : Command_Pre_Parse_2)
+    (parent_command_ids : int<command_id> list)
+    (id : int<command_id>)
+// TODO1 #parsing Replace with anonymous record.
+    : int<command_id> option * int<command_id> =
+
     match next_token.command with
 
     | Command_Pre_Parse_Type.Command _
@@ -92,7 +102,12 @@ When we encounter End_If as the current token, we set its ID to the previously r
 *)
 
 (* Get the parent If block for an Else_If or Else token. *)
-let get_parent_if (command_map : Scene_Data) (parent_command_ids : int<command_id> list) : Command_Post_Parse * int<command_id> * If_Block =
+let get_parent_if
+    (command_map : Scene_Data)
+    (parent_command_ids : int<command_id> list)
+// TODO1 #parsing Replace with anonymous record.
+    : Command_Post_Parse * int<command_id> * If_Block =
+
     let parent_command_id =
         match parent_command_ids with
         | head :: _ -> head

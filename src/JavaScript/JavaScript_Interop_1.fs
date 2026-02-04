@@ -7,6 +7,8 @@ open System
 open Browser.Dom
 // jsNative
 open Fable.Core
+// ? operator
+open Fable.Core.JsInterop
 
 open Log
 
@@ -18,49 +20,61 @@ let private debug : log_function = debug debug_module_name
 let private warn : warn_function = warn debug_module_name
 let private error : error_function = error debug_module_name
 
+(* Types *)
+
 (* TODO1 #javascript #future Make it so value can be any type. Including discriminated unions.
 Replace this with a JavaScript_Environment type to which the author can add arbitrary variable definitions.
 *)
 type Menu_Variables = Map<string, int>
 
+(* We cannot include script_text_index here because it is not available to eval_js_with_exception (), which can be called for non-command reasons:
+1 Getting the JavaScript state as part of getting the game state to create a snapshot.
+2 Getting the JavaScript state for debugging.
+(end)
+
+Instead, we get script_text_index for each command in Parser_1_Semantics. Then, in Runner_Queue.run_command (), we check for this exception type.
+*)
+type Run_Time_JavaScript_Error_Data = {
+    code : string
+    inner : exn
+}
+exception Run_Time_JavaScript_Error of Run_Time_JavaScript_Error_Data
+
 (* Functions - JavaScript *)
 
-(* Notes
-- window.report_error is the error () function defined in Log, not the version we have defined here that is closed over the module name (JavaScript_Interop_1), so we still have to provide that.
-- We cannot get Fable to emit an F# tuple to JavaScript correctly, so we must leave the data parameter to window.report_error ()/Log.error () empty.
-*)
-
-// TODO1 #javascript Use this again if we move error handling higher up the call chain.
-(*
+(* eval_js () can throw an exception, which must be handled by the caller. The only way to handle it here is in the emit attribute, which does not let us use our custom F# exception types. *)
 [<Emit("eval($0)")>]
-*)
+let private eval_js (code : string) : obj = jsNative
 
-[<Emit("""
-(function() {
-    try {
-        return eval($0);
-    } catch (exn) {
-        throw (window.report_error("JavaScript_Interop_1", "eval_js", `\nJavaScript error:\n${exn.message}\nCode:\n${$0}`, []));
-    }
-})()
-""")>]
-let eval_js (code : string) : obj = jsNative
+(* This raises an exception, rather than call Log.error (), because we still need to get the script name and line number that caused the error. In Runner_Queue.run_command (), we check for this exception type. We use a custom exception type because Fable does not support the .NET exception Data field. *)
+let eval_js_with_exception (code : string) : obj =
+    try eval_js code
+    with e ->
+        {
+            code = code
+            inner = e
+        } |> Run_Time_JavaScript_Error |> raise
 
 let private emit_menu_variables (menu_variables : Menu_Variables) : string =
     (String.Empty, menu_variables) ||> Seq.fold (fun acc kv ->
         $"{acc}var {kv.Key} = {kv.Value};{Environment.NewLine}"
     )
 
-(* TODO1 #javascript Instead of code, take JavaScript_Data? Then catch exception from eval_js?
+(* TODO1 #javascript Re-check everywhere we can use conditionals and make sure they're included in check_javascript. We don't think notifications are, for instance? No, they are. Just check all callers of this function and make a list.
 
-- Problem, this is also called when evaluating conditionals. Which means if, else if, etc need to store their script text index as well.
+- Also, test error handling for every command that can use JavaScript.
 
-- Also, re-check everywhere we can use conditionals and make sure they're included in check_javascript. We don't think notifications are, for instance? No, they are. Just check all callers of this function and make a list.
-
-- This is probably the right place to catch exceptions from eval_js, add data such as line number, then rethrow.
+1 js
+js console.log (x);
+(end)
+2 js/endjs
+js
+console.log (x);
+endjs
+(end)
 *)
 let eval_js_with_menu_variables<'T> (code : string) (menu_variables : Menu_Variables) : 'T =
-    eval_js $"{emit_menu_variables menu_variables}{code}" |> unbox<'T>
+    eval_js_with_exception $"{emit_menu_variables menu_variables}{code}" |> unbox<'T>
 
 (* In some cases we must run JavaScript code that might fail. If the JavaScript code fails, eval_js_string returns null, which is a valid value of System.String. We check for that here and return String.Empty instead. *)
 (* We do not use this for now.

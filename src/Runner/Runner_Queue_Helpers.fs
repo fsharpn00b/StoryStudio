@@ -34,7 +34,7 @@ let private end_image_map_behavior = Wait_For_Callback { continue_afterward = tr
 
 (* Helper functions *)
 
-let private command_to_behavior (command : Command) : Command_Behavior =
+let private command_to_behavior (command : Command_Type) : Command_Behavior =
     match command with
     | Background_Fade_In _
     | Background_Fade_Out _
@@ -60,7 +60,7 @@ We set continue_after_running to false because, even if the dialogue box has its
     | JavaScript_Block _ -> Continue_Immediately { autosave = false }
     | Jump _ -> Continue_Immediately { autosave = true }
 
-let private command_to_component_ids (command : Command) : Runner_Component_Names Set =
+let private command_to_component_ids (command : Command_Type) : Runner_Component_Names Set =
     match command with
     | Background_Fade_In _
     | Background_Fade_Out _
@@ -89,7 +89,8 @@ let private handle_command
 (* This function can change both scene and next_command_id if we get a Jump command. *)
     (current_scene_id : int<scene_id>)
     (next_command_id_1 : int<command_id> option)
-    (command_1 : Command)
+    (command_1 : Command_Type)
+    (error_data : Command_Error_Data_2)
     (menu_variables : Menu_Variables)
     : Runner_Command_Data =
 
@@ -157,22 +158,11 @@ let private handle_command
                     eval_js_with_menu_variables<unit> command_2.code menu_variables
                     runner_component_interfaces.current.notifications.current.update_permanent_notification menu_variables
 
-(* TODO1 #javascript Need to decide where to handle the exception.
-
-- handle_if, handle_menu, etc will need these as well.
-*)
         | JavaScript_Block command_2 ->
             Some <| fun _ ->
                 do
-                    try eval_js_with_menu_variables<unit> command_2.code menu_variables
-                    with | exn ->
-                        let scene =
-                            match scenes.TryFind current_scene_id with
-                            | Some scene -> scene
-                            | None -> "TODO1 #javascript Additional error" |> invalidOp
-                        let line_number = get_script_line_number scene.content command_2.script_text_index
-                        console.log $"Error in scene {scene.name}, line number {line_number}:"
-                        raise exn
+                    eval_js_with_menu_variables<unit> command_2.code menu_variables
+                    runner_component_interfaces.current.notifications.current.update_permanent_notification menu_variables
 
         | Jump _ -> None
 
@@ -186,6 +176,7 @@ let private handle_command
 
     {
         command = command_2
+        error_data = error_data
         debug_data = command_1.ToString ()
         behavior = behavior
         components_used = component_ids
@@ -197,6 +188,7 @@ let private handle_if
     (current_scene_id : int<scene_id>)
     (next_command_id_1 : int<command_id> option)
     (command : If_Block)
+    (error_data : Command_Error_Data_2)
     (menu_variables : Menu_Variables)
     : Runner_Command_Data =
 
@@ -223,6 +215,7 @@ let private handle_if
 
     {
         command = None
+        error_data = error_data
         debug_data = command.ToString ()
         behavior = if_behavior
         components_used = Set.empty
@@ -235,6 +228,7 @@ let private handle_menu
     (current_scene_id : int<scene_id>)
     (next_command_id : int<command_id> option)
     (menu_data_1 : Menu_Data_1)
+    (error_data : Command_Error_Data_2)
     (menu_variables : Menu_Variables)
     : Runner_Command_Data =
 
@@ -261,6 +255,7 @@ let private handle_menu
 
     {
         command = Some command
+        error_data = error_data
         debug_data = menu_data_1.ToString ()
         behavior = menu_behavior
         components_used = Set.singleton Menu
@@ -273,6 +268,7 @@ let private handle_image_map
     (current_scene_id : int<scene_id>)
     (next_command_id : int<command_id> option)
     (image_map_data_1 : Image_Map_Data)
+    (error_data : Command_Error_Data_2)
     (menu_variables : Menu_Variables)
     : Runner_Command_Data =
 
@@ -290,6 +286,7 @@ let private handle_image_map
 
     {
         command = Some command
+        error_data = error_data
         debug_data = image_map_data_1.ToString ()
         behavior = image_map_behavior
         components_used = Set.singleton Image_Map
@@ -309,13 +306,14 @@ let get_command_data
 
     match command.command with
 
-    | Command_Post_Parse_Type.Command command_1 -> handle_command runner_component_interfaces scenes scene_id command.next_command_id command_1 menu_variables
+    | Command_Post_Parse_Type.Command command_1 -> handle_command runner_component_interfaces scenes scene_id command.next_command_id command_1 command.error_data menu_variables
 
-    | Command_Post_Parse_Type.If command_2 -> handle_if scene_id command.next_command_id command_2 menu_variables
+    | Command_Post_Parse_Type.If command_2 -> handle_if scene_id command.next_command_id command_2 command.error_data menu_variables
 
     | Command_Post_Parse_Type.End_If ->
         {
             command = None
+            error_data = command.error_data
             debug_data = "End_If"
             behavior = end_if_behavior
             components_used = Set.empty
@@ -323,13 +321,14 @@ let get_command_data
             next_command_id = command.next_command_id
         }
 
-    | Command_Post_Parse_Type.Menu command_3 -> handle_menu runner_component_interfaces scene_id command.next_command_id command_3 menu_variables
+    | Command_Post_Parse_Type.Menu command_3 -> handle_menu runner_component_interfaces scene_id command.next_command_id command_3 command.error_data menu_variables
 
-    | Command_Post_Parse_Type.Image_Map command_4 -> handle_image_map runner_component_interfaces scene_id command.next_command_id command_4 menu_variables
+    | Command_Post_Parse_Type.Image_Map command_4 -> handle_image_map runner_component_interfaces scene_id command.next_command_id command_4 command.error_data menu_variables
 
     | Command_Post_Parse_Type.End_Image_Map transition_time ->
         {
             command = Some <| fun (command_queue_item_id : int<command_queue_item_id>) -> runner_component_interfaces.current.image_map.current.fade_out transition_time command_queue_item_id
+            error_data = command.error_data
             debug_data = "End_Image_Map"
             behavior = end_image_map_behavior
             components_used = Set.singleton Runner_Component_Names.Image_Map

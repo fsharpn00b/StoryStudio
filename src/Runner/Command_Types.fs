@@ -14,14 +14,12 @@ type Dialogue_Data = {
     javascript_interpolations : string list
 }
 
-// TODO1 #javascript Revert this to being just a string. Or just remove script_text_index?
 type JavaScript_Data = {
     code : string
     script_text_index : int
 }
 
-// TODO1 #parsing Rename to Command_Type?
-type Command =
+type Command_Type =
     | Music_Play of string
     | Music_Stop
     | Background_Fade_In of Background_Fade_In_Data
@@ -70,7 +68,7 @@ type Command_Behavior =
 
 (* This is after we have matched a command but before we have parsed it. Parsing mostly means to assign command IDs and deal with If/Else_If/Else/End_If statements. *)
 type Command_Pre_Parse_Type =
-    | Command of Command
+    | Command of Command_Type
     | If of string
     | Else_If of string
     | Else
@@ -79,9 +77,24 @@ type Command_Pre_Parse_Type =
     | Image_Map of Image_Map_Data
     | End_Image_Map of Transition_Time
 
-type Command_Pre_Parse = {
+type Command_Error_Data_1 = {
     source : string
     script_text_index : int
+}
+
+type Command_Pre_Parse_1 = {
+    error_data : Command_Error_Data_1
+    command : Command_Pre_Parse_Type
+}
+
+type Command_Error_Data_2 = {
+    source : string
+    scene_id : int<scene_id>
+    script_text_index : int
+}
+
+type Command_Pre_Parse_2 = {
+    error_data : Command_Error_Data_2
     command : Command_Pre_Parse_Type
 }
 
@@ -100,20 +113,20 @@ type If_Block = {
 }
 
 type Command_Post_Parse_Type =
-    | Command of Command
+    | Command of Command_Type
     | If of If_Block
     | End_If
     | Menu of Menu_Data_1
     | Image_Map of Image_Map_Data
     | End_Image_Map of Transition_Time
 
-// TODO1 #parsing We'll need to copy the source and script_text_index here also.
 type Command_Post_Parse =
     {
         id : int<command_id>
         next_command_id : int<command_id> option
         parent_command_id : int<command_id> option
         command : Command_Post_Parse_Type
+        error_data : Command_Error_Data_2
     }
 
 type Scene_Data = {
