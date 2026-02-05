@@ -129,7 +129,7 @@ let run
 (* window.state must be defined, so we provide an empty definition here in case the author does not define it. If they do, their definition will replace ours. *)
     if Initial_Run = reason then
         do
-            set_state_in_js "{}"
+            set_state_in_js_with_exception "{}"
             poll_for_plugins_to_be_ready ()
     else do continuation ()
 

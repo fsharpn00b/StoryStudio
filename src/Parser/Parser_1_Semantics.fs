@@ -285,15 +285,13 @@ let get_grammar_and_semantics
 let private parse_script_2
     (grammar : obj)
     (semantics_1 : obj)
-    (script_id : int<scene_id>)
-    (script_text : string)
+    (script : Script)
     : Command_Pre_Parse_2 list =
 
-    let grammar_match_result : obj = grammar?``match``(script_text)
+    let grammar_match_result : obj = grammar?``match``(script.content)
 
     if grammar_match_result?failed() then
-// TODO1 #exceptions Use Log.error () here.
-        raise <| Exception grammar_match_result?message
+        error "parse_script_2" "Failed to parse script." ["script_name", script.name; "message", grammar_match_result?message] |> invalidOp
 
     let semantics_2 : obj =
         emitJsExpr (semantics_1, grammar_match_result) "$0($1)"
@@ -310,7 +308,7 @@ let private parse_script_2
             {
                 error_data = {
                     source = command.error_data.source
-                    scene_id = script_id
+                    scene_id = script.id
                     script_text_index = command.error_data.script_text_index
                 }
                 command = command.command
@@ -322,18 +320,13 @@ let parse_script_1
     (script : Script)
     : Command_Pre_Parse_2 list =
 
-    try parse_script_2 grammar semantics script.id script.content
-    with
-// TODO1 #exceptions We should probably call Log.error () instead of re-raising this. Who do we expect to catch this? If we use Log.error (), we can get rid of Parsing_Semantics_Error_2 and rename Parsing_Semantics_Error_1.
-        | Parsing_Semantics_Error_1 e ->
-            let script_line_number = get_script_line_number script.content e.script_text_index
-            {
-                message = e.message
-                script_name = script.name
-                script_line_number = script_line_number
-                data = e.data
-            } |> Parsing_Semantics_Error_2 |> raise
-        | e ->
-// TODO1 #exceptions Make sure this is right. We should not see a generic exception here.
-            error "parse_script_1" "Failed to parse script." ["script_name", script.name; "message", e.Message] |> invalidOp
-
+    try parse_script_2 grammar semantics script with
+    | Parsing_Semantics_Error e ->
+        let script_line_number = get_script_line_number script.content e.script_text_index
+        error "parse_script_1" "Failed to parse script." (e.data @ [
+            "message", e.message
+            "script_name", script.name
+            "script_line_number", script_line_number
+        ]) |> invalidOp
+(* We should not see a generic exception here, so we just re-raise this. *)
+    | _ -> reraise ()

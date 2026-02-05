@@ -64,8 +64,10 @@ let get_next_command_id
     (next_token : Command_Pre_Parse_2)
     (parent_command_ids : int<command_id> list)
     (id : int<command_id>)
-// TODO1 #parsing Replace with anonymous record.
-    : int<command_id> option * int<command_id> =
+    : {|
+        next_id_for_command : int<command_id> option
+        next_available_id : int<command_id>
+    |} =
 
     match next_token.command with
 
@@ -73,7 +75,11 @@ let get_next_command_id
     | Command_Pre_Parse_Type.If _
     | Command_Pre_Parse_Type.Menu _
     | Command_Pre_Parse_Type.Image_Map _
-    | Command_Pre_Parse_Type.End_Image_Map _ -> Some <| id + 1<command_id>, id + 1<command_id>
+    | Command_Pre_Parse_Type.End_Image_Map _ ->
+        {|
+            next_id_for_command = Some <| id + 1<command_id>
+            next_available_id = id + 1<command_id>
+        |}
     | Command_Pre_Parse_Type.Else_If _
     | Command_Pre_Parse_Type.Else
     | Command_Pre_Parse_Type.End_If ->
@@ -95,18 +101,20 @@ ID  Token       next_command_id     parent_command_id       child_command_id
 When we encounter Else_If, Else, or End_If as the next token, we return parent ID + 1 (2) as the next ID for the current token, and current ID as the next ID to use after the End_If. We do not need to increment the current ID because we do not create commands for Else_If or Else, and we have already reserved an ID for End_If.
 When we encounter End_If as the current token, we set its ID to the previously reserved ID, 2, and do not increment the current ID, 4.
 *)
-        Some <| parent_command_id + 1<command_id>, id
-(* We do not use this for now. *)
-(*
-    | _ -> None, id
-*)
+        {|
+            next_id_for_command = Some <| parent_command_id + 1<command_id>
+            next_available_id = id
+        |}
 
 (* Get the parent If block for an Else_If or Else token. *)
 let get_parent_if
     (command_map : Scene_Data)
     (parent_command_ids : int<command_id> list)
-// TODO1 #parsing Replace with anonymous record.
-    : Command_Post_Parse * int<command_id> * If_Block =
+    : {|
+        parent : Command_Post_Parse
+        parent_command_id : int<command_id>
+        if_block : If_Block
+    |} =
 
     let parent_command_id =
         match parent_command_ids with
@@ -117,5 +125,10 @@ let get_parent_if
         | Some parent -> parent
         | None -> error "get_parent_if" "Tried to get parent (If block) for ElseIf, Else, or EndIf, but the parent was not found." ["parent_command_id", parent_command_id; "command_map", command_map] |> invalidOp
     match parent.command with
-    | Command_Post_Parse_Type.If if_block -> parent, parent_command_id, if_block
+    | Command_Post_Parse_Type.If if_block ->
+        {|
+            parent = parent
+            parent_command_id = parent_command_id
+            if_block = if_block
+        |}
     | _ -> error "get_parent_if" "Tried to get parent for ElseIf, Else, or EndIf, but the parent is not an If block." ["parent", parent; "parent_command_id", parent_command_id; "command_map", command_map] |> invalidOp

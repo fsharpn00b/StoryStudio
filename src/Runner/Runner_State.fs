@@ -96,7 +96,7 @@ We might want to get the state at the most recent pausable point (which might be
         runner_component_interfaces.current.image_map.current.set_state component_data.image_map
         runner_component_interfaces.current.music.current.set_state component_data.music
         runner_component_interfaces.current.notifications.current.set_state component_data.notifications
-        set_state_in_js component_data.javascript
+        set_state_in_js_with_exception component_data.javascript
 
 (* We set the command state afterward to prevent having it overwritten due to a component completing an existing transition (on its own, not because we called its set_state () method) after we set the command state but before we call the components' set_state () methods.
 *)

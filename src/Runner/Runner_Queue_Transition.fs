@@ -102,8 +102,16 @@ let remove_transition_1
             let command_1 =
                 match queue_data.commands.TryFind command_queue_item_id with
 
-                | None -> error "remove_transition" "Command queue item not found." ["command_queue_item_id", command_queue_item_id; "commands", queue_data.commands |> Seq.map (fun kv ->
-                $"Command queue id: {kv.Key}. Command: {kv.Value.command_data.debug_data}") |> Seq.toList :> obj] |> invalidOp
+                | None ->
+                    error
+                        "remove_transition"
+                        "Command queue item not found."
+                        [
+                            "command_queue_item_id", command_queue_item_id
+                            "known_commands", queue_data.commands |> Seq.map (fun kv ->
+                                $"command_queue_item_id: {kv.Key}. command: {kv.Value.command_data.error_data.source}"
+                            ) |> Seq.toList :> obj
+                        ] |> invalidOp
 
 (* Remove the transition (as represented by its component ID) from the command. *)
                 | Some command ->

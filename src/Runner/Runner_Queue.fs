@@ -56,30 +56,36 @@ let private run_command
     (f : unit -> unit)
     : unit =
 
-// TODO1 #exceptions Why is this closed over error_data? Alternatively, why should it take script_text_index as a parameter? known_error_data should be the only parameter, as it comes from the caught exception.
     let get_script_name_and_line_number
-        (script_text_index : int)
         (known_error_data : (string * obj) list)
         : string * int =
 
         let scene =
             match scenes.TryFind error_data.scene_id with
             | Some scene -> scene
-// TODO1 #exceptions Roll Runner_Command_Data.debug_data into error_data. Or eliminate it, now that we have error_data.source.
-            | None -> error "run_command" "While trying to get the scene name and line number for a command that raised an error, we encountered an additional error: the scene ID for this command is unknown." (known_error_data @ ["scene_id", error_data.scene_id; "source", error_data.source; "script_text_index", error_data.script_text_index]) |> invalidOp
-        scene.name, get_script_line_number scene.content script_text_index
+            | None ->
+                error
+                    "run_command"
+                    "While trying to get the scene name and line number for a command that raised an error, we encountered an additional error: the scene ID for this command is unknown."
+                    (known_error_data @ [
+                        "scene_id", error_data.scene_id
+                        "known_scenes", scenes |> Seq.map (fun kv ->
+                            $"scene_id: {kv.Key}. scene_name: {kv.Value.name}"
+                        ) :> obj
+                        "source", error_data.source
+                        "script_text_index", error_data.script_text_index
+                    ]) |> invalidOp
+        scene.name, get_script_line_number scene.content error_data.script_text_index
 
     try f () with
     | Run_Time_JavaScript_Error e ->
-        let known_error_data = ["code", e.code :> obj]
-        let script_name, script_line_number = get_script_name_and_line_number error_data.script_text_index known_error_data
+        let known_error_data = ["code", e.code :> obj; "message", e.inner.Message]
+        let script_name, script_line_number = get_script_name_and_line_number known_error_data
         error "run_command" "JavaScript error." (known_error_data @ ["script_name", script_name; "script_line_number", script_line_number]) |> invalidOp
     | e ->
-(* TODO1 #exceptions Make sure this is right.
-- Can we just rethrow this? The only exception we should see here is one already raised by Log.error ().
-*)
+(* We should not see a generic exception here. If we catch an error raised by Log.error (), this presumably shows the user two alerts. However, we do want to add the script name and line number for the command in question. *)
         let known_error_data = ["message", e.Message :> obj]
-        let script_name, script_line_number = get_script_name_and_line_number error_data.script_text_index known_error_data
+        let script_name, script_line_number = get_script_name_and_line_number known_error_data
         error "run_command" "Error running command." (known_error_data @ ["script_name", script_name; "script_line_number", script_line_number]) |> invalidOp
 
 let private add_command_to_queue
@@ -109,7 +115,7 @@ We set autosave here because it can be set by commands with either type of behav
         }
         components_used_by_commands =
             if Set.empty <> Set.intersect queue_data.components_used_by_commands command_data.components_used then
-                do warn "add_command_to_queue" false "Overlap between components used by command and components used by commands already in queue." ["Components used by commands already in queue", queue_data.components_used_by_commands; "command", command_data.debug_data; "Components used by command", command_data.components_used]
+                do warn "add_command_to_queue" false "Overlap between components used by command and components used by commands already in queue." ["Components used by commands already in queue", queue_data.components_used_by_commands; "command", command_data.error_data.source; "Components used by command", command_data.components_used]
             Set.union queue_data.components_used_by_commands command_data.components_used
         autosave =
             queue_data.autosave ||

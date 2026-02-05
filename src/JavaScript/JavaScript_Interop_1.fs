@@ -32,7 +32,7 @@ type Menu_Variables = Map<string, int>
 2 Getting the JavaScript state for debugging.
 (end)
 
-Instead, we get script_text_index for each command in Parser_1_Semantics. Then, in Runner_Queue.run_command (), we check for this exception type.
+Instead, we get script_text_index for each command in Parser_1_Semantics. Then, in Runner_Queue.run_command (), we check for this exception type and add the script name and calculate the line number that caused the error.
 *)
 type Run_Time_JavaScript_Error_Data = {
     code : string
@@ -48,8 +48,8 @@ let private eval_js (code : string) : obj = jsNative
 
 (* This raises an exception, rather than call Log.error (), because we still need to get the script name and line number that caused the error. In Runner_Queue.run_command (), we check for this exception type. We use a custom exception type because Fable does not support the .NET exception Data field. *)
 let eval_js_with_exception (code : string) : obj =
-    try eval_js code
-    with e ->
+    try eval_js code with
+    | e ->
         {
             code = code
             inner = e

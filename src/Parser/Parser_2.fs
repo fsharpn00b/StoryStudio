@@ -27,7 +27,8 @@ let private handle_command
     (next_token : Command_Pre_Parse_2)
     : Parser_2_Accumulator =
 
-    let next_id_for_command, next_available_id = get_next_command_id next_token acc.parent_command_ids acc.current_command_id
+    let result = get_next_command_id next_token acc.parent_command_ids acc.current_command_id
+    let next_id_for_command, next_available_id = result.next_id_for_command, result.next_available_id
     let parent_command_id = match acc.parent_command_ids with | head :: _ -> Some head | _ -> None
 
     {
@@ -94,7 +95,8 @@ let private handle_else_if
 
     let child_command_id = acc.current_command_id + 1<command_id>
 (* Get the If block to which this Else_If token belongs. Add the Else_If branch to the If block. *)
-    let parent, parent_command_id, if_block = get_parent_if acc.scene acc.parent_command_ids
+    let result = get_parent_if acc.scene acc.parent_command_ids
+    let parent, parent_command_id, if_block = result.parent, result.parent_command_id, result.if_block
     let if_block = {
         if_block with
             else_if_blocks = if_block.else_if_blocks @ [{ conditional = conditional; child_command_id = child_command_id }]
@@ -117,7 +119,8 @@ let private handle_else
 
     let child_command_id = acc.current_command_id + 1<command_id>
 (* Get the If block to which this Else token belongs. Add the Else branch to the If block. *)
-    let parent, parent_command_id, if_block = get_parent_if acc.scene acc.parent_command_ids
+    let result = get_parent_if acc.scene acc.parent_command_ids
+    let parent, parent_command_id, if_block = result.parent, result.parent_command_id, result.if_block
     if not if_block.else_block.IsNone then
         error "handle_else" "If block already has an Else block." ["if_block", if_block; "scene", acc.scene] |> invalidOp
     let if_block = {
@@ -149,7 +152,8 @@ let private handle_end_if
         | _ -> error "handle_end_if" "Tried to get parent ID (If block ID) for EndIf, but there is no parent ID." ["scene", acc.scene; "current_command_id", acc.current_command_id; "next_token", next_token] |> invalidOp
 (* parent_command_id + 1 is the ID we reserved earlier for the End_If. *)
     let id_for_command = parent_command_id + 1<command_id>
-    let next_id_for_command, next_available_id = get_next_command_id next_token parent_command_ids acc.current_command_id
+    let result = get_next_command_id next_token parent_command_ids acc.current_command_id
+    let next_id_for_command, next_available_id = result.next_id_for_command, result.next_available_id
 
     {
         acc with

@@ -177,7 +177,6 @@ let private handle_command
     {
         command = command_2
         error_data = error_data
-        debug_data = command_1.ToString ()
         behavior = behavior
         components_used = component_ids
         next_command_scene_id = next_command_scene_id
@@ -216,7 +215,6 @@ let private handle_if
     {
         command = None
         error_data = error_data
-        debug_data = command.ToString ()
         behavior = if_behavior
         components_used = Set.empty
         next_command_scene_id = current_scene_id
@@ -256,7 +254,6 @@ let private handle_menu
     {
         command = Some command
         error_data = error_data
-        debug_data = menu_data_1.ToString ()
         behavior = menu_behavior
         components_used = Set.singleton Menu
         next_command_scene_id = current_scene_id
@@ -287,7 +284,6 @@ let private handle_image_map
     {
         command = Some command
         error_data = error_data
-        debug_data = image_map_data_1.ToString ()
         behavior = image_map_behavior
         components_used = Set.singleton Image_Map
         next_command_scene_id = current_scene_id
@@ -314,7 +310,6 @@ let get_command_data
         {
             command = None
             error_data = command.error_data
-            debug_data = "End_If"
             behavior = end_if_behavior
             components_used = Set.empty
             next_command_scene_id = scene_id
@@ -329,7 +324,6 @@ let get_command_data
         {
             command = Some <| fun (command_queue_item_id : int<command_queue_item_id>) -> runner_component_interfaces.current.image_map.current.fade_out transition_time command_queue_item_id
             error_data = command.error_data
-            debug_data = "End_Image_Map"
             behavior = end_image_map_behavior
             components_used = Set.singleton Runner_Component_Names.Image_Map
             next_command_scene_id = scene_id

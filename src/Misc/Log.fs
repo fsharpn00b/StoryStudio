@@ -17,7 +17,6 @@ open Utilities
 (end)
 
 When we catch a .NET exception, we extract the message.
-TODO1 #exceptions Verify that.
 *)
 
 (* Types *)
@@ -66,5 +65,8 @@ let error (module_name : string) (function_name : string) (message : string) (da
     do window.alert $"{message}{Environment.NewLine}See browser console for more information."
     log module_name function_name Error message data
 
+(* We do not use this for now. *)
 (* This makes the error () function accessible from JavaScript. *)
+(*
 do window?report_error <- error
+*)
