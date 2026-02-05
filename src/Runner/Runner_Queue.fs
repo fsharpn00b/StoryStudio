@@ -56,37 +56,18 @@ let private run_command
     (f : unit -> unit)
     : unit =
 
-    let get_script_name_and_line_number
-        (known_error_data : (string * obj) list)
-        : string * int =
-
-        let scene =
-            match scenes.TryFind error_data.scene_id with
-            | Some scene -> scene
-            | None ->
-                error
-                    "run_command"
-                    "While trying to get the scene name and line number for a command that raised an error, we encountered an additional error: the scene ID for this command is unknown."
-                    (known_error_data @ [
-                        "scene_id", error_data.scene_id
-                        "known_scenes", scenes |> Seq.map (fun kv ->
-                            $"scene_id: {kv.Key}. scene_name: {kv.Value.name}"
-                        ) :> obj
-                        "source", error_data.source
-                        "script_text_index", error_data.script_text_index
-                    ]) |> invalidOp
-        scene.name, get_script_line_number scene.content error_data.script_text_index
+    let known_error_data_1 = ["source", error_data.source :> obj]
 
     try f () with
     | Run_Time_JavaScript_Error e ->
-        let known_error_data = ["code", e.code :> obj; "message", e.inner.Message]
-        let script_name, script_line_number = get_script_name_and_line_number known_error_data
-        error "run_command" "JavaScript error." (known_error_data @ ["script_name", script_name; "script_line_number", script_line_number]) |> invalidOp
+        let known_error_data_2 = known_error_data_1 @ ["code", e.code; "message", e.inner.Message]
+        let script_name, script_line_number = get_script_name_and_line_number scenes "run_command" error_data known_error_data_2
+        error "run_command" "JavaScript error." (known_error_data_2 @ ["script_name", script_name; "script_line_number", script_line_number]) |> invalidOp
     | e ->
 (* We should not see a generic exception here. If we catch an error raised by Log.error (), this presumably shows the user two alerts. However, we do want to add the script name and line number for the command in question. *)
-        let known_error_data = ["message", e.Message :> obj]
-        let script_name, script_line_number = get_script_name_and_line_number known_error_data
-        error "run_command" "Error running command." (known_error_data @ ["script_name", script_name; "script_line_number", script_line_number]) |> invalidOp
+        let known_error_data_2 = known_error_data_1 @ ["message", e.Message]
+        let script_name, script_line_number = get_script_name_and_line_number scenes "run_command" error_data known_error_data_2
+        error "run_command" "Error running command." (known_error_data_2 @ ["script_name", script_name; "script_line_number", script_line_number]) |> invalidOp
 
 let private add_command_to_queue
     (queue_data : Runner_Queue_State_Loading_Data)

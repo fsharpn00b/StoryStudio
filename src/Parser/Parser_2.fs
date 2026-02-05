@@ -1,5 +1,8 @@
 module Parser_2
 
+// Environment.NewLine
+open System
+
 // console, window
 open Browser.Dom
 
@@ -90,6 +93,7 @@ let private handle_if
 
 let private handle_else_if
     (acc : Parser_2_Accumulator)
+    (source : string)
     (conditional : string)
     : Parser_2_Accumulator =
 
@@ -107,7 +111,13 @@ let private handle_else_if
             scene = {
                 acc.scene with
                     commands = acc.scene.commands.Add (parent_command_id, {
-                        parent with command = Command_Post_Parse_Type.If if_block
+                        parent with
+                            error_data =
+                                {
+                                    parent.error_data with
+                                        source = $"{parent.error_data.source}{Environment.NewLine}{source}"  
+                                }
+                            command = Command_Post_Parse_Type.If if_block
                     })
             }
             current_command_id = child_command_id
@@ -133,7 +143,14 @@ let private handle_else
             scene = {
                 acc.scene with
                     commands = acc.scene.commands.Add (parent_command_id, {
-                        parent with command = Command_Post_Parse_Type.If if_block
+                        parent with
+                            error_data =
+                                {
+                                    parent.error_data with
+(* If can have only one Else, so we go ahead and add End_If as well here. *)
+                                        source = $"{parent.error_data.source}{Environment.NewLine}else{Environment.NewLine}endif"
+                                }
+                            command = Command_Post_Parse_Type.If if_block
                     })
             }
             current_command_id = child_command_id
@@ -197,7 +214,7 @@ let private parse_commands
         match token.command with
         | Command_Pre_Parse_Type.Command command -> handle_command acc (Command_Post_Parse_Type.Command command) token next_token
         | Command_Pre_Parse_Type.If conditional -> handle_if acc token conditional
-        | Command_Pre_Parse_Type.Else_If conditional -> handle_else_if acc conditional
+        | Command_Pre_Parse_Type.Else_If conditional -> handle_else_if acc token.error_data.source conditional
         | Command_Pre_Parse_Type.Else -> handle_else acc
         | Command_Pre_Parse_Type.End_If -> handle_end_if acc token next_token
         | Command_Pre_Parse_Type.Menu menu -> handle_command acc (Command_Post_Parse_Type.Menu menu) token next_token

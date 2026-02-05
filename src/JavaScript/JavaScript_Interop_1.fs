@@ -60,31 +60,18 @@ let private emit_menu_variables (menu_variables : Menu_Variables) : string =
         $"{acc}var {kv.Key} = {kv.Value};{Environment.NewLine}"
     )
 
-(* TODO1 #javascript Re-check everywhere we can use conditionals and make sure they're included in check_javascript. We don't think notifications are, for instance? No, they are. Just check all callers of this function and make a list.
-
-- Also, test error handling for every command that can use JavaScript.
-
-1 js
-js console.log (x);
-(end)
-2 js/endjs
-js
-console.log (x);
-endjs
-(end)
-*)
 let eval_js_with_menu_variables<'T> (code : string) (menu_variables : Menu_Variables) : 'T =
     eval_js_with_exception $"{emit_menu_variables menu_variables}{code}" |> unbox<'T>
 
 (* In some cases we must run JavaScript code that might fail. If the JavaScript code fails, eval_js_string returns null, which is a valid value of System.String. We check for that here and return String.Empty instead. *)
 (* We do not use this for now.
-TODO2 #javascript This will no longer work with the new exception handling in eval_js.
+// TODO2 #javascript This might not work yet. We have not tested it recently.
 *)
 (*
-let try_eval_js_string_with_menu_variables (code : string) (menu_variables : Menu_Variables) : string option =
-    let result = eval_js_string $"{emit_menu_variables menu_variables}{code}"
+let try_eval_js_with_menu_variables<'T> (code : string) (menu_variables : Menu_Variables) : 'T option =
+    let result = eval_js $"{emit_menu_variables menu_variables}{code}"
     if isNull result then None
-    else Some result
+    else result |> unbox<'T> |> Some
 *)
 
 (* Functions - TypeScript *)
@@ -114,4 +101,105 @@ let eval_ts_boolean (ts_code : string) : bool =
 let eval_ts_string (ts_code : string) : string =
     let js_code = check_ts ts_code
     eval_js_string js_code
+*)
+
+(* Notes *)
+
+(* 20260205 Done.
+
+x Re-check everywhere we can use JavaScript interpolations/conditionals and make sure they're included in check_javascript ().
+x Also, test error handling for every command that can use JavaScript.
+
+1 js
+x In check_javascript ()? Yes, handle_command_javascript ().
+x Tested error handling?
+
+js console.log (x);
+
+2 js/endjs
+x In check_javascript ()? Yes, handle_command_javascript ().
+x Tested error handling?
+
+js
+console.log (x);
+endjs
+
+3 status
+x In check_javascript ()? Yes handle_command_javascript ().
+x Tested error handling?
+
+status ${x} endstatus
+
+4 notify
+x In check_javascript ()? Yes, handle_command_javascript ().
+x Tested error handling?
+
+notify ${x} endnotify
+
+5 dialogue
+x In check_javascript ()? Yes, handle_command_javascript ().
+x Tested error handling?
+
+l ${x}
+
+6 if
+x In check_javascript ()? Yes, handle_if_javascript ().
+x Tested error handling?
+
+if true === x
+    l x
+endif
+
+7 elseif
+x In check_javascript ()? Yes, handle_if_javascript ().
+x Tested error handling?
+
+if false
+    l x
+elseif true === x
+    l x
+endif
+
+8 menu description
+x In check_javascript ()? Yes, handle_menu_javascript ().
+x Tested error handling?
+
+menu x ${x}
+1 x
+endmenu
+
+9 menu item description
+x In check_javascript ()? Yes, handle_menu_javascript ().
+x Tested error handling?
+
+menu x x
+1 ${x}
+endmenu
+
+10 menu item conditional
+x In check_javascript ()? Yes, handle_menu_javascript ().
+x Tested error handling?
+
+menu x x
+1 x / true === x
+2 x
+endmenu
+
+(An image map does not have a description.
+TODO2 It probably should, for the same reason as image map item does, to show alt text.
+)
+
+10 image map item description
+x In check_javascript ()? Yes, handle_image_map_javascript ().
+N Tested error handling? TODO2 The grammar does not allow a description for now.
+
+11 image map item conditional
+x In check_javascript ()? Yes, handle_image_map_javascript ().
+x Tested error handling?
+
+imagemap x overhead 1.0
+1 0 0 25 25 / true === x
+2 25 25 50 50
+endimagemap
+hideimagemap 1.0
 *)

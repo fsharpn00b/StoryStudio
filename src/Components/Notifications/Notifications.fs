@@ -121,7 +121,7 @@ let update_permanent_notification
             | Idle old_data -> old_data
             | In_Transition transition_data -> transition_data.new_data
 
-(* Previously, we called try_eval_js_string_with_menu_variables (). This was because the start script might run JavaScript functions, which would trigger an evaluation of the permanent notification text, which might contain JavaScript expressions with values that were not defined yet. As a result, trying to evalate those expressions would fail. This should not be an issue now. We do not evaluate the permanent notification text until the author first sets it. By that point, they should have defined all JavaScript values they intend to use.
+(* Previously, we called try_eval_js_with_menu_variables (), which, unlike try_eval_js_with_menu_variables (), does not raise an exception if the JavaScript code fails and returns null, but instead returns None. This was because the start script might run JavaScript functions, which would trigger an evaluation of the permanent notification text, which might contain JavaScript expressions with values that were not defined yet. As a result, trying to evalate those expressions would fail. This should not be an issue now. We do not evaluate the permanent notification text until the author first sets it. By that point, they should have defined all JavaScript values they intend to use.
 *)
         let value_2 = eval_js_with_menu_variables<string> value_1 menu_variables
         let new_data = Visible { text = value_2 }
