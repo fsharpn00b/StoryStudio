@@ -38,6 +38,8 @@ https://stackoverflow.com/a/58360992
   width: 100%;
 
   padding: 0.25rem 1rem;
+/* Allow multiple lines. */
+  white-space: pre;
 }
 
 #temporary_notification_container {
@@ -47,4 +49,5 @@ https://stackoverflow.com/a/58360992
 
 .temporary_notification_label {
   padding: 0.25rem 1rem;
+  white-space: pre;
 }

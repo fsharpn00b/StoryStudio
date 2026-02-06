@@ -39,13 +39,13 @@
     <Compile Include="Save_Load/Save_Load_Rendering.fs" />
     <Compile Include="Save_Load/Save_Load.fs" />
     <Compile Include="Runner/Scripts.fs" />
-    <Compile Include="JavaScript/JavaScript_Parser.fs" />
-    <Compile Include="JavaScript/JavaScript_Interop_2.fs" />
     <Compile Include="Parser/Parser_1_Helpers.fs" />
     <Compile Include="Parser/Parser_1_Grammar.fs" />
     <Compile Include="Parser/Parser_1_Semantics.fs" />
     <Compile Include="Parser/Parser_2_Helpers.fs" />
     <Compile Include="Parser/Parser_2.fs" />
+    <Compile Include="JavaScript/JavaScript_Parser.fs" />
+    <Compile Include="JavaScript/JavaScript_Interop_2.fs" />
     <Compile Include="Runner/Runner_Types.fs" />
     <Compile Include="Runner/Runner_Transition.fs" />
     <Compile Include="Runner/Runner_State.fs" />

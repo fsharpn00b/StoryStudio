@@ -10,6 +10,7 @@ open Command_Types
 open Image_Map
 open Menu
 open Log
+open Parser_1_Helpers
 open Save_Load_Storage_Helpers
 open Scripts
 open Units_Of_Measure
@@ -47,43 +48,54 @@ type private Parser_JavaScript_Accumulator = {
 
 (* Functions - helper *)
 
-let private enclose_javascript_in_function (javascript : string) : string = @$"
+let private write_javascript_path (i : int) (javascript : string) : string = @$"
+// Path: {i}
+
 (function () {{
-    {javascript}
+{javascript}
 }}) ();
 "
 
-let private combine_javascript_interpolations (javascript_interpolations : string list) : string =
-    javascript_interpolations |> List.map (fun x -> $"console.log({x});{Environment.NewLine}") |> String.concat String.Empty
+let private combine_javascript_interpolations (javascript_interpolations : string list) (line_number : string) : string =
+    javascript_interpolations |> List.map (fun x -> $"{line_number}console.log({x});{Environment.NewLine}") |> String.concat String.Empty
 
-let private combine_javascript_conditionals (javascript_conditionals : string list) : string =
-    javascript_conditionals |> List.map (fun x -> $"if ({x}) {{}}{Environment.NewLine}") |> String.concat String.Empty
+let private combine_javascript_conditionals (javascript_conditionals : string list) (line_number : string) : string =
+    javascript_conditionals |> List.map (fun x -> $"{line_number}if ({x}) {{}}{Environment.NewLine}") |> String.concat String.Empty
 
-let private handle_command_javascript (command_1 : Command_Type) : string option =
+let private handle_command_javascript (command_1 : Command_Type) (line_number : string) : string option =
     match command_1 with
     | JavaScript_Inline command_2
-    | JavaScript_Block command_2 -> Some $"{command_2.code}{Environment.NewLine}"
-    | Dialogue command_2 -> combine_javascript_interpolations command_2.javascript_interpolations |> Some
-    | Temporary_Notification command_2 -> combine_javascript_interpolations command_2.javascript_interpolations |> Some
-    | Permanent_Notification command_2 -> combine_javascript_interpolations command_2.javascript_interpolations |> Some
+    | JavaScript_Block command_2 -> Some $"{line_number}{command_2.code}{Environment.NewLine}"
+// TODO1 #javascript What if there are no interpolations? Shouldn't we return None?
+    | Dialogue command_2 -> combine_javascript_interpolations command_2.javascript_interpolations line_number |> Some
+    | Temporary_Notification command_2 -> combine_javascript_interpolations command_2.javascript_interpolations line_number |> Some
+    | Permanent_Notification command_2 -> combine_javascript_interpolations command_2.javascript_interpolations line_number |> Some
     | _ -> None
 
-let private handle_menu_javascript (menu : Menu_Data_1) : string =
+let private handle_menu_javascript (menu : Menu_Data_1) (line_number_1 : int) : string =
+    let line_number_2 = $"// Menu starting at line {line_number_1}{Environment.NewLine}"
     String.concat String.Empty [
-        combine_javascript_interpolations menu.javascript_interpolations
-        combine_javascript_interpolations (menu.items |> List.collect (fun menu_item -> menu_item.javascript_interpolations))
-        combine_javascript_conditionals (menu.items |> List.choose (fun menu_item -> menu_item.conditional))
-        $"var {menu.name} = 1;{Environment.NewLine}"
+        combine_javascript_interpolations menu.javascript_interpolations line_number_2
+        combine_javascript_interpolations (menu.items |> List.collect (fun menu_item -> menu_item.javascript_interpolations)) line_number_2
+        combine_javascript_conditionals (menu.items |> List.choose (fun menu_item -> menu_item.conditional)) line_number_2
+        $"{line_number_2}var {menu.name} = 1;{Environment.NewLine}"
     ]
 
-let private handle_image_map_javascript (image_map : Image_Map_Data) : string =
+let private handle_image_map_javascript (image_map : Image_Map_Data) (line_number_1 : int) : string =
+    let line_number_2 = $"// Image map starting at line {line_number_1}{Environment.NewLine}"
     String.concat String.Empty [
-        combine_javascript_interpolations (image_map.items |> List.collect (fun image_map_item -> image_map_item.javascript_interpolations))
-        combine_javascript_conditionals (image_map.items |> List.choose (fun image_map_item -> image_map_item.conditional))
-        $"var {image_map.name} = 1;{Environment.NewLine}"
+        combine_javascript_interpolations (image_map.items |> List.collect (fun image_map_item -> image_map_item.javascript_interpolations)) line_number_2
+        combine_javascript_conditionals (image_map.items |> List.choose (fun image_map_item -> image_map_item.conditional)) line_number_2
+        $"{line_number_2}var {image_map.name} = 1;{Environment.NewLine}"
     ]
 
-let private handle_if_javascript (acc : Parser_JavaScript_Path_Accumulator) (scene_id : int<scene_id>) (if_block : If_Block) =
+let private handle_if_javascript
+    (acc : Parser_JavaScript_Path_Accumulator)
+    (scene_id : int<scene_id>)
+    (if_block : If_Block)
+    (line_number : string)
+    : Parser_JavaScript_Path_Accumulator =
+
     let javascript_1 =
         [
             [ $"if ({if_block.conditional}) {{}}{Environment.NewLine}" ]
@@ -94,7 +106,7 @@ let private handle_if_javascript (acc : Parser_JavaScript_Path_Accumulator) (sce
     let new_accumulator = {
         acc with
             paths_to_try = []
-            javascript = javascript_2 :: acc.javascript
+            javascript = javascript_2 :: line_number :: acc.javascript
     }
     let paths_to_try =
         [
@@ -135,11 +147,15 @@ let rec private try_javascript_path
 
     | Some command_id_2 ->
 
-        let command =
+        let command_1 =
             match scene.commands.TryFind command_id_2 with
             | Some command -> command
             | None -> error "try_javascript_path" "Command not found." ["current_scene", scene.name; "command_id", command_id_2; "commands", scene.commands] |> invalidOp
-        match command.command with
+
+        let line_number_1 = get_script_line_number scene.content command_1.error_data.script_text_index
+        let line_number_2 = $"// Line {line_number_1}{Environment.NewLine}"
+
+        match command_1.command with
 
         | Command command_2 ->
             match command_2 with
@@ -159,26 +175,26 @@ let rec private try_javascript_path
 
             | _ ->
                 let javascript_1 =
-                    match handle_command_javascript command_2 with
+                    match handle_command_javascript command_2 line_number_2 with
                     | Some javascript_2 -> javascript_2 :: acc.javascript
                     | None -> acc.javascript
-                try_javascript_path { acc with javascript = javascript_1 } scenes scene_id scene command.next_command_id
+                try_javascript_path { acc with javascript = javascript_1 } scenes scene_id scene command_1.next_command_id
 
         | Menu menu ->
             try_javascript_path {
-                acc with javascript = (handle_menu_javascript menu) :: acc.javascript
-            } scenes scene_id scene command.next_command_id
+                acc with javascript = (handle_menu_javascript menu line_number_1) :: acc.javascript
+            } scenes scene_id scene command_1.next_command_id
 
         | Image_Map image_map ->
             try_javascript_path {
-                acc with javascript = (handle_image_map_javascript image_map) :: acc.javascript
-            } scenes scene_id scene command.next_command_id
+                acc with javascript = (handle_image_map_javascript image_map line_number_1) :: acc.javascript
+            } scenes scene_id scene command_1.next_command_id
 
-        | End_Image_Map _ -> try_javascript_path acc scenes scene_id scene command.next_command_id
+        | End_Image_Map _ -> try_javascript_path acc scenes scene_id scene command_1.next_command_id
 
-        | If if_block -> handle_if_javascript acc scene_id if_block
+        | If if_block -> handle_if_javascript acc scene_id if_block line_number_2
 
-        | End_If -> try_javascript_path acc scenes scene_id scene command.next_command_id
+        | End_If -> try_javascript_path acc scenes scene_id scene command_1.next_command_id
 
 let rec private try_javascript_paths
     (acc : Parser_JavaScript_Accumulator)
@@ -192,7 +208,10 @@ let rec private try_javascript_paths
             acc with
                 paths_tried =
                     if path_accumulator.encountered_if then acc.paths_tried
-                    else { path_accumulator with javascript = path_accumulator.javascript |> List.rev } :: acc.paths_tried
+                    else
+                        let javascript_1 = path_accumulator.javascript |> List.rev
+                        let javascript_2 = $"// Scene: {entry_scene_name}{Environment.NewLine}{Environment.NewLine}" :: javascript_1
+                        { path_accumulator with javascript = javascript_2 } :: acc.paths_tried
                 paths_to_try = path_accumulator.paths_to_try @ tail
         } scenes
 
@@ -217,13 +236,11 @@ let check_javascript (scenes : Scene_Map) : unit =
     let javascript_1 =
         scenes
         |> get_javascript_paths
-(* TODO1 #javascript Insert path demarcator here? *)
-        |> List.map enclose_javascript_in_function
-        |> String.concat Environment.NewLine
+        |> List.mapi write_javascript_path
+        |> String.concat String.Empty
     let file_name = $"{get_current_timestamp ()}.ts"
     let javascript_2 =
-        $"""
-/*
+        $"""/*
 To validate this file, run
 npx tsc --noEmit --strict {file_name}
 (end)
@@ -236,16 +253,10 @@ The --save-dev means you are installing the package only for dev purposes, not t
 
 // TypeScript types:
 
-{get_typescript_types ()}
-
-// Scene: {entry_scene_name}
+{get_typescript_types().Trim ()}
 {javascript_1}
 """
     download_file file_name "application/x-typescript" javascript_2
-
-// TODO1 #javascript When checking JS, emit the source string and line number for each command.
-
-// TODO1 #javascript Trim leading/trailing whitespace from each code string we insert. Then re-add newlines to space everything as desired.
 
 (* TODO1 #javascript Think again about letting the author write the entire VN in JavaScript/TypeScript, with our commands available to them - essentially turning our commands into a JS-facing API - now that we no longer parse line by line.
 

@@ -90,9 +90,6 @@ let Fade_Label (
         prop.className class_name
         prop.text data.text
         prop.style [
-(* TODO1 #notification Multiline doesn't work. We need to replace \n with Html.br [] or dynamically create grid cells. Putting <br/> in script does not work.
-    - Also trim white space from each line.
-*)
 (* TODO1 #notification We might need to re-add this so we can size background blur to the contents of each individual label.
     - If so, add to view_idle_visible as well.
 *)

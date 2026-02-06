@@ -169,7 +169,7 @@ let get_typescript_types () : string =
         vite_glob_eager_raw types_path
         |> fun result -> JS.Constructors.Object.entries result
         |> unbox<(string * string)[]>
-        |> Seq.map (fun (path, content) -> content)
+        |> Seq.map (fun (path, content) -> $"// {path}{Environment.NewLine}{Environment.NewLine}{content}")
     String.Join (Environment.NewLine, results)
 
 (* TODO2 Should we automatically fade out the dialogue box during a scene change? Should we fade it in for the first line of dialogue in a scene? Or should these things be left to the author?
