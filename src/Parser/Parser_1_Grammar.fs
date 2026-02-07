@@ -132,15 +132,7 @@ Script {
 /* Note nl gets its own parameter in the semantics even though it is part of a group. */
     menu_items = ((menu_item | comment | menu_empty_line) nl)+
     menu_empty_line = sp*
-/* TODO1 #javascript If the author includes both a conditional and a single-line comment, the match for the former will consume the latter. However, since the conditional is in JavaScript, this should not be an issue. If it becomes an issue, we can have menu_item_conditional/image_map_conditional include a negative lookahead for "//".
-
-It is an issue. It interferes with JS checking.
-1 left / false === window.state.player_state.is_lost
-becomes
-if (false === window.state.player_state.is_lost // Comment after menu item.) {}
-(end)
-*/
-    menu_item = int_param sp+ (~nl ~(sp+ "/") any)+ menu_item_conditional? single_line_comment?
+    menu_item = int_param sp+ (~nl ~(sp+ "/") any)+ menu_item_conditional?
     menu_item_conditional = sp+ "/" sp+ (~nl any)+
     end_menu = sp* "endmenu"
 
@@ -151,14 +143,13 @@ if (false === window.state.player_state.is_lost // Comment after menu item.) {}
     image_map = "imagemap" sp+ string_param sp+ string_param sp+ float_param nl image_map_items end_image_map
     image_map_items = ((image_map_item | comment | image_map_empty_line) nl)+
     image_map_empty_line = sp*
-    image_map_item = int_param sp+ int_param sp+ int_param sp+ int_param sp+ int_param image_map_item_conditional? single_line_comment?
+    image_map_item = int_param sp+ int_param sp+ int_param sp+ int_param sp+ int_param image_map_item_conditional?
     image_map_item_conditional = sp+ "/" sp+ (~nl any)+
     end_image_map = sp* "endimagemap"
 
 /* TODO2 #parsing In case the author forgets to close the notify block, we might warn them (with alert = false) if we find known commands inside it. */
     temporary_notification = "notify" sp+ (~"endnotify" any)* "endnotify"
     permanent_notification = "status" sp+ (~"endstatus" any)* "endstatus"
-// TODO1 #notifications We need a hidestatus or clearstatus command. 
 }
 """
 

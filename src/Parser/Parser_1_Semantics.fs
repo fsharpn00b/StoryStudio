@@ -191,7 +191,7 @@ We do not currently use this. *)
 
 (* Note It seems if a menu item has no conditional, its children property is empty, and this semantic is never applied. *)
     semantics?menu_item_conditional <- fun _ _ _ conditional -> Some conditional?sourceString
-    semantics?menu_item <- fun value _ text conditional_1 _ ->
+    semantics?menu_item <- fun value _ text conditional_1 ->
         {
             Menu_Item_Data_1.value = value?ast()
             text = text?sourceString |> convert_string_to_use_javascript_interpolation
@@ -221,7 +221,7 @@ We do not currently use this. *)
 
 (* Note It seems if an image map item has no conditional, its children property is empty, and this semantic is never applied. *)
     semantics?image_map_item_conditional <- fun _ _ _ conditional -> Some conditional?sourceString
-    semantics?image_map_item <- fun value _ x1 _ y1 _ x2 _ y2 conditional_1 _ ->
+    semantics?image_map_item <- fun value _ x1 _ y1 _ x2 _ y2 conditional_1 ->
         {
             Image_Map_Item_Data.value = value?ast()
             x1 = x1?ast()
@@ -265,7 +265,7 @@ We do not currently use this. *)
 
     semantics
 
-// TODO1 #parsing How can we get clearer error messages from the parser?
+// TODO1 #parsing #future How can we get clearer error messages from the parser?
 
 let get_grammar_and_semantics
     (scripts : Script list)

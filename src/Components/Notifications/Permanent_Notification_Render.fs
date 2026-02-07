@@ -22,6 +22,17 @@ let private error : error_function = error log_module_name
 
 (* Functions - rendering *)
 
+(* TODO1 #notifications Add the following animations:
+1 When the permanent notification goes from Hidden to Visible or Visible to Hidden, or the temporary notification queue goes from empty to non-empty or from non-empty to empty, fade in or out the alpha value of the background blur.
+2 When the permanent notification cross-fades, or the temporary notification fades out and a new temporary notification fades in, animate the width value of the corresponding label or label container so the background blur expands or contracts.
+
+To do this, we would probably need to expand Fade_Label to include the label container, because we think that's where we should add the styling for the background blur, rather than add it to the label, though we might be wrong.
+
+Example of style.width setting for label:
+style.width (length.em (data.text.Length + 1))
+(end)
+*)
+
 let permanent_notification_view
     (is_visible : bool)
     (permanent_notification_data_ref : IRefValue<Transition_State<Notification_State, Notification_Transition_Type>>)

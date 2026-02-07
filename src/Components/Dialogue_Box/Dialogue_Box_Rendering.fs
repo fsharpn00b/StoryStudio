@@ -24,10 +24,6 @@ let mutable private debug_state_update_counter = 1
 
 let view
     (typing_state : IRefValue<Typing_State>)
-(* TODO1 #transitions Again, our type parameters to Transition_State entangle visibility with other potential transition types?
-
-In this case, Typing_State is not managed by the Transition_* classes because it doesn't have the same set of states (Idle/Pre_Transition/In_Transition) that a CSS transition does.
-*)
     (fade_state : IRefValue<Transition_State<Dialogue_Box_Visibility_State, Dialogue_Box_Transition_Type>>)
     (configuration : Dialogue_Box_Configuration)
     : ReactElement=

@@ -18,7 +18,8 @@ open Log
 open Runner_Types
 open Utilities
 
-// TODO1 #plugins Allow author-configurable hotkeys for players to interact with plugins (for example, press "i" for inventory).
+(* TODO1 #plugins Allow author-configurable plugin hotkeys for players to interact with plugins (for example, press "i" for inventory). Each plugin could export a list of hotkeys tied to functions it defines. Have to handle conflict between that and built-in hotkeys though. Also need to import the plugin hotkeys into our configuration screen. Maybe just let plugin specify default hotkeys, then if they conflict with built-in hotkeys, assign them to the next available letter and let the player configure it. Not very satisfactory.
+*)
 
 (* Consts *)
 

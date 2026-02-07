@@ -9,18 +9,11 @@ https://stackoverflow.com/a/58360992
 
   justify-items: start;
 
-/* TODO1 #notification See if we can size this to the contents of each individual label. */
   display: grid;
 /* 2 rows, both sized automatically. */
   grid-template-rows: auto auto;
 /* 1 column, taking up all available width. */
   grid-template-columns: 1fr;
-
-  background: rgba(0, 0, 0, 0.4);
-  /* Frosted glass effect */
-  backdrop-filter: blur(10px);
-  /* Safari support */
-  -webkit-backdrop-filter: blur(10px);
 }
 
 #permanent_notification_container {
@@ -29,6 +22,12 @@ https://stackoverflow.com/a/58360992
 
 /* Also use a grid here, so we can put multiple labels in the same cell to superimpose them. position: absolute does not work. */
   display: grid;
+
+  background: rgba(0, 0, 0, 0.4);
+  /* Frosted glass effect */
+  backdrop-filter: blur(10px);
+  /* Safari support */
+  -webkit-backdrop-filter: blur(10px);
 }
 
 .permanent_notification_label {
@@ -45,6 +44,12 @@ https://stackoverflow.com/a/58360992
 #temporary_notification_container {
   grid-row: 2;
   grid-column: 1;
+
+  background: rgba(0, 0, 0, 0.4);
+  /* Frosted glass effect */
+  backdrop-filter: blur(10px);
+  /* Safari support */
+  -webkit-backdrop-filter: blur(10px);
 }
 
 .temporary_notification_label {

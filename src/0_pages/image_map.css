@@ -1,4 +1,6 @@
-/* TODO1 #background Need a better way to scale background/image map to window size. This is probably why Ren'py makes you select a target resolution when you create a project. Does CSS have any kind of dynamic resize/resample? */
+/* TODO1 #background Need a better way to scale background/image map to window size. This is probably why Ren'py makes you select a target resolution when you create a project. Does CSS have any kind of dynamic resize/resample?
+Looks like Ren'py games typically shrink the background from the top instead of the sides. Figure out how to do that.
+*/
 
 #image_map_container {
   position: absolute;

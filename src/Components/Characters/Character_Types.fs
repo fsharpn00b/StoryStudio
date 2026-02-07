@@ -46,14 +46,6 @@ type Visible_Character_Data = {
     url : string
 }
 
-(* TODO1 #transitions This should properly be called Character_Visibility_State.
-Our transition data type is Transition_Data<Character_State, Character_Transition_Type>.
-Character_Transition_Type can be either Fade or Move, but Character_State is only concerned with Fade.
-In other words, we are entangling orthogonal transition types here.
-Part of the issue is that Character_State doubles as what used to be Character_Saveable_State.
-We also have entangled visibility with fade, when in fact it could apply to either fade or move (since we move characters on or off screen).
-See also item in Dialogue_Box_Rendering.
-*)
 type Character_State =
     | Visible of Visible_Character_Data
     | Hidden

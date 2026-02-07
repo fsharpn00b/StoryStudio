@@ -56,38 +56,51 @@ let private write_javascript_path (i : int) (javascript : string) : string = @$"
 }}) ();
 "
 
-let private combine_javascript_interpolations (javascript_interpolations : string list) (line_number : string) : string =
-    javascript_interpolations |> List.map (fun x -> $"{line_number}console.log({x});{Environment.NewLine}") |> String.concat String.Empty
+let private combine_javascript_interpolations (javascript_interpolations : string list) (line_number : string) : string option =
+    if 0 = List.length javascript_interpolations then None
+    else
+        javascript_interpolations
+            |> List.map (fun x -> $"{line_number}console.log({x});{Environment.NewLine}")
+            |> String.concat String.Empty
+            |> Some
 
-let private combine_javascript_conditionals (javascript_conditionals : string list) (line_number : string) : string =
-    javascript_conditionals |> List.map (fun x -> $"{line_number}if ({x}) {{}}{Environment.NewLine}") |> String.concat String.Empty
+let private combine_javascript_conditionals (javascript_conditionals : string list) (line_number : string) : string option =
+    if 0 = List.length javascript_conditionals then None
+    else
+        javascript_conditionals
+            |> List.map (fun x -> $"{line_number}if ({x}) {{}}{Environment.NewLine}")
+            |> String.concat String.Empty
+            |> Some
 
 let private handle_command_javascript (command_1 : Command_Type) (line_number : string) : string option =
     match command_1 with
     | JavaScript_Inline command_2
     | JavaScript_Block command_2 -> Some $"{line_number}{command_2.code}{Environment.NewLine}"
-// TODO1 #javascript What if there are no interpolations? Shouldn't we return None?
-    | Dialogue command_2 -> combine_javascript_interpolations command_2.javascript_interpolations line_number |> Some
-    | Temporary_Notification command_2 -> combine_javascript_interpolations command_2.javascript_interpolations line_number |> Some
-    | Permanent_Notification command_2 -> combine_javascript_interpolations command_2.javascript_interpolations line_number |> Some
+    | Dialogue command_2 -> combine_javascript_interpolations command_2.javascript_interpolations line_number
+    | Temporary_Notification command_2 -> combine_javascript_interpolations command_2.javascript_interpolations line_number
+    | Permanent_Notification command_2 -> combine_javascript_interpolations command_2.javascript_interpolations line_number
     | _ -> None
 
 let private handle_menu_javascript (menu : Menu_Data_1) (line_number_1 : int) : string =
     let line_number_2 = $"// Menu starting at line {line_number_1}{Environment.NewLine}"
-    String.concat String.Empty [
-        combine_javascript_interpolations menu.javascript_interpolations line_number_2
-        combine_javascript_interpolations (menu.items |> List.collect (fun menu_item -> menu_item.javascript_interpolations)) line_number_2
-        combine_javascript_conditionals (menu.items |> List.choose (fun menu_item -> menu_item.conditional)) line_number_2
-        $"{line_number_2}var {menu.name} = 1;{Environment.NewLine}"
-    ]
+    let javascript_interpolations_and_conditionals =
+        [
+            combine_javascript_interpolations menu.javascript_interpolations line_number_2
+            combine_javascript_interpolations (menu.items |> List.collect (fun menu_item -> menu_item.javascript_interpolations)) line_number_2
+            combine_javascript_conditionals (menu.items |> List.choose (fun menu_item -> menu_item.conditional)) line_number_2
+            $"{line_number_2}var {menu.name} = 1;{Environment.NewLine}" |> Some
+        ] |> List.choose id
+    String.concat String.Empty javascript_interpolations_and_conditionals
 
 let private handle_image_map_javascript (image_map : Image_Map_Data) (line_number_1 : int) : string =
     let line_number_2 = $"// Image map starting at line {line_number_1}{Environment.NewLine}"
-    String.concat String.Empty [
-        combine_javascript_interpolations (image_map.items |> List.collect (fun image_map_item -> image_map_item.javascript_interpolations)) line_number_2
-        combine_javascript_conditionals (image_map.items |> List.choose (fun image_map_item -> image_map_item.conditional)) line_number_2
-        $"{line_number_2}var {image_map.name} = 1;{Environment.NewLine}"
-    ]
+    let javascript_interpolations_and_conditionals =
+        [
+            combine_javascript_interpolations (image_map.items |> List.collect (fun image_map_item -> image_map_item.javascript_interpolations)) line_number_2
+            combine_javascript_conditionals (image_map.items |> List.choose (fun image_map_item -> image_map_item.conditional)) line_number_2
+            $"{line_number_2}var {image_map.name} = 1;{Environment.NewLine}" |> Some
+        ] |> List.choose id
+    String.concat String.Empty javascript_interpolations_and_conditionals
 
 let private handle_if_javascript
     (acc : Parser_JavaScript_Path_Accumulator)
@@ -258,7 +271,7 @@ The --save-dev means you are installing the package only for dev purposes, not t
 """
     download_file file_name "application/x-typescript" javascript_2
 
-(* TODO1 #javascript Think again about letting the author write the entire VN in JavaScript/TypeScript, with our commands available to them - essentially turning our commands into a JS-facing API - now that we no longer parse line by line.
+(* TODO1 #javascript #future Think again about letting the author write the entire VN in JavaScript/TypeScript, with our commands available to them - essentially turning our commands into a JS-facing API - now that we no longer parse line by line.
 
 We would be essentially embedding a DSL into JS. How to contain the DSL? Quoted strings? Comments?
 The parser could then read the scripts and transform the DSLs into JS? That doesn't make sense.

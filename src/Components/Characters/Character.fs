@@ -125,14 +125,7 @@ Height is set in the character definition file and not changed afterward. It is 
                         Fade
                         command_queue_item_id
 
-(* TODO1 #transitions Verify:
-- For backgrounds and characters:
-- Hidden -> cross fade = fade in
-- Visible -> fade in = cross fade
-- and so on.
 
-- Should moving in an already visible character fail? We could simply move the character to the new position.
-*)
                 member _.move_in
                     (new_url : string)
                     (direction : Character_Move_Direction)

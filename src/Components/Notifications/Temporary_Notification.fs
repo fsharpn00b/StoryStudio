@@ -10,6 +10,14 @@ open Transition
 open Units_Of_Measure
 open Utilities
 
+// TODO1 #notification Notifications can obstruct image map hotspots. They should pass through mouse clicks.
+
+(* TODO1 #notifications We need additional commands:
+- hidestatus
+    - hidestatus should also be plugged into hide UI command.
+- clearstatus
+*)
+
 (* Debug *)
 
 let private log_module_name = "Temporary_Notification"
@@ -90,12 +98,6 @@ let Fade_Label (
         prop.className class_name
         prop.text data.text
         prop.style [
-(* TODO1 #notification We might need to re-add this so we can size background blur to the contents of each individual label.
-    - If so, add to view_idle_visible as well.
-*)
-(*
-            style.width (length.em (data.text.Length + 1))
-*)
             style.custom ("opacity", opacity)
             style.custom ("transition", $"opacity {transition_time}s ease-in-out")
         ]
@@ -146,7 +148,7 @@ let private handle_fade_in_or_fade_out_complete
 
         set_fade_state <| Idle new_data
 
-// TODO1 #notification Add timeout function handles to cancel notification transitions?
+// TODO2 #notification Add timeout function handles to cancel notification transitions?
 
         window.setTimeout ((fun () ->
             set_fade_state <| In_Transition {
