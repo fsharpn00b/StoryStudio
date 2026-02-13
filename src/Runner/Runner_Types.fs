@@ -16,7 +16,7 @@ open JavaScript_Interop_1
 open Key_Bindings
 open Menu
 open Music
-open Notifications
+open Notification_Types
 open Save_Load_Types
 open Units_Of_Measure
 

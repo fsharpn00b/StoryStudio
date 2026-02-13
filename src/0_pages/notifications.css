@@ -16,12 +16,18 @@ https://stackoverflow.com/a/58360992
   grid-template-columns: 1fr;
 }
 
-#permanent_notification_container {
+#permanent_notification_container_outer {
   grid-row: 1;
   grid-column: 1;
 
-/* Also use a grid here, so we can put multiple labels in the same cell to superimpose them. position: absolute does not work. */
+/* Also use a grid here, so we can put multiple inner containers in the same cell to superimpose them. position: absolute does not work. */
   display: grid;
+}
+
+.permanent_notification_container_inner {
+/* Put each instance of this class in row 1, column 1, superimposing if needed. */
+  grid-row: 1;
+  grid-column: 1;
 
   background: rgba(0, 0, 0, 0.4);
   /* Frosted glass effect */
@@ -31,20 +37,17 @@ https://stackoverflow.com/a/58360992
 }
 
 .permanent_notification_label {
-/* Put each instance of this class in row 1, column 1, superimposing if needed. */
-  grid-row: 1;
-  grid-column: 1;
-  width: 100%;
-
   padding: 0.25rem 1rem;
 /* Allow multiple lines. */
   white-space: pre;
 }
 
-#temporary_notification_container {
+#temporary_notification_container_outer {
   grid-row: 2;
   grid-column: 1;
+}
 
+.temporary_notification_container_inner {
   background: rgba(0, 0, 0, 0.4);
   /* Frosted glass effect */
   backdrop-filter: blur(10px);

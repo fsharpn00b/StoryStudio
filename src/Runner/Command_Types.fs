@@ -4,7 +4,7 @@ open Character_Types
 open Background
 open Image_Map
 open Menu
-open Temporary_Notification
+open Notification_Types
 open Units_Of_Measure
 
 type Dialogue_Data = {

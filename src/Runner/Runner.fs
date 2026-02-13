@@ -19,6 +19,7 @@ open Key_Bindings
 open Log
 open Menu
 open Music
+open Notification_Types
 open Notifications
 open Plugins
 open Runner_Configuration

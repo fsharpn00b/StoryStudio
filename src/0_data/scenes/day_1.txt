@@ -18,6 +18,9 @@ endif
 // JS interpolation in dialogue.
 l Which way should we go? (Lost: ${window.state.player_state.is_lost})
 
+// This is to test resizing of the permanent notification.
+//status You are absolutely, definitely, positively, sure as heck not lost. endstatus
+
 // Create a menu whose result is stored in a variable named direction.
 menu direction Which way?
 // This menu option is dependent on a JS expression.

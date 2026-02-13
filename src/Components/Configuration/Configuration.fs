@@ -23,7 +23,7 @@ open Character_Types
 open Dialogue_Box_Types
 open Key_Bindings
 open Log
-open Temporary_Notification
+open Notification_Types
 open Units_Of_Measure
 open Utilities
 

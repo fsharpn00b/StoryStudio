@@ -2,8 +2,6 @@ module Parser_1_Semantics
 
 // Double, Int32
 open System
-// Regex
-open System.Text.RegularExpressions
 
 // console, window
 open Browser.Dom
@@ -22,10 +20,9 @@ open Command_Types
 open Image_Map
 open Log
 open Menu
-open Temporary_Notification
+open Notification_Types
 open Parser_1_Helpers
 open Parser_1_Grammar
-open Units_Of_Measure
 
 (* Debug *)
 

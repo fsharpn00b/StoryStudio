@@ -6,17 +6,11 @@ open Browser.Dom
 open Feliz
 
 open Log
+open Notification_Component
+open Notification_Types
 open Transition
 open Units_Of_Measure
 open Utilities
-
-// TODO1 #notification Notifications can obstruct image map hotspots. They should pass through mouse clicks.
-
-(* TODO1 #notifications We need additional commands:
-- hidestatus
-    - hidestatus should also be plugged into hide UI command.
-- clearstatus
-*)
 
 (* Debug *)
 
@@ -24,110 +18,6 @@ let private log_module_name = "Temporary_Notification"
 let private debug : log_function = debug log_module_name
 let private warn : warn_function = warn log_module_name
 let private error : error_function = error log_module_name
-
-(* Types *)
-
-type Notification_Transition_Type = Fade
-
-type Notifications_Configuration = {
-    display_time : Temporary_Notification_Display_Time
-    transition_time : Transition_Time
-}
-
-type Notification_Data_1 = {
-    text : string
-    javascript_interpolations : string list
-}
-
-(* This is after we have applied JavaScript interpolations to the text field. *)
-type Notification_Data_2 = {
-    text : string
-}
-
-type Notification_State =
-    | Visible of Notification_Data_2
-    | Hidden
-
-(* Interfaces *)
-
-type I_Temporary_Notification =
-    abstract member show : Notification_Data_2 -> unit
-    abstract member set_configuration : Notifications_Configuration -> unit
-
-(* Consts *)
-
-let max_temporary_notification_display_time = 30<seconds>
-let min_temporary_notification_display_time = 1<seconds>
-let max_notification_transition_time = 5<seconds>
-let min_notification_transition_time = 0<seconds>
-
-let private notify_fade_in_complete = 0<command_queue_item_id>
-let private notify_fade_out_complete = 1<command_queue_item_id>
-
-(* Main functions - rendering *)
-
-let view_idle_visible
-    (data : Notification_Data_2)
-    (class_name : string)
-    : ReactElement =
-
-    Html.label [
-        prop.key data.text
-        prop.className class_name
-        prop.text data.text
-    ]
-
-[<ReactComponent>]
-let Fade_Label (
-    class_name : string,
-    data : Notification_Data_2,
-    initial_value : string,
-    final_value : string,
-    transition_time : Transition_Time,
-    handle_transition_end : unit -> unit
-    ) : ReactElement =
-
-    let opacity, set_opacity = React.useState initial_value
-
-    React.useEffectOnce (fun () ->
-        window.setTimeout ((fun () -> set_opacity final_value), int pre_transition_time) |> ignore
-    )
-
-    Html.label [
-        prop.key data.text
-        prop.className class_name
-        prop.text data.text
-        prop.style [
-            style.custom ("opacity", opacity)
-            style.custom ("transition", $"opacity {transition_time}s ease-in-out")
-        ]
-        prop.onTransitionEnd (fun _ ->
-            handle_transition_end ()
-        )
-    ]
-
-let private view
-    (fade_state : IRefValue<Transition_State<Notification_State, Notification_Transition_Type>>)
-    (notify : int<command_queue_item_id> -> unit)
-    : ReactElement =
-
-    let class_name = "temporary_notification_label"
-
-    Html.div [
-        match fade_state.current with
-        | Idle Hidden -> Html.none
-        | Idle (Visible data) -> view_idle_visible data class_name
-        | In_Transition transition_data ->
-            match transition_data.old_data, transition_data.new_data with
-
-            | Hidden, Visible data ->
-                Fade_Label (class_name, data, "0.0", "1.0", transition_data.transition_time, (fun () -> notify notify_fade_in_complete))
-
-            | Visible data, Hidden ->
-                Fade_Label (class_name, data, "1.0", "0.0", transition_data.transition_time, (fun () -> notify notify_fade_out_complete))
-
-            | _ -> error "view" "Called with unexpected transition data." ["transition_data", transition_data] |> invalidOp
-    ]
 
 (* Main functions - state *)
 
@@ -220,4 +110,4 @@ let Temporary_Notification_Component
     )
 (* This component does not implement I_Transitionable. *)
 
-    view fade_state_ref handle_fade_in_or_fade_out_complete_2
+    temporary_notifications_view fade_state_ref handle_fade_in_or_fade_out_complete_2

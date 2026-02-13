@@ -26,8 +26,9 @@
     <Compile Include="Components/Dialogue_Box/Dialogue_Box.fs" />
     <Compile Include="Components/Image_Map/Image_Map.fs" />
     <Compile Include="Components/Menu/Menu.fs" />
+    <Compile Include="Components/Notifications/Notification_Types.fs" /><Compile Include="Components/Notifications/Notification_Component.fs" />
     <Compile Include="Components/Notifications/Temporary_Notification.fs" />
-    <Compile Include="Components/Notifications/Permanent_Notification_Render.fs" />
+    
     <Compile Include="Components/Notifications/Notifications.fs" />
     <Compile Include="Components/Configuration/Key_Bindings.fs" />
     <Compile Include="Components/Configuration/Configuration.fs" />

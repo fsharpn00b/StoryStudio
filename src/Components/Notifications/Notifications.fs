@@ -12,10 +12,12 @@ open Feliz
 
 open JavaScript_Interop_1
 open Log
-open Permanent_Notification_Render
+open Notification_Component
+open Notification_Types
 open Temporary_Notification
 open Transition
 open Units_Of_Measure
+open Utilities
 
 (* Debug *)
 
@@ -26,43 +28,11 @@ let private error : error_function = error log_module_name
 
 (* Types *)
 
-type Temporary_Notifications_Queue = Notification_Data_2 list
-
-(* TODO2 For now, we only worry about permanent notifications.
-If we decide to handle temporary notifications:
-- Save timeout function handle to cancel transition/notification in case we load new game/undo?
-- Also need to clear notification queue in that case?
-*)
-type Notifications_Saveable_State = {
-    permanent_notification_before_eval_js : string option
-    permanent_notification_after_eval_js : Notification_State
-}
-
-(* Interfaces *)
-
-type I_Notifications =
-    abstract member add_temporary_notification : Notification_Data_2 -> unit
-    abstract member set_permanent_notification : string -> Menu_Variables -> unit
-    abstract member update_permanent_notification : Menu_Variables -> unit
-    abstract member get_state : unit -> Notifications_Saveable_State
-    abstract member set_state : Notifications_Saveable_State -> unit
-(* We do not use this for now. *)
-//    abstract member get_configuration : unit -> Temporary_Notifications_Configuration
-    abstract member set_configuration : Notifications_Configuration -> unit
-    abstract member show : unit -> unit
-    abstract member hide : unit -> unit
-    abstract member is_visible : unit -> bool
-(* When we pause the game by calling Runner_Transition.force_complete_transitions (), we want to show a temporary notification to tell the player the game is paused and they must click to continue.
-x After we show the save/load screen.
-x After we show the configuration screen.
-x After the player imports/exports current/multiple saved games to/from file.
-x Exceptions: Runner_Queue.run (), Runner_History.undo_redo ().
-*)
-    abstract member show_game_paused_notification : unit -> unit
+type private Temporary_Notifications_Queue = Notification_Data_2 list
 
 (* Global values *)
 
-let mutable temporary_notification_queue_lock = 0
+let mutable private temporary_notification_queue_lock = 0
 
 (* Consts *)
 
@@ -70,7 +40,7 @@ let private game_paused_notification = "Game paused. Click to continue."
 
 (* Main functions - state *)
 
-let notify_remove_temporary_notification_from_queue
+let private notify_remove_temporary_notification_from_queue
     (queue : IRefValue<Temporary_Notifications_Queue>)
     (show : Notification_Data_2 -> unit)
     : unit =
@@ -85,9 +55,39 @@ let notify_remove_temporary_notification_from_queue
         | [] -> error "notify_remove_temporary_notification_from_queue" "Received notification to remove temporary notification from queue, but queue was already empty." [] |> invalidOp
     )
 
+(* Main functions - render *)
+
+let view
+    (is_visible : bool)
+    (permanent_notification_data_ref : IRefValue<Transition_State<Notification_State, Notification_Transition_Type>>)
+    (set_permanent_notification_data_after_js_eval : Transition_State<Notification_State, Notification_Transition_Type> -> unit)
+    (temporary_notification_component_ref : IRefValue<ReactElement>)
+    : ReactElement =
+
+    if is_visible then
+        Html.div [
+            prop.id "notifications_container"
+            prop.style [style.zIndex notifications_z_index]
+            prop.children [
+                Html.div [
+                    prop.id "permanent_notification_container_outer"
+                    prop.children [
+                        yield! permanent_notification_view permanent_notification_data_ref set_permanent_notification_data_after_js_eval
+                    ]
+                ]
+                Html.div [
+                    prop.id "temporary_notification_container_outer"
+                    prop.children [
+                        yield temporary_notification_component_ref.current
+                    ]
+                ]
+            ]
+        ]
+    else Html.none
+
 (* Main functions - interface *)
 
-let add_temporary_notification
+let private add_temporary_notification
     (queue : IRefValue<Temporary_Notifications_Queue>)
     (show : Notification_Data_2 -> unit)
     (data : Notification_Data_2)
@@ -102,7 +102,7 @@ let add_temporary_notification
         | _ -> do queue.current <- List.append queue.current [data]
     )
 
-let update_permanent_notification
+let private update_permanent_notification
     (configuration_ref : IRefValue<Notifications_Configuration>)
     (permanent_notification_data_before_js_eval_ref : IRefValue<string option>)
     (permanent_notification_data_after_eval_js_ref : IRefValue<Transition_State<Notification_State, Notification_Transition_Type>>)
@@ -171,7 +171,8 @@ let Notifications (
     do React.useImperativeHandle (props.expose, fun () ->
         {
             new I_Notifications with
-                member _.add_temporary_notification (data : Notification_Data_2) : unit = add_temporary_notification queue temporary_notification_interface.current.show data
+                member _.add_temporary_notification (data : Notification_Data_2) : unit =
+                    add_temporary_notification queue temporary_notification_interface.current.show data
 
                 member _.set_permanent_notification (data : string) (menu_variables : Menu_Variables) : unit =
                     do
@@ -210,4 +211,4 @@ let Notifications (
 (* This component does not implement I_Transitionable. *)
 
 (* Render permanent notification. *)
-    permanent_notification_view is_visible permanent_notification_data_after_eval_js_ref set_permanent_notification_data_after_js_eval temporary_notification_component
+    view is_visible permanent_notification_data_after_eval_js_ref set_permanent_notification_data_after_js_eval temporary_notification_component

@@ -15,7 +15,7 @@ open Dialogue_Box_Types
 open Key_Bindings
 open Log
 open Runner_Types
-open Temporary_Notification
+open Notification_Types
 open Units_Of_Measure
 
 (* Debug *)
