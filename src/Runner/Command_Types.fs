@@ -35,6 +35,7 @@ type Command_Type =
     | Dialogue of Dialogue_Data
     | Temporary_Notification of Notification_Data_1
     | Permanent_Notification of Notification_Data_1
+    | Hide_Permanent_Notification
     | JavaScript_Inline of JavaScript_Data
     | JavaScript_Block of JavaScript_Data
     | Jump of int<scene_id>

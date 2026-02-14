@@ -31,6 +31,7 @@ endmenu
 
 // Fade in the character Tom, with a happy expression, at horizontal position 75%, over 1 second.
 fadein t happy 75 1.0
+
 t Great idea!
 
 if 1 === direction

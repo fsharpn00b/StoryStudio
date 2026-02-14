@@ -114,12 +114,15 @@ let permanent_notification_view
         match transition_data.old_data, transition_data.new_data with
 
         | Hidden, Visible data ->
-            Fade_Label_Container (Permanent, data, "0.0", "1.0", transition_data.transition_time, complete_transition)  |> Seq.singleton
+            Fade_Label_Container (Permanent, data, "0.0", "1.0", transition_data.transition_time, complete_transition) |> Seq.singleton
 
         | Visible old_data, Visible new_data ->
             [
                 Fade_Label_Container (Permanent, old_data, "1.0", "0.0", transition_data.transition_time, complete_transition)
                 Fade_Label_Container (Permanent, new_data, "0.0", "1.0", transition_data.transition_time, complete_transition)
             ]
+
+        | Visible data, Hidden ->
+            Fade_Label_Container (Permanent, data, "1.0", "0.0", transition_data.transition_time, complete_transition) |> Seq.singleton
 
         | _ -> error "permanent_notification_view" "Called with unexpected transition data." ["transition_data", transition_data] |> invalidOp

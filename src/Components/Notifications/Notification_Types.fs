@@ -5,12 +5,6 @@ open Units_Of_Measure
 
 // TODO1 #notifications Notifications can obstruct image map hotspots. They should pass through mouse clicks.
 
-(* TODO1 #notifications We need additional commands:
-- hidestatus
-    - hidestatus should also be plugged into hide UI command.
-- clearstatus
-*)
-
 (* TODO2 #notifications Add the following animations:
 x 1 When the permanent notification goes from Hidden to Visible or Visible to Hidden, or the temporary notification queue goes from empty to non-empty or from non-empty to empty, fade in or out the background blur.
 / 2 When the permanent notification cross-fades, or the temporary notification fades out and a new temporary notification fades in, animate the width value of the corresponding label or label container so the background blur expands or contracts. We tried cross fading the background blur but it doesn't work.
@@ -69,6 +63,7 @@ type I_Notifications =
     abstract member add_temporary_notification : Notification_Data_2 -> unit
     abstract member set_permanent_notification : string -> Menu_Variables -> unit
     abstract member update_permanent_notification : Menu_Variables -> unit
+    abstract member hide_permanent_notification : unit -> unit
     abstract member get_state : unit -> Notifications_Saveable_State
     abstract member set_state : Notifications_Saveable_State -> unit
 (* We do not use this for now. *)

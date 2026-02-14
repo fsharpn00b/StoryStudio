@@ -259,6 +259,7 @@ We do not currently use this. *)
             Notification_Data_1.text = text?sourceString |> convert_string_to_use_javascript_interpolation
             javascript_interpolations = extract_javascript_interpolations text?sourceString
         } |> Permanent_Notification |> Command_Pre_Parse_Type.Command |> Some
+    semantics?hide_permanent_notification <- fun _ -> Hide_Permanent_Notification |> Command_Pre_Parse_Type.Command |> Some
 
     semantics
 

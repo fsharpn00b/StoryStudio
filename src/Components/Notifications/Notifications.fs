@@ -134,8 +134,27 @@ let private update_permanent_notification
                 transition_type = Fade
                 transition_time = configuration_ref.current.transition_time
 (* See comments in handle_fade_in_or_fade_out_complete (). *)
-                command_queue_item_id = 0<command_queue_item_id>
+                command_queue_item_id = notify_fade_in_complete
             }
+
+let private hide_permanent_notification
+    (configuration_ref : IRefValue<Notifications_Configuration>)
+    (permanent_notification_data_after_eval_js_ref : IRefValue<Transition_State<Notification_State, Notification_Transition_Type>>)
+    (set_permanent_notification_data_after_js_eval : Transition_State<Notification_State, Notification_Transition_Type> -> unit)
+    : unit =
+
+    let old_data =
+        match permanent_notification_data_after_eval_js_ref.current with
+        | Idle old_data -> old_data
+        | In_Transition transition_data -> transition_data.new_data
+
+    do set_permanent_notification_data_after_js_eval <| In_Transition {
+        old_data = old_data
+        new_data = Hidden
+        transition_type = Fade
+        transition_time = configuration_ref.current.transition_time
+        command_queue_item_id = notify_fade_out_complete
+    }
 
 (* Component *)
 
@@ -158,6 +177,7 @@ let Notifications (
 *)
     let permanent_notification_data_before_eval_js_ref = React.useRef None
 (* We use useState because we want this component to redraw itself whenever this value changes. *)
+(* Whereas the default state for Notifications is visible, the default state for permanent notification is hidden. *)
     let permanent_notification_data_after_eval_js, set_permanent_notification_data_after_js_eval = React.useState (Idle Hidden)
     let permanent_notification_data_after_eval_js_ref = React.useRef permanent_notification_data_after_eval_js
     do permanent_notification_data_after_eval_js_ref.current <- permanent_notification_data_after_eval_js
@@ -181,6 +201,9 @@ let Notifications (
 
                 member _.update_permanent_notification (menu_variables : Menu_Variables) : unit =
                     do update_permanent_notification configuration_ref permanent_notification_data_before_eval_js_ref permanent_notification_data_after_eval_js_ref set_permanent_notification_data_after_js_eval menu_variables
+
+                member _.hide_permanent_notification () : unit =
+                    do hide_permanent_notification configuration_ref permanent_notification_data_after_eval_js_ref set_permanent_notification_data_after_js_eval
 
 (* TODO2 #notification If we back up and re-do a notify command, the temporary notification does not appear again, and the stale label remains in the content tree instead of being removed. This only seems to happen when we change the code or CSS and cause Fable to recompile on the fly, though. So far we have not reproduced it in normal conditions. *)
                 member _.get_state () : Notifications_Saveable_State =

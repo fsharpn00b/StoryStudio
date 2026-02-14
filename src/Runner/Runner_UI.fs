@@ -179,6 +179,7 @@ let show_saved_game_screen
                 runner_component_interfaces.current.configuration.current.hide ()
             show_saved_game_screen queue runner_component_interfaces action
 
+// TODO1 #ui #future If plugins add UI elements, we should call their show ()/hide () methods here also.
 let show_or_hide_ui
     (runner_component_interfaces : IRefValue<Runner_Component_Interfaces>)
     : unit =

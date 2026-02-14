@@ -76,6 +76,7 @@ Script {
         | stop_music
         | show_dialogue_box
         | hide_dialogue_box
+        | hide_permanent_notification
         | single_line_javascript
         | if
         | else_if
@@ -150,6 +151,7 @@ Script {
 /* TODO2 #parsing In case the author forgets to close the notify block, we might warn them (with alert = false) if we find known commands inside it. */
     temporary_notification = "notify" sp+ (~"endnotify" any)* "endnotify"
     permanent_notification = "status" sp+ (~"endstatus" any)* "endstatus"
+    hide_permanent_notification = "hidestatus"
 }
 """
 

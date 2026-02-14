@@ -55,6 +55,7 @@ We set continue_after_running to false because, even if the dialogue box has its
     | Music_Stop
     | Temporary_Notification _
     | Permanent_Notification _
+    | Hide_Permanent_Notification
 // TODO2 Possibly these should not be commands, or should at least be a separate subtype.
     | JavaScript_Inline _
     | JavaScript_Block _ -> Continue_Immediately { autosave = false }
@@ -79,6 +80,7 @@ let private command_to_component_ids (command : Command_Type) : Runner_Component
 (* The Notifications component does not notify Runner when it completes a transition. *)
     | Temporary_Notification _
     | Permanent_Notification _
+    | Hide_Permanent_Notification
     | JavaScript_Inline _
     | JavaScript_Block _
     | Jump _ -> Set.empty
@@ -133,6 +135,9 @@ let private handle_command
 
         | Permanent_Notification command_2 ->
             Some <| fun _ -> do runner_component_interfaces.current.notifications.current.set_permanent_notification command_2.text menu_variables
+
+        | Hide_Permanent_Notification ->
+            Some <| fun _ -> do runner_component_interfaces.current.notifications.current.hide_permanent_notification ()
 
         | Background_Fade_In command_2 ->
             Some <| fun (command_queue_item_id : int<command_queue_item_id>) -> do runner_component_interfaces.current.background.current.fade_in command_2.new_url command_2.transition_time command_queue_item_id
