@@ -402,7 +402,7 @@ let get_command_data
             next_command = next_command
         }
 
-(* TODO1 #parsing In Runner_Queue_Helpers_2, for some commands (If, Jump, Eval), we essentially run these commands immediately, instead of delaying them and adding them to the queue. These commands have a special function, to change the next command we run. We must run them immediately because otherwise we might add commands that follow them to the queue when we should not. For instance, if we have commands:
+(* TODO2 #parsing In Runner_Queue_Helpers_2, for some commands (If, Jump, Eval), we essentially run these commands immediately, instead of delaying them and adding them to the queue. These commands have a special function, to change the next command we run. We must run them immediately because otherwise we might add commands that follow them to the queue when we should not. For instance, if we have commands:
 
 Jump <another scene>
 fadeoutall
@@ -422,14 +422,13 @@ Remaining work:
 
 - We could change Runner_Command_Signature to return Next_Command_Data, then change Runner_Queue_Helpers_2 to delay If, Jump, and Eval instead of running them immediately. However, for the reason mentioned previously, we would also need to change If, Jump and Eval to behavior Continue_Immediately/run_queue_now = true, to make sure we did not add any commands that follow them to the queue. We're not sure this would work for If.
 
-- We need to see if issue arises for any other command that can affect JS state.
-- menu
-- image_map
-- What else?
+x We need to see if this issue arises for any other command that can affect JS state.
+x menu
+x image_map
+x What else? We looked at all calls to JavaScript_Interop_1.eval_js_with_menu_variables () but couldn't find any.
 
-We think menu and image_map stop and run the queue, though, so the issue should not arise.
+Runner_Notify.get_notify_menu_selection () and get_notify_image_map_selection () both set the queue state to Queue_Idle and update menu_variables. So it should not be possible to run a command after menu or image_map that depends on changes they make to JS state but runs before those changes can be recorded.
 
-- Just get rid of the queue, or reduce it to running one command at a time, as soon as we encounter it.
-- Keep the Wait_For_Callback/Continue_Immediately command behaviors, but only so we know whether the queue should run the command and then exit and wait for the callback, or recursively call run ().
+N Just get rid of the queue, or reduce it to running one command at a time, as soon as we encounter it. We tried this, but it was very painful, and it would be even more painful if we needed to re-add the queue at some point, such as if we want to run multiple commands in parallel.
+N Keep the Wait_For_Callback/Continue_Immediately command behaviors, but only so we know whether the queue should run the command and then exit and wait for the callback, or recursively call run ().
 *)
-
