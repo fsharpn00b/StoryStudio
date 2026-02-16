@@ -79,6 +79,7 @@ let private handle_command_javascript (command_1 : Command_Type) (line_number : 
     | Dialogue command_2 -> combine_javascript_interpolations command_2.javascript_interpolations line_number
     | Temporary_Notification command_2 -> combine_javascript_interpolations command_2.javascript_interpolations line_number
     | Permanent_Notification command_2 -> combine_javascript_interpolations command_2.javascript_interpolations line_number
+    | Eval eval_data -> combine_javascript_interpolations eval_data.javascript_interpolations line_number
     | _ -> None
 
 let private handle_menu_javascript (menu : Menu_Data_1) (line_number_1 : int) : string =
@@ -173,7 +174,9 @@ let rec private try_javascript_path
         | Command command_2 ->
             match command_2 with
 
-            | Jump destination_scene_id ->
+// TODO1 #parsing If we allow jumping to labels, we'll need to deal with that here also.
+            | Jump jump_data ->
+                let destination_scene_id = jump_data.scene_id
                 if acc.scenes_encountered.Contains destination_scene_id then acc
                 else
                     let destination_scene_name =

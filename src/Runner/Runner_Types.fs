@@ -61,10 +61,19 @@ type Runner_Saveable_State_Component_Data = {
     javascript : obj
 }
 
-type Runner_Saveable_State_Running_Data = {
+(* A field that uses this type should always be optional. None means there is no next command. *)
+type Next_Command_Data = {
+    next_command_scene_id : int<scene_id>
+    next_command_id : int<command_id>
+}
+
+type Runner_Queue_Next_Command_Data = {
     next_command_queue_item_id : int<command_queue_item_id>
-    scene_id : int<scene_id>
-    next_command_id : int<command_id> option
+    next_command : Next_Command_Data option
+}
+
+type Runner_Saveable_State_Running_Data = {
+    next_command : Runner_Queue_Next_Command_Data
 (* We clear the history when we load a saved game. This determines whether, when we load a saved game, we re-add the current state to the history. *)
     add_to_history : bool
 (* This determines whether, when we load a saved game, we then autosave the current state. *)
@@ -93,13 +102,14 @@ type Runner_Component_Names =
     | Menu
     | Image_Map
 
+type Runner_Command_Signature = int<command_queue_item_id> -> unit
+
 type Runner_Command_Data = {
-    command : (int<command_queue_item_id> -> unit) option
+    command : Runner_Command_Signature option
     error_data : Command_Error_Data_2
     behavior : Command_Behavior
     components_used : Runner_Component_Names Set
-    next_command_scene_id : int<scene_id>
-    next_command_id : int<command_id> option
+    next_command : Next_Command_Data option
 }
 
 type Runner_Queue_Item = {
@@ -108,14 +118,8 @@ type Runner_Queue_Item = {
     components_used_by_command : Runner_Component_Names Set
 }
 
-type Runner_Queue_Next_Command_Data = {
-    next_command_queue_item_id : int<command_queue_item_id>
-    next_command_scene_id : int<scene_id>
-    next_command_id : int<command_id> option
-}
-
 type Runner_Queue_State_Idle_Data = {
-    next_command_data : Runner_Queue_Next_Command_Data
+    next_command : Runner_Queue_Next_Command_Data
 (* See notes in Command_Queue_State_Running_Data. *)
     add_to_history : bool
     autosave : bool

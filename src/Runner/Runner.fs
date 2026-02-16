@@ -25,7 +25,7 @@ open Plugins
 open Runner_Configuration
 open Runner_History
 open Runner_Notify
-open Runner_Queue
+open Runner_Queue_Helpers_1
 open Runner_Save_Load
 open Runner_Types
 open Runner_UI
@@ -96,7 +96,8 @@ let private error : error_function = error debug_module_name
 let Runner
     (props : {| expose : IRefValue<I_Runner> |})
     (characters : Character_Input_Map)
-    (scenes : Scene_Map)
+    (scenes : IRefValue<Scene_Map>)
+    (parser : Parser)
     : ReactElement =
 
 (* State *)
@@ -164,14 +165,14 @@ When you need to trigger events from [an embedded] Elmish component, use React p
         Background.Background (
             {| expose = background_2 |},
             configuration_1.current.background_configuration,
-            (get_notify_transition_complete scenes runner_component_interfaces queue history Runner_Component_Names.Background)
+            (get_notify_transition_complete scenes runner_component_interfaces queue history Runner_Component_Names.Background parser)
         )
 
     let characters_1 = 
         Characters.Characters (
             {| expose = characters_2 |},
             configuration_1.current.characters_configuration,
-            (get_notify_transition_complete scenes runner_component_interfaces queue history Runner_Component_Names.Characters),
+            (get_notify_transition_complete scenes runner_component_interfaces queue history Runner_Component_Names.Characters parser),
             characters
         )
 
@@ -203,21 +204,21 @@ When you need to trigger events from [an embedded] Elmish component, use React p
         Dialogue_Box.Dialogue_Box (
             {| expose = dialogue_box_2 |},
             configuration_1.current.dialogue_box_configuration,
-            (get_notify_transition_complete scenes runner_component_interfaces queue history Runner_Component_Names.Dialogue_Box)
+            (get_notify_transition_complete scenes runner_component_interfaces queue history Runner_Component_Names.Dialogue_Box parser)
         )
 
     let image_map_1 =
         Image_Map.Image_Map (
             {| expose = image_map_2 |},
-            (get_notify_transition_complete scenes runner_component_interfaces queue history Runner_Component_Names.Image_Map),
-            (get_notify_image_map_selection scenes queue runner_component_interfaces)
+            (get_notify_transition_complete scenes runner_component_interfaces queue history Runner_Component_Names.Image_Map parser),
+            (get_notify_image_map_selection scenes queue runner_component_interfaces parser)
         )
 
     let menu_1 =
         Menu.Menu (
             {| expose = menu_2 |},
-            (get_notify_transition_complete scenes runner_component_interfaces queue history Runner_Component_Names.Menu),
-            (get_notify_menu_selection scenes queue runner_component_interfaces)
+            (get_notify_transition_complete scenes runner_component_interfaces queue history Runner_Component_Names.Menu parser),
+            (get_notify_menu_selection scenes queue runner_component_interfaces parser)
         )
 
     let music_1 = Music {| expose = music_2 |}
@@ -241,7 +242,7 @@ When you need to trigger events from [an embedded] Elmish component, use React p
 
     React.useImperativeHandle(props.expose, fun () ->
         { new I_Runner with
-            member _.run (reason : Run_Reason) : unit = Runner_UI.run queue scenes runner_component_interfaces reason
+            member _.run (reason : Run_Reason) : unit = Runner_UI.run queue scenes runner_component_interfaces reason parser
             member _.get_key_bindings () : Key_To_Key_Binding_Name = configuration_1.current.key_bindings_configuration.key_to_name
             member _.show_or_hide_configuration_screen () : unit = Runner_UI.show_or_hide_configuration_screen queue runner_component_interfaces
 // We do not use this for now.

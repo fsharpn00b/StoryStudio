@@ -33,7 +33,8 @@ let music_path = "../0_data/music.txt?raw"
 let entry_script_name = "start.txt"
 let entry_scene_name = "start"
 let entry_scene_id = 0<scene_id>
-let scene_initial_command_id = 1<command_id>
+let temporary_scene_id_for_eval_command = -1<scene_id>
+let scene_initial_command_id = 0<command_id>
 
 let game_state_name = "state"
 (* This is used by JavaScript_Interop_2.set_state_in_js (). We define it close to game_state_name so that if we change game_state_name, we won't forget to change set_state_in_js_emit accordingly. We can't insert a variable into a constant expression, and we need a constant expression to define an attribute. *)
@@ -141,29 +142,37 @@ let get_music () : Map<string, string> =
     | _ -> error "get_music" "Failed to deserialize music." ["music", music_1] |> invalidOp
 
 let get_scripts () : Script list =
-    let scripts_1 =
+(* ID 0 is reserved for the entry scene. *)
+    let mutable scene_id = 1
+    let mutable entry_scene_found = false
+
+    let scripts =
         vite_glob_eager_raw scripts_path
         |> fun result -> JS.Constructors.Object.entries result
         |> unbox<(string * string)[]>
         |> Array.toList
-(* Make sure the scripts include the expected entry scene. *)
-    match scripts_1 |> List.tryFind (fun script -> script |> fst |> convert_file_path_to_scene_name = entry_scene_name) with
-    | None -> error "get_scripts" "Entry script missing." ["Expected entry script name", entry_script_name; "Script names", scripts_1 |> List.map fst :> obj] |> invalidOp
-    | Some entry_script ->
 (* Convert the scripts to scene data. *)
-        let scripts_2 =
-            scripts_1
-                |> List.mapi (fun i (path, content) ->
-                    {
-(* ID 0 is reserved for the entry scene. *)
-                        id = LanguagePrimitives.Int32WithMeasure <| i + 1
-                        name = convert_file_path_to_scene_name path
-                        content = content
-                    }
-                )
-(* Include the entry scene data. *)
-        { id = entry_scene_id; name = entry_scene_name; content = snd entry_script } :: scripts_2
-    
+        |> List.map (fun (path, content) ->
+                let scene_name = convert_file_path_to_scene_name path
+                {
+                    id =
+                        if 0 = String.Compare (entry_scene_name, scene_name) then
+                            do entry_scene_found <- true
+                            entry_scene_id
+                        else
+                            let result = LanguagePrimitives.Int32WithMeasure <| scene_id 
+                            do scene_id <- scene_id + 1
+                            result
+                    name = scene_name
+                    content = content
+                }
+            )
+
+(* Make sure the scripts include the expected entry scene. *)
+    if not entry_scene_found then
+        error "get_scripts" "Entry script missing." ["Expected entry script name", entry_script_name; "Script names", scripts |> List.map (fun script -> script.name) :> obj] |> invalidOp
+    else scripts
+
 let get_typescript_types () : string =
     let results =
         vite_glob_eager_raw types_path

@@ -6,11 +6,10 @@ open System
 // console, window
 open Browser.Dom
 
-open Character_Types
 open Command_Types
 open Log
-open Parser_1_Semantics
 open Parser_2_Helpers
+open Scripts
 open Units_Of_Measure
 
 (* Debug *)
@@ -200,7 +199,7 @@ let private parse_commands
             name = script_name
             content = script_content
         }
-        current_command_id = 1<command_id>
+        current_command_id = scene_initial_command_id
         parent_command_ids = []
     }
 
@@ -265,20 +264,15 @@ let private parse_commands
 
     | _ -> error "parse" "Invalid last token. Last token should be a command or EndIf." ["Last token", List.last tokens_1 :> obj] |> invalidOp
 
-let get_scene_map_and_javascript
+let get_scene_map
+    (parser : Parser)
     (scripts : Script list)
-    (backgrounds : Map<string, string>)
-    (characters : Character_Input_Map)
-    (music_tracks : Map<string, string>)
     : Scene_Map =
-
-(* get_grammar_and_semantics uses a try/catch block. *)
-    let grammar, semantics = get_grammar_and_semantics scripts music_tracks backgrounds characters
 
     scripts
         |> List.map (fun script ->
 (* parse_script_1 simply wraps parse_script_2 in a try/catch block. *)
-            match parse_script_1 grammar semantics script with
+            match parser script with
             | [] -> error "get_scene_map_and_javascript" "Script is empty or contains only comments." ["script name", script.name] |> invalidOp
             | commands -> script.id, parse_commands script.name script.content commands
         )

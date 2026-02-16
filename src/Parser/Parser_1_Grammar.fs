@@ -87,6 +87,7 @@ Script {
 */
         | hide_image_map
         | dialogue
+        | eval
 
 /* Multi-line patterns. */
         | comment
@@ -117,6 +118,7 @@ Script {
     end_if = "endif"
     jump = "jump" sp+ string_param
     hide_image_map = "hideimagemap" sp+ float_param
+    hide_permanent_notification = "hidestatus"
 """
 (* We cannot get interpolation to work with a triple-quoted string. *)
         + dialogue_pattern
@@ -151,7 +153,8 @@ Script {
 /* TODO2 #parsing In case the author forgets to close the notify block, we might warn them (with alert = false) if we find known commands inside it. */
     temporary_notification = "notify" sp+ (~"endnotify" any)* "endnotify"
     permanent_notification = "status" sp+ (~"endstatus" any)* "endstatus"
-    hide_permanent_notification = "hidestatus"
+
+    eval = "eval" (~"endeval" any)* "endeval"
 }
 """
 

@@ -96,9 +96,10 @@ let get_menu_variables
 
 let run
     (queue : IRefValue<Runner_Queue>)
-    (scenes : Scene_Map)
+    (scenes : IRefValue<Scene_Map>)
     (runner_component_interfaces : IRefValue<Runner_Component_Interfaces>)
     (reason : Run_Reason)
+    (parser : Parser)
     : unit =
 
 (* We do not want to run the next command when any of the following are visible.
@@ -114,7 +115,7 @@ let run
             not <| runner_component_interfaces.current.save_load.current.is_visible () &&
             not <| runner_component_interfaces.current.configuration.current.is_visible () then
 (* We must determine what the next command is before we can run it. *)
-            do Runner_Queue.run queue scenes runner_component_interfaces reason
+            do Runner_Queue.run queue scenes runner_component_interfaces reason parser
 
 // TODO2 #plugins Consider expanding this check to all runner components. So far we have only had to check plugins because they are loaded asynchronously.
     let are_plugins_ready () : bool =
@@ -285,7 +286,7 @@ let redo
 (* Event handlers *)
 
 let handle_key_down
-    (scenes : Scene_Map)
+    (scenes : IRefValue<Scene_Map>)
     (runner : IRefValue<I_Runner>)
     (event : Event)
     : unit =
@@ -331,7 +332,7 @@ npm install typescript --save-dev
 (end)
 The --save-dev means you are installing the package only for dev purposes, not to be deployed with the application.
 *)
-        | "javascript" -> scenes |> check_javascript
+        | "javascript" -> scenes.current |> check_javascript
         | "state" ->
             do
                 show_js_state ()

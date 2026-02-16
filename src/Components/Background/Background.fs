@@ -126,7 +126,7 @@ let private view_2
         [
 (* We only want one of these transitions to report when it is complete. Otherwise, we will try to remove the command queue item id from the command queue twice, and get an error. *)
 // TODO2 #transitions Consider a separate component for cross fade.
-            get_transitionable_image_2 (fun () -> complete_transition None false Hidden) old_url "0.0" "1.0"
+            get_transitionable_image_2 (fun () -> complete_transition None false Hidden) old_url "1.0" "0.0"
             get_transitionable_image_2 (fun () -> complete_transition_2 <| Visible new_url) new_url "0.0" "1.0"
         ]
 

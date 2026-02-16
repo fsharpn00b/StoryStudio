@@ -14,6 +14,7 @@ open Feliz
 //importSideEffects "./0_pages/menu.css"
 
 open Log
+open Parser_1_Semantics
 open Parser_2
 open Runner
 open Runner_Types
@@ -35,13 +36,16 @@ let private error : error_function = error debug_module_name
 *)
 
 let character_inputs= get_character_inputs ()
-let scenes = get_scene_map_and_javascript (get_scripts ()) (get_backgrounds ()) character_inputs (get_music ())
+(* get_parser uses a try/catch block. *)
+let scripts = get_scripts ()
+let parser = get_parser scripts (get_backgrounds ()) character_inputs (get_music ())
 
 (* Component *)
 
 [<ReactComponent>]
 let Main () : ReactElement =
 
+    let scenes = React.useRef <| get_scene_map parser scripts
     let runner_2 = React.useRef<I_Runner> Unchecked.defaultof<_>
 
     do React.useEffectOnce(fun () ->
@@ -71,7 +75,7 @@ let Main () : ReactElement =
     )
 
     let runner_1 =
-        Runner {| expose = runner_2 |} character_inputs scenes
+        Runner {| expose = runner_2 |} character_inputs scenes parser
 
     runner_1
 

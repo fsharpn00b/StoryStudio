@@ -30,11 +30,12 @@ let mutable remove_transition_lock = 0
 let private remove_transition_2
     (queue : IRefValue<Runner_Queue>)
     (history : IRefValue<Runner_History>)
-    (scenes : Scene_Map)
+    (scenes : IRefValue<Scene_Map>)
     (runner_component_interfaces : IRefValue<Runner_Component_Interfaces>)
     (queue_data : Runner_Queue_State_Running_Data)
     (command_queue_item_id : int<command_queue_item_id>)
     (command : Runner_Queue_Item)
+    (parser : Parser)
     : unit =
 
     let commands =
@@ -47,7 +48,7 @@ let private remove_transition_2
     if Map.isEmpty commands then
         queue.current <-
             Queue_Idle {
-                next_command_data = queue_data.next_command_data
+                next_command = queue_data.next_command_data
                 add_to_history = queue_data.add_to_history
                 autosave = queue_data.autosave
                 menu_variables = queue_data.menu_variables
@@ -68,7 +69,7 @@ let private remove_transition_2
             quicksave_or_autosave queue runner_component_interfaces Save_Load_Types.Autosave
 (* Run the next command(s) if specified. *)
         if queue_data.continue_after_finished then
-            run queue scenes runner_component_interfaces Handle_Queue_Empty
+            run queue scenes runner_component_interfaces Handle_Queue_Empty parser
     else
 (* Update the queue with the new map of command queue items. *)
         do queue.current <-
@@ -82,10 +83,11 @@ let private remove_transition_2
 let remove_transition_1
     (queue : IRefValue<Runner_Queue>)
     (history : IRefValue<Runner_History>)
-    (scenes : Scene_Map)
+    (scenes : IRefValue<Scene_Map>)
     (runner_component_interfaces : IRefValue<Runner_Component_Interfaces>)
     (command_queue_item_id : int<command_queue_item_id>)
     (component_id : Runner_Component_Names)
+    (parser : Parser)
     : unit =
 
     #if debug
@@ -130,7 +132,7 @@ let remove_transition_1
                     command_2
 
 (* If the command has no more transitions, remove it from the queue. *)
-            remove_transition_2 queue history scenes runner_component_interfaces queue_data command_queue_item_id command_1
+            remove_transition_2 queue history scenes runner_component_interfaces queue_data command_queue_item_id command_1 parser
         )
 
     | _ -> error "remove_transition" "Unexpected queue state." ["Queue state", queue.current] |> invalidOp

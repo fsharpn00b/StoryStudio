@@ -26,9 +26,9 @@
     <Compile Include="Components/Dialogue_Box/Dialogue_Box.fs" />
     <Compile Include="Components/Image_Map/Image_Map.fs" />
     <Compile Include="Components/Menu/Menu.fs" />
-    <Compile Include="Components/Notifications/Notification_Types.fs" /><Compile Include="Components/Notifications/Notification_Component.fs" />
+    <Compile Include="Components/Notifications/Notification_Types.fs" />
+    <Compile Include="Components/Notifications/Notification_Component.fs" />
     <Compile Include="Components/Notifications/Temporary_Notification.fs" />
-    
     <Compile Include="Components/Notifications/Notifications.fs" />
     <Compile Include="Components/Configuration/Key_Bindings.fs" />
     <Compile Include="Components/Configuration/Configuration.fs" />
@@ -53,7 +53,8 @@
     <Compile Include="Runner/Runner_History.fs" />
     <Compile Include="Runner/Runner_Configuration.fs" />
     <Compile Include="Runner/Runner_Save_Load.fs" />
-    <Compile Include="Runner/Runner_Queue_Helpers.fs" />
+    <Compile Include="Runner/Runner_Queue_Helpers_1.fs" />
+    <Compile Include="Runner/Runner_Queue_Helpers_2.fs" />
     <Compile Include="Runner/Runner_Queue.fs" />
     <Compile Include="Runner/Runner_Queue_Transition.fs" />
     <Compile Include="Runner/Runner_Notify.fs" />

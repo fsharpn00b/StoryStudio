@@ -29,9 +29,7 @@ let get_state
     | Queue_Idle data ->
 
         Runner_Saveable_State_Running {
-            next_command_queue_item_id = data.next_command_data.next_command_queue_item_id
-            scene_id = data.next_command_data.next_command_scene_id
-            next_command_id = data.next_command_data.next_command_id
+            next_command = data.next_command
 (* We clear the history when we load a saved game. When we load a saved game, we need to determine whether to re-add the current state to the history.
 We complete all running transitions before we show the save/load game screen. Any commands with behavior Continue_Immediately should have finished. In effect, the queue should have been in a Wait_For_Callback state. So when we load a saved game, we only need to check add_to_history, which is simply the inverse of continue_after_finished. We do not use continue_after_finished itself because we need to set it to false to halt running commands when the user opens the save/load game screen or rolls back/forward.
 If add_to_history is false, which means that when we halted running commands, we would otherwise have run the next command without waiting for input from the user, we should not add the current state to the history.
@@ -104,11 +102,7 @@ We might want to get the state at the most recent pausable point (which might be
             match runner_state with
             | Runner_Saveable_State_Running data ->
                 Queue_Idle {
-                    next_command_data = {
-                        next_command_queue_item_id = data.next_command_queue_item_id
-                        next_command_scene_id = data.scene_id
-                        next_command_id = data.next_command_id
-                    }
+                    next_command = data.next_command
                     add_to_history = data.add_to_history
                     autosave = data.autosave
                     menu_variables = data.menu_variables

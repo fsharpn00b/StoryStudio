@@ -36,11 +36,12 @@ The Notify_Transition_Complete message would include the sender.
 *)
 (* A UI component uses this function to notify Runner that the component has finished its current transition. *)
 let get_notify_transition_complete
-    (scenes : Scene_Map)
+    (scenes : IRefValue<Scene_Map>)
     (runner_component_interfaces : IRefValue<Runner_Component_Interfaces>)
     (queue : IRefValue<Runner_Queue>)
     (history : IRefValue<Runner_History>)
     (component_id : Runner_Component_Names)
+    (parser : Parser)
     : int<command_queue_item_id> -> unit =
 (* Close over all these parameters so it becomes a unit -> unit that we can pass to UI components.
 We also need to delay the evaluation of this function until runner_component_interfaces is not null. The delayed result of this function is passed to the constructors of these components.
@@ -49,7 +50,7 @@ We can close over queue because it is a reference.
     fun (command_queue_item_id : int<command_queue_item_id>) ->
 (* If we do not delay here, and a transition is short enough, this notification can set the queue state to Queue_Idle *before* the transition sets it to Queue_Running. As a result, it is not possible to start any more transitions. *)
         do window.setTimeout ((fun () ->
-            do remove_transition_1 queue history scenes runner_component_interfaces command_queue_item_id component_id
+            do remove_transition_1 queue history scenes runner_component_interfaces command_queue_item_id component_id parser
         ), int notify_transition_complete_delay_time) |> ignore
 
 (* notify_transition_complete is only called when a transition completes on its own, without being interrupted. *)
@@ -59,9 +60,10 @@ See notes in Fade_Transition.update_complete_transition (), Fade_Visibility.upda
 *)
 
 let get_notify_menu_selection
-    (scenes : Scene_Map)
+    (scenes : IRefValue<Scene_Map>)
     (queue : IRefValue<Runner_Queue>)
     (runner_component_interfaces : IRefValue<Runner_Component_Interfaces>)
+    (parser : Parser)
     : string -> int -> unit =
 
     fun (menu_name : string) (selected_index : int) ->
@@ -105,15 +107,15 @@ That is because the Menu command is for showing the menu, and after that, the co
 // TODO2 Can this be done in the Menu.Menu_Item_Selected handler? Just return false for is_visible and clear menu data there. No, it might be we still want to make sure no mouse clicks are processed yet.
                 runner_component_interfaces.current.menu.current.hide false None
                 window.setTimeout((fun () ->
-(* Since the user has to select a menu item, we set run_manually to true. *)
-                    run queue scenes runner_component_interfaces Run_Reason.Notify_Menu_Selection
+                    run queue scenes runner_component_interfaces Run_Reason.Notify_Menu_Selection parser
                 ), int notify_transition_complete_delay_time) |> ignore
             ), int notify_transition_complete_delay_time) |> ignore
 
 let get_notify_image_map_selection
-    (scenes : Scene_Map)
+    (scenes : IRefValue<Scene_Map>)
     (queue : IRefValue<Runner_Queue>)
     (runner_component_interfaces : IRefValue<Runner_Component_Interfaces>)
+    (parser : Parser)
     : string -> int -> unit =
 
     fun (image_map_name : string) (selected_index : int) ->
@@ -126,8 +128,7 @@ let get_notify_image_map_selection
 
             window.setTimeout((fun () ->
                 window.setTimeout((fun () ->
-(* Since the user has to select an image map item, we set run_manually to true. *)
-                    run queue scenes runner_component_interfaces Run_Reason.Notify_Image_Map_Selection
+                    run queue scenes runner_component_interfaces Run_Reason.Notify_Image_Map_Selection parser
                 ), int notify_transition_complete_delay_time) |> ignore
             ), int notify_transition_complete_delay_time) |> ignore
 

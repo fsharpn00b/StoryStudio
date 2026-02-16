@@ -1,6 +1,12 @@
 // Play music.
 //playmusic autumn
 
+// This is to test the eval command.
+/*
+js window.state.eval_command = "fadein night 2.0"
+eval ${window.state.eval_command} endeval
+*/
+
 // Fade in daytime background over 2 seconds.
 fadein day 2.0 // Comment after statement.
 

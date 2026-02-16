@@ -202,4 +202,10 @@ imagemap x overhead 1.0
 2 25 25 50 50
 endimagemap
 hideimagemap 1.0
+
+12 eval
+x In check_javascript ()? Yes, in handle_command_javascript ().
+x Tested error handling?
+
+eval ${x} endeval
 *)

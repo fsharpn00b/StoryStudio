@@ -23,6 +23,7 @@ open Menu
 open Notification_Types
 open Parser_1_Helpers
 open Parser_1_Grammar
+open Scripts
 
 (* Debug *)
 
@@ -159,9 +160,11 @@ We do not currently use this. *)
     semantics?end_if <- fun _ -> Command_Pre_Parse_Type.End_If |> Some
     semantics?jump <- fun _ _ destination ->
         let script_id = get_script_id scripts destination?sourceString destination?source?startIdx
-        script_id |> Command_Type.Jump |> Command_Pre_Parse_Type.Command |> Some
+        { scene_id = script_id; command_id = scene_initial_command_id } |> Command_Type.Jump |> Command_Pre_Parse_Type.Command |> Some
     semantics?hide_image_map <- fun _ _ transition_time ->
         transition_time?ast() |> Command_Pre_Parse_Type.End_Image_Map |> Some
+    semantics?hide_permanent_notification <- fun _ ->
+        Hide_Permanent_Notification |> Command_Pre_Parse_Type.Command |> Some
 
     semantics?dialogue <- fun character_short_name _ text ->
         {
@@ -259,26 +262,16 @@ We do not currently use this. *)
             Notification_Data_1.text = text?sourceString |> convert_string_to_use_javascript_interpolation
             javascript_interpolations = extract_javascript_interpolations text?sourceString
         } |> Permanent_Notification |> Command_Pre_Parse_Type.Command |> Some
-    semantics?hide_permanent_notification <- fun _ -> Hide_Permanent_Notification |> Command_Pre_Parse_Type.Command |> Some
+
+    semantics?eval <- fun _ text _ ->
+        {
+            eval_content = text?sourceString |> convert_string_to_use_javascript_interpolation
+            javascript_interpolations = extract_javascript_interpolations text?sourceString
+        } |> Eval |> Command_Pre_Parse_Type.Command |> Some
 
     semantics
 
 // TODO1 #parsing #future How can we get clearer error messages from the parser?
-
-let get_grammar_and_semantics
-    (scripts : Script list)
-    (music_tracks : Map<string, string>)
-    (backgrounds : Map<string, string>)
-    (characters : Character_Input_Map)
-    : obj * obj =
-
-    let grammar_text = get_grammar_text characters
-    let grammar = ohm?grammar(grammar_text)
-
-    let semantics_1 = get_semantics scripts music_tracks backgrounds characters
-    let semantics_2 = grammar?createSemantics()?addOperation("ast", semantics_1)
-
-    grammar, semantics_2
 
 let private parse_script_2
     (grammar : obj)
@@ -312,7 +305,7 @@ let private parse_script_2
                 command = command.command
             })
 
-let parse_script_1
+let private parse_script_1
     (grammar : obj)
     (semantics : obj)
     (script : Script)
@@ -328,3 +321,19 @@ let parse_script_1
         ]) |> invalidOp
 (* We should not see a generic exception here, so we just re-raise this. *)
     | _ -> reraise ()
+
+let get_parser
+    (scripts : Script list)
+    (backgrounds : Map<string, string>)
+    (characters : Character_Input_Map)
+    (music_tracks : Map<string, string>)
+    : Script -> Command_Pre_Parse_2 list =
+
+    let grammar_text = get_grammar_text characters
+    let grammar = ohm?grammar(grammar_text)
+
+(* We need scripts to call get_semantics so it can validate Jump commands. *)
+    let semantics_1 = get_semantics scripts music_tracks backgrounds characters
+    let semantics_2 = grammar?createSemantics()?addOperation("ast", semantics_1)
+
+    parse_script_1 grammar semantics_2

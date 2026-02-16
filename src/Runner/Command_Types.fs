@@ -19,6 +19,20 @@ type JavaScript_Data = {
     script_text_index : int
 }
 
+(* TODO1 #parsing Allow jumping to labels.
+Scene_Data could contain a map of label -> command ID that we build as we parse.
+Otherwise, since we assign command IDs in Parser_2.parse_commands (), we don't know how we can transform Jump <label> to Jump <command_ID> in 
+*)
+type Jump_Data = {
+    scene_id : int<scene_id>
+    command_id : int<command_id>
+}
+
+type Eval_Data = {
+    eval_content : string
+    javascript_interpolations : string list
+}
+
 type Command_Type =
     | Music_Play of string
     | Music_Stop
@@ -38,7 +52,8 @@ type Command_Type =
     | Hide_Permanent_Notification
     | JavaScript_Inline of JavaScript_Data
     | JavaScript_Block of JavaScript_Data
-    | Jump of int<scene_id>
+    | Jump of Jump_Data
+    | Eval of Eval_Data
 
 type Wait_For_Callback_Behavior = {
     continue_afterward : bool
@@ -47,6 +62,7 @@ type Wait_For_Callback_Behavior = {
 }
 
 type Continue_Immediately_Behavior = {
+    run_queue_now : bool
     autosave : bool
 }
 
@@ -55,10 +71,11 @@ type Continue_Immediately_Behavior = {
 For example:
                     
                     Continue_Immediately    Wait_For_Callback
-                                            continue_afterward
-Background_Fade_In  false                   true
-Dialogue            false                   false
-JavaScript_Inline   true
+                    run_queue_now           continue_afterward
+Background_Fade_In  N/A                     true
+Dialogue            N/A                     false
+JavaScript_Inline   true                    N/A
+If                  false                   N/A
 
 Continue_Immediately implies the command finishes immediately.
 *)
@@ -142,3 +159,5 @@ type Script = {
     name : string
     content : string
 }
+
+type Parser = Script -> Command_Pre_Parse_2 list
