@@ -105,18 +105,15 @@ let private handle_no_more_commands
     else do queue.current <- Queue_Done
 
 let rec private handle_next_command
-    (queue : IRefValue<Runner_Queue>)
-    (scenes : IRefValue<Scene_Map>)
-    (runner_component_interfaces : IRefValue<Runner_Component_Interfaces>)
+    (runner_state : Runner_State)
     (queue_data : Runner_Queue_State_Loading_Data)
     (next_command : Next_Command_Data)
-    (parser : Parser)
     : unit =
 
 (* Get the scene for the next command. *)
-    match scenes.current.TryFind next_command.next_command_scene_id with
+    match runner_state.scenes.current.TryFind next_command.next_command_scene_id with
 
-    | None -> error "add_commands_to_queue" "Next command scene ID not found." ["next_command_scene_id", next_command.next_command_scene_id; "scenes", scenes] |> invalidOp
+    | None -> error "add_commands_to_queue" "Next command scene ID not found." ["next_command_scene_id", next_command.next_command_scene_id; "scenes", runner_state.scenes] |> invalidOp
 
     | Some scene ->
 
@@ -128,15 +125,15 @@ let rec private handle_next_command
         | Some command ->
             let command_data =
 (* Runner_Queue_Helpers_2.get_command_data () can try to evaluate JavaScript for If or Eval commands. *)
-                try get_command_data runner_component_interfaces scenes next_command.next_command_scene_id command queue_data.menu_variables parser with
+                try get_command_data runner_state next_command.next_command_scene_id command queue_data.menu_variables with
                 | Run_Time_JavaScript_Error e ->
                     let known_error_data = ["code", e.code :> obj; "message", e.inner.Message]
-                    let script_name, script_line_number = get_script_name_and_line_number scenes.current "handle_next_command" command.error_data known_error_data
+                    let script_name, script_line_number = get_script_name_and_line_number runner_state.scenes.current "handle_next_command" command.error_data known_error_data
                     error "handle_next_command" "JavaScript error." (known_error_data @ ["script_name", script_name; "script_line_number", script_line_number]) |> invalidOp
 (* Unlike with run_command, we might see a generic exception here. Runner_Queue_Helpers_2.handle_eval () and handle_if_2 () can raise one. *)
                 | e ->
                     let known_error_data = ["message", e.Message :> obj]
-                    let script_name, script_line_number = get_script_name_and_line_number scenes.current "handle_next_command" command.error_data known_error_data
+                    let script_name, script_line_number = get_script_name_and_line_number runner_state.scenes.current "handle_next_command" command.error_data known_error_data
                     error "handle_next_command" "Error running command." (known_error_data @ ["script_name", script_name; "script_line_number", script_line_number]) |> invalidOp
 
             let queue_data_2 = add_command_to_queue queue_data command_data
@@ -145,7 +142,7 @@ let rec private handle_next_command
 (* We keep adding commands to the queue until we reach a command with behavior Continue_Immediately/run_queue_now = true or Wait_For_Callback. *)
             | Continue_Immediately behavior ->
                 if behavior.run_queue_now then
-                    do queue.current <-
+                    do runner_state.queue.current <-
                         Queue_Running {
                             commands = queue_data_2.commands
                             next_command_data = queue_data_2.next_command_data
@@ -156,11 +153,12 @@ let rec private handle_next_command
                             menu_variables = queue_data_2.menu_variables
                         } 
                 else
-                    do queue.current <- Queue_Loading queue_data_2
-                    add_commands_to_queue queue scenes runner_component_interfaces parser
+                    do runner_state.queue.current <- Queue_Loading queue_data_2
+                    add_commands_to_queue runner_state
 
+(* Once we reach a command with behavior Wait_For_Callback, we do not add any more commands to the queue for now, and we set continue_after_finished and add_to_history to reflect the last command. *)
             | Wait_For_Callback wait ->
-                do queue.current <-
+                do runner_state.queue.current <-
                     Queue_Running {
                         commands = queue_data_2.commands
                         next_command_data = queue_data_2.next_command_data
@@ -171,28 +169,13 @@ let rec private handle_next_command
                         menu_variables = queue_data_2.menu_variables
                     }
 
-(* TODO1 #parsing Create a Runner_State that contains
-- scenes : IRefValue<Scene_Map>
-- queue : IRefValue<Runner_Queue>
-- runner_component_interfaces : IRefValue<Runner_Component_Interfaces>
-- parser : Parser
-
-Update the scene map and queue as we go.
-
-- Where is the other mutable state we have like this?
-*)
-(* Once we reach a command with behavior Wait_For_Callback, we do not add any more commands to the queue for now, and we set continue_after_finished and add_to_history to reflect the last command. *)
-
 and private add_commands_to_queue
-    (queue : IRefValue<Runner_Queue>)
-    (scenes : IRefValue<Scene_Map>)
-    (runner_component_interfaces : IRefValue<Runner_Component_Interfaces>)
-    (parser : Parser)
+    (runner_state : Runner_State)
     : unit =
 
 (* Change the queue state to Queue_Loading to protect it from other functions. *)
     let queue_data =
-        match queue.current with
+        match runner_state.queue.current with
         
         | Queue_Idle data ->
             {
@@ -207,10 +190,10 @@ and private add_commands_to_queue
 (* This function is recursive, so the queue state might already be Queue_Loading. *)
         | Queue_Loading data -> data
 
-        | _ -> error "add_commands_to_queue" "Unexpected queue state." ["Queue state", queue.current] |> invalidOp
+        | _ -> error "add_commands_to_queue" "Unexpected queue state." ["Queue state", runner_state.queue.current] |> invalidOp
 
     let queue_state = Queue_Loading queue_data
-    do queue.current <- queue_state
+    do runner_state.queue.current <- queue_state
 
     #if debug
     do debug "add_commands_to_queue" String.Empty ["next_command_id", queue_data.next_command_data.next_command_id]
@@ -219,24 +202,21 @@ and private add_commands_to_queue
 (* Get the next command ID. *)
     match queue_data.next_command_data.next_command with
 (* If there are no more commands to add to the queue... *)
-    | None -> handle_no_more_commands queue queue_data
-    | Some next_command_2 -> handle_next_command queue scenes runner_component_interfaces queue_data next_command_2 parser
+    | None -> handle_no_more_commands runner_state.queue queue_data
+    | Some next_command_2 -> handle_next_command runner_state queue_data next_command_2
 
 (* Functions - main *)
 
 let rec private run_commands
-    (queue : IRefValue<Runner_Queue>)
-    (scenes : IRefValue<Scene_Map>)
+    (runner_state : Runner_State)
     (reason : Run_Reason)
-    (parser : Parser)
-    (runner_component_interfaces : IRefValue<Runner_Component_Interfaces>)
     : unit =
 
     #if debug
     do debug "run_commands" String.Empty ["reason", reason; "queue", queue.current]
     #endif
 
-    match queue.current with
+    match runner_state.queue.current with
 
     | Queue_Running data ->
 
@@ -249,7 +229,7 @@ let rec private run_commands
 If the last command has behavior Continue_Immediately, add_commands_to_queue () sets the queue state to Queue_Done.
 If the last command has behavior Wait_For_Callback, remove_transition () removes it from the queue, then calls run (), which calls this function.
 *)
-        if Map.isEmpty data.commands then do queue.current <- Queue_Done
+        if Map.isEmpty data.commands then do runner_state.queue.current <- Queue_Done
         else
 (* We run all commands and then remove those with behavior Continue_Immediately and leave those with behavior Wait_For_Callback. The latter are removed by remove_transition () when their transitions complete. *)
             let commands =
@@ -260,7 +240,7 @@ If the last command has behavior Wait_For_Callback, remove_transition () removes
 (* Run the command. *)
                         let command_data = kv.Value.command_data
                         match command_data.command with
-                        | Some f -> run_command scenes command_data.error_data (fun () -> f kv.Key)
+                        | Some f -> run_command runner_state.scenes command_data.error_data (fun () -> f kv.Key)
                         | None -> ()
 
 (* If the command does not wait for a transition to complete, remove it from the queue. *)
@@ -269,37 +249,6 @@ If the last command has behavior Wait_For_Callback, remove_transition () removes
                         | _ -> Some (kv.Key, kv.Value)
                     )
                     |> Map.ofSeq
-
-(* TODO1 #parsing In Runner_Queue_Helpers_2, for some commands (If, Jump, Eval), we essentially run these commands immediately, instead of delaying them and adding them to the queue. These commands have a special function, to change the next command we run. We must run them immediately because otherwise we might add commands that follow them to the queue when we should not. For instance, if we have commands:
-
-Jump <another scene>
-fadeoutall
-
-If we do not run Jump immediately, we will add both commands to the queue, but we do not want to run fadeoutall.
-
-However, this can be a problem because If and Eval can evalulate JavaScript. If we have commands:
-
-js window.state.x = true
-if true === window.state.x
-
-The If will raise an exception because x is undefined. That is because we add the JS command to the queue, but do not run it yet, and then we run the If command immediately, before we run the queue.
-
-For now, we handle this with a new command behavior, Continue_Immediately/run_queue_now = true, which we apply to JS commands. When we encounter a command with this behavior, we stop adding commands to the queue and run the queue.
-
-Remaining work:
-
-- We could change Runner_Command_Signature to return Next_Command_Data, then change Runner_Queue_Helpers_2 to delay If, Jump, and Eval instead of running them immediately. However, for the reason mentioned previously, we would also need to change If, Jump and Eval to behavior Continue_Immediately/run_queue_now = true, to make sure we did not add any commands that follow them to the queue. We're not sure this would work for If.
-
-- We need to see if issue arises for any other command that can affect JS state.
-- menu
-- image_map
-- What else?
-
-We think menu and image_map stop and run the queue, though, so the issue should not arise.
-
-- Just get rid of the queue, or reduce it to running one command at a time, as soon as we encounter it.
-- Keep the Wait_For_Callback/Continue_Immediately command behaviors, but only so we know whether the queue should run the command and then exit and wait for the callback, or recursively call run ().
-*)
 
 (* If there are no commands remaining, we know that both:
 
@@ -319,44 +268,41 @@ We also transition from Queue_Running to Queue_Idle in Runner_Queue_Transition.r
 *)
             if Map.isEmpty commands then
                 do
-                    queue.current <- Queue_Idle {
+                    runner_state.queue.current <- Queue_Idle {
                         next_command = data.next_command_data
                         add_to_history = data.add_to_history
                         autosave = data.autosave
                         menu_variables = data.menu_variables
                     }
-                    run queue scenes runner_component_interfaces reason parser
+                    run runner_state reason
 (* If there is a command remaining, it must be one that waits for a transition to complete. *)
-            else do queue.current <- Queue_Running { data with commands = commands }
+            else do runner_state.queue.current <- Queue_Running { data with commands = commands }
 
-    | _ -> error "run_commands" "Unexpected queue state." ["queue", queue.current] |> invalidOp
+    | _ -> error "run_commands" "Unexpected queue state." ["queue", runner_state.queue.current] |> invalidOp
 
 (* Ideally, queue would be a value, not a reference. But it must be a reference so it can also be accessed by remove_transition (), which is called by Runner_Transition.notify_transition_complete (), which in turn is called by various components. *)
 and run
-    (queue : IRefValue<Runner_Queue>)
-    (scenes : IRefValue<Scene_Map>)
-    (runner_component_interfaces : IRefValue<Runner_Component_Interfaces>)
+    (runner_state : Runner_State)
 (* Previously, this was run_manually : bool. We used it to determine whether we were running a command automatically, or running (or interrupting) a command at player request. Now that is handled by queue.state. reason is for debugging.
 *)
     (reason : Run_Reason)
-    (parser : Parser)
     : unit =
 
     #if debug
     do debug "run" String.Empty <| ["reason", reason; "queue", queue.current]
     #endif
 
-    match queue.current with
+    match runner_state.queue.current with
     | Queue_Idle _ ->
         do
-            add_commands_to_queue queue scenes runner_component_interfaces parser
+            add_commands_to_queue runner_state
 (* If there are no more commands, add_commands_to_queue sets the queue state to Queue_Done. Otherwise, it sets it to Queue_Running. *)
-            match queue.current with
-            | Queue_Running _ -> run_commands queue scenes reason parser runner_component_interfaces
+            match runner_state.queue.current with
+            | Queue_Running _ -> run_commands runner_state reason
             | _ -> ()
     | Queue_Loading _ -> do error "run" "Unexpected queue state (Queue_Loading)." [] |> invalidOp
     | Queue_Running _ ->
-        do force_complete_transitions runner_component_interfaces queue false
+        do force_complete_transitions runner_state false
             (fun () ->
                 #if debug
                 do debug "run" "Runner_State.force_complete_transitions () done." []

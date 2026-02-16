@@ -21,9 +21,8 @@ let private error : error_function = error debug_module_name
 (* Functions *)
 
 let add_to_history
+    (runner_state : Runner_State)
     (history : IRefValue<Runner_History>)
-    (runner_component_interfaces : IRefValue<Runner_Component_Interfaces>)
-    (queue : IRefValue<Runner_Queue>)
     : unit =
 
     do
@@ -33,13 +32,13 @@ let add_to_history
                 {
                     history.current with
                         current_index = Some 0
-                        history = [get_state runner_component_interfaces queue]
+                        history = [get_state runner_state]
                 }
             | Some current_index ->
                 {
                     history.current with
                         current_index = Some <| current_index + 1
-                        history = (List.take (current_index + 1) history.current.history) @ [get_state runner_component_interfaces queue]
+                        history = (List.take (current_index + 1) history.current.history) @ [get_state runner_state]
                 }
         history.current.notify_history_changed ()
 
@@ -94,9 +93,8 @@ let can_redo
 (end)
 *)
 let undo_redo
+    (runner_state : Runner_State)
     (history : IRefValue<Runner_History>)
-    (queue : IRefValue<Runner_Queue>)
-    (runner_component_interfaces : IRefValue<Runner_Component_Interfaces>)
     (undo : bool)
     : unit =
 
@@ -108,7 +106,7 @@ let undo_redo
     | Some current_index_1 ->
         if (undo && current_index_1 > 0) || (not undo && current_index_1 < history.current.history.Length - 1) then
 (* We do not call force_complete_transitions () until we have determined undo/redo is valid. *)
-            do force_complete_transitions runner_component_interfaces queue true (fun () ->
+            do force_complete_transitions runner_state true (fun () ->
                 #if debug
                 do debug "undo_redo" "Runner_State.force_complete_transitions () done." []
                 #endif
@@ -122,6 +120,6 @@ let undo_redo
                     debug "undo_redo" String.Empty ["History index (after)", history.current.current_index; "History length", history.current.history.Length]
                     #endif
 
-                    set_state history.current.history.[current_index_2] queue runner_component_interfaces
+                    set_state runner_state history.current.history.[current_index_2]
             )
     | None -> ()

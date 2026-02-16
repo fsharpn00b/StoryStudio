@@ -28,14 +28,11 @@ let mutable remove_transition_lock = 0
 (* Main functions *)
 
 let private remove_transition_2
-    (queue : IRefValue<Runner_Queue>)
+    (runner_state : Runner_State)
     (history : IRefValue<Runner_History>)
-    (scenes : IRefValue<Scene_Map>)
-    (runner_component_interfaces : IRefValue<Runner_Component_Interfaces>)
     (queue_data : Runner_Queue_State_Running_Data)
     (command_queue_item_id : int<command_queue_item_id>)
     (command : Runner_Queue_Item)
-    (parser : Parser)
     : unit =
 
     let commands =
@@ -46,7 +43,7 @@ let private remove_transition_2
 
 (* If there are no remaining running commands, set the queue state to Queue_Idle. *)
     if Map.isEmpty commands then
-        queue.current <-
+        runner_state.queue.current <-
             Queue_Idle {
                 next_command = queue_data.next_command_data
                 add_to_history = queue_data.add_to_history
@@ -64,30 +61,27 @@ let private remove_transition_2
 - It's not intuitive to remember that this function (remove_transition) is where we add to history and autosave.
 *)
         if queue_data.add_to_history then
-            add_to_history history runner_component_interfaces queue
+            add_to_history runner_state history
         if queue_data.autosave then
-            quicksave_or_autosave queue runner_component_interfaces Save_Load_Types.Autosave
+            quicksave_or_autosave runner_state Save_Load_Types.Autosave
 (* Run the next command(s) if specified. *)
         if queue_data.continue_after_finished then
-            run queue scenes runner_component_interfaces Handle_Queue_Empty parser
+            run runner_state Handle_Queue_Empty
     else
 (* Update the queue with the new map of command queue items. *)
-        do queue.current <-
-            match queue.current with
+        do runner_state.queue.current <-
+            match runner_state.queue.current with
             | Queue_Running data ->
                 Queue_Running { data with commands = commands }
             | Queue_Interrupting data ->
                 Queue_Interrupting { data with commands = commands }
-            | _ -> error "remove_transition" "Unexpected queue state." ["queue", queue.current] |> invalidOp
+            | _ -> error "remove_transition" "Unexpected queue state." ["queue", runner_state.queue.current] |> invalidOp
 
 let remove_transition_1
-    (queue : IRefValue<Runner_Queue>)
+    (runner_state : Runner_State)
     (history : IRefValue<Runner_History>)
-    (scenes : IRefValue<Scene_Map>)
-    (runner_component_interfaces : IRefValue<Runner_Component_Interfaces>)
     (command_queue_item_id : int<command_queue_item_id>)
     (component_id : Runner_Component_Names)
-    (parser : Parser)
     : unit =
 
     #if debug
@@ -95,7 +89,7 @@ let remove_transition_1
     #endif
 
 (* When a component completes a transition, it signals the queue. This happens whether the transition completes on its own or the player interrupts it. *)
-    match queue.current with
+    match runner_state.queue.current with
     | Queue_Running queue_data
     | Queue_Interrupting queue_data ->
 
@@ -132,7 +126,7 @@ let remove_transition_1
                     command_2
 
 (* If the command has no more transitions, remove it from the queue. *)
-            remove_transition_2 queue history scenes runner_component_interfaces queue_data command_queue_item_id command_1 parser
+            remove_transition_2 runner_state history queue_data command_queue_item_id command_1
         )
 
-    | _ -> error "remove_transition" "Unexpected queue state." ["Queue state", queue.current] |> invalidOp
+    | _ -> error "remove_transition" "Unexpected queue state." ["Queue state", runner_state.queue.current] |> invalidOp

@@ -20,12 +20,12 @@ let private error : error_function = error debug_module_name
 (* Main functions - state *)
 
 let get_state
-    (runner_component_interfaces : IRefValue<Runner_Component_Interfaces>)
-(* Previously this parameter was type Command_State rather than IRefValue<Command_State>, meaning we called .current before passing the result to this function. It seems that caused this function to see a stale state. It seems the rule is, with any IRefValue, we must call .current as late as possible, whether setting or getting or the value. *)
-    (queue : IRefValue<Runner_Queue>)
+    (runner_state : Runner_State)
+(* This refers to a parameter we have since removed, but the point stands.
+Previously this parameter was type Command_State rather than IRefValue<Command_State>, meaning we called .current before passing the result to this function. It seems that caused this function to see a stale state. It seems the rule is, with any IRefValue, we must call .current as late as possible, whether setting or getting or the value. *)
     : Runner_Saveable_State =
 
-    match queue.current with
+    match runner_state.queue.current with
     | Queue_Idle data ->
 
         Runner_Saveable_State_Running {
@@ -37,13 +37,13 @@ If add_to_history is false, which means that when we halted running commands, we
             add_to_history = data.add_to_history
             autosave = data.autosave
             component_data = {
-                background = runner_component_interfaces.current.background.current.get_state ()
-                dialogue = runner_component_interfaces.current.dialogue_box.current.get_state ()
-                characters = runner_component_interfaces.current.characters.current.get_state ()
-                menu = runner_component_interfaces.current.menu.current.get_state ()
-                image_map = runner_component_interfaces.current.image_map.current.get_state ()
-                music = runner_component_interfaces.current.music.current.get_state ()
-                notifications = runner_component_interfaces.current.notifications.current.get_state ()
+                background = runner_state.runner_component_interfaces.current.background.current.get_state ()
+                dialogue = runner_state.runner_component_interfaces.current.dialogue_box.current.get_state ()
+                characters = runner_state.runner_component_interfaces.current.characters.current.get_state ()
+                menu = runner_state.runner_component_interfaces.current.menu.current.get_state ()
+                image_map = runner_state.runner_component_interfaces.current.image_map.current.get_state ()
+                music = runner_state.runner_component_interfaces.current.music.current.get_state ()
+                notifications = runner_state.runner_component_interfaces.current.notifications.current.get_state ()
                 javascript = get_state_from_js ()
             }
             menu_variables = data.menu_variables
@@ -52,29 +52,28 @@ If add_to_history is false, which means that when we halted running commands, we
     | Queue_Done ->
 
         Runner_Saveable_State_Done {
-            background = runner_component_interfaces.current.background.current.get_state ()
-            dialogue = runner_component_interfaces.current.dialogue_box.current.get_state ()
-            characters = runner_component_interfaces.current.characters.current.get_state ()
-            menu = runner_component_interfaces.current.menu.current.get_state ()
-            image_map = runner_component_interfaces.current.image_map.current.get_state ()
-            music = runner_component_interfaces.current.music.current.get_state ()
-            notifications = runner_component_interfaces.current.notifications.current.get_state ()
+            background = runner_state.runner_component_interfaces.current.background.current.get_state ()
+            dialogue = runner_state.runner_component_interfaces.current.dialogue_box.current.get_state ()
+            characters = runner_state.runner_component_interfaces.current.characters.current.get_state ()
+            menu = runner_state.runner_component_interfaces.current.menu.current.get_state ()
+            image_map = runner_state.runner_component_interfaces.current.image_map.current.get_state ()
+            music = runner_state.runner_component_interfaces.current.music.current.get_state ()
+            notifications = runner_state.runner_component_interfaces.current.notifications.current.get_state ()
             javascript = get_state_from_js ()
         }
 
 (* At this point, we should have forced transitions to complete, or already have been in state Queue_Idle. *)
-    | _ -> error "get_state" "Unexpected queue state." ["Queue state", queue.current] |> invalidOp
+    | _ -> error "get_state" "Unexpected queue state." ["Queue state", runner_state.queue.current] |> invalidOp
 
 (* Each UI component is responsible to notify its container (Runner) that a transition is complete. This is because some components (Characters, Dialogue_Box) might handle multiple transitions (multiple characters, fade and typing transitions, respectively). We want the component to send only a single notification for these grouped transitions, because Runner does not concern itself with the individual transitions - those should be contained by the component.
 *)
 let set_state
-    (runner_state : Runner_Saveable_State)
-    (queue : IRefValue<Runner_Queue>)
-    (runner_component_interfaces : IRefValue<Runner_Component_Interfaces>)
+    (runner_state : Runner_State)
+    (runner_saveable_state : Runner_Saveable_State)
     : unit =
 
     let component_data =
-        match runner_state with
+        match runner_saveable_state with
         | Runner_Saveable_State_Running data -> data.component_data
         | Runner_Saveable_State_Done data -> data
 
@@ -87,19 +86,19 @@ let set_state
 (* TODO2 When we save (that is, call each component's get_state () method), we record the final state of any in-progress transition, rather than the original state.
 We might want to get the state at the most recent pausable point (which might be the current point if no transition is in progress). Since we plan to represent history and save state the same way, this should be feasible. However, if they have just loaded the game, the history might be empty.
 *)
-        runner_component_interfaces.current.background.current.set_state component_data.background
-        runner_component_interfaces.current.dialogue_box.current.set_state component_data.dialogue
-        runner_component_interfaces.current.characters.current.set_state component_data.characters
-        runner_component_interfaces.current.menu.current.set_state component_data.menu
-        runner_component_interfaces.current.image_map.current.set_state component_data.image_map
-        runner_component_interfaces.current.music.current.set_state component_data.music
-        runner_component_interfaces.current.notifications.current.set_state component_data.notifications
+        runner_state.runner_component_interfaces.current.background.current.set_state component_data.background
+        runner_state.runner_component_interfaces.current.dialogue_box.current.set_state component_data.dialogue
+        runner_state.runner_component_interfaces.current.characters.current.set_state component_data.characters
+        runner_state.runner_component_interfaces.current.menu.current.set_state component_data.menu
+        runner_state.runner_component_interfaces.current.image_map.current.set_state component_data.image_map
+        runner_state.runner_component_interfaces.current.music.current.set_state component_data.music
+        runner_state.runner_component_interfaces.current.notifications.current.set_state component_data.notifications
         set_state_in_js_with_exception component_data.javascript
 
 (* We set the command state afterward to prevent having it overwritten due to a component completing an existing transition (on its own, not because we called its set_state () method) after we set the command state but before we call the components' set_state () methods.
 *)
-        queue.current <-
-            match runner_state with
+        runner_state.queue.current <-
+            match runner_saveable_state with
             | Runner_Saveable_State_Running data ->
                 Queue_Idle {
                     next_command = data.next_command

@@ -168,6 +168,13 @@ type Run_Reason =
     | Notify_Menu_Selection
     | Notify_Image_Map_Selection
 
+type Runner_State = {
+    queue : IRefValue<Runner_Queue>
+    scenes : IRefValue<Scene_Map>
+    runner_component_interfaces : IRefValue<Runner_Component_Interfaces>
+    parser : Parser
+}
+
 (* Interfaces *)
 
 type I_Runner =

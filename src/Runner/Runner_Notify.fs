@@ -36,12 +36,9 @@ The Notify_Transition_Complete message would include the sender.
 *)
 (* A UI component uses this function to notify Runner that the component has finished its current transition. *)
 let get_notify_transition_complete
-    (scenes : IRefValue<Scene_Map>)
-    (runner_component_interfaces : IRefValue<Runner_Component_Interfaces>)
-    (queue : IRefValue<Runner_Queue>)
+    (runner_state : Runner_State)
     (history : IRefValue<Runner_History>)
     (component_id : Runner_Component_Names)
-    (parser : Parser)
     : int<command_queue_item_id> -> unit =
 (* Close over all these parameters so it becomes a unit -> unit that we can pass to UI components.
 We also need to delay the evaluation of this function until runner_component_interfaces is not null. The delayed result of this function is passed to the constructors of these components.
@@ -50,7 +47,7 @@ We can close over queue because it is a reference.
     fun (command_queue_item_id : int<command_queue_item_id>) ->
 (* If we do not delay here, and a transition is short enough, this notification can set the queue state to Queue_Idle *before* the transition sets it to Queue_Running. As a result, it is not possible to start any more transitions. *)
         do window.setTimeout ((fun () ->
-            do remove_transition_1 queue history scenes runner_component_interfaces command_queue_item_id component_id parser
+            do remove_transition_1 runner_state history command_queue_item_id component_id
         ), int notify_transition_complete_delay_time) |> ignore
 
 (* notify_transition_complete is only called when a transition completes on its own, without being interrupted. *)
@@ -60,10 +57,7 @@ See notes in Fade_Transition.update_complete_transition (), Fade_Visibility.upda
 *)
 
 let get_notify_menu_selection
-    (scenes : IRefValue<Scene_Map>)
-    (queue : IRefValue<Runner_Queue>)
-    (runner_component_interfaces : IRefValue<Runner_Component_Interfaces>)
-    (parser : Parser)
+    (runner_state : Runner_State)
     : string -> int -> unit =
 
     fun (menu_name : string) (selected_index : int) ->
@@ -88,10 +82,10 @@ Previously (20251208) we kept menu and choice data in window.state.menus. The tr
 See also notes in Runner_Types.Command_Queue_State_Idle_Data.
 (end)
 *)
-            match queue.current with
+            match runner_state.queue.current with
             | Queue_Idle data ->
-                queue.current <- Queue_Idle { data with menu_variables = data.menu_variables.Add (menu_name, selected_index) }
-            | _ -> error "get_notify_menu_selection" "Unexpected queue state." ["Queue state", queue.current] |> invalidOp
+                runner_state.queue.current <- Queue_Idle { data with menu_variables = data.menu_variables.Add (menu_name, selected_index) }
+            | _ -> error "get_notify_menu_selection" "Unexpected queue state." ["Queue state", runner_state.queue.current] |> invalidOp
 
 (* When the player selects a menu item, it also registers as a mouse click, which Runner_Test handles by calling Runner.run (). In Runner.run (), we do not call get_next_command () if a menu is visible. We want to make sure the menu is still visible when Runner.run () is called, so we delay before we call Menu.hide ().
 
@@ -105,30 +99,26 @@ The command behavior for Menu is Wait_For_Callback/continue_after_finished = fal
 That is because the Menu command is for showing the menu, and after that, the command and its transition are complete. It does not concern itself with menu item selection. In effect, menu item selection is not a command and does not have an associated behavior.
 *)
 // TODO2 Can this be done in the Menu.Menu_Item_Selected handler? Just return false for is_visible and clear menu data there. No, it might be we still want to make sure no mouse clicks are processed yet.
-                runner_component_interfaces.current.menu.current.hide false None
+                runner_state.runner_component_interfaces.current.menu.current.hide false None
                 window.setTimeout((fun () ->
-                    run queue scenes runner_component_interfaces Run_Reason.Notify_Menu_Selection parser
+                    run runner_state Run_Reason.Notify_Menu_Selection
                 ), int notify_transition_complete_delay_time) |> ignore
             ), int notify_transition_complete_delay_time) |> ignore
 
 let get_notify_image_map_selection
-    (scenes : IRefValue<Scene_Map>)
-    (queue : IRefValue<Runner_Queue>)
-    (runner_component_interfaces : IRefValue<Runner_Component_Interfaces>)
-    (parser : Parser)
+    (runner_state : Runner_State)
     : string -> int -> unit =
 
     fun (image_map_name : string) (selected_index : int) ->
         do
-            match queue.current with
+            match runner_state.queue.current with
             | Queue_Idle data ->
 (* Save image map variables in the same map as menu variables. *)
-                queue.current <- Queue_Idle { data with menu_variables = data.menu_variables.Add (image_map_name, selected_index) }
-            | _ -> error "get_notify_image_map_selection" "Unexpected queue state." ["Queue state", queue.current] |> invalidOp
+                runner_state.queue.current <- Queue_Idle { data with menu_variables = data.menu_variables.Add (image_map_name, selected_index) }
+            | _ -> error "get_notify_image_map_selection" "Unexpected queue state." ["Queue state", runner_state.queue.current] |> invalidOp
 
             window.setTimeout((fun () ->
                 window.setTimeout((fun () ->
-                    run queue scenes runner_component_interfaces Run_Reason.Notify_Image_Map_Selection parser
+                    run runner_state Run_Reason.Notify_Image_Map_Selection
                 ), int notify_transition_complete_delay_time) |> ignore
             ), int notify_transition_complete_delay_time) |> ignore
-

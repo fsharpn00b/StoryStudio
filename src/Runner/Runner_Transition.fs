@@ -121,8 +121,7 @@ x Where do we call Runner_State.force_complete_transitions ()?
 (end)
 *)
 let force_complete_transitions
-    (runner_component_interfaces : IRefValue<Runner_Component_Interfaces>)
-    (queue : IRefValue<Runner_Queue>)
+    (runner_state : Runner_State)
     (override_continue_after_finished : bool)
     (continuation : unit -> unit)
     : unit =
@@ -131,7 +130,7 @@ let force_complete_transitions
     do debug "force_complete_transitions" String.Empty ["override_continue_after_finished", override_continue_after_finished; "queue", queue.current]
     #endif
 
-    match queue.current with
+    match runner_state.queue.current with
 
 (* If the queue state is Queue_Idle or Queue_Done, all transitions should be complete, so go ahead and run the continuation.
 Runner_Queue.remove_transition () sets the queue state to Queue_Idle when a command with behavior Wait_For_Callback/continuer_after_finished = false is done.
@@ -143,7 +142,7 @@ Runner_Queue.remove_transition () and Runner_Queue.add_commands_to_queue () set 
     | Queue_Running data ->
 
 (* See notes before this function. *)
-        do queue.current <- Queue_Interrupting {
+        do runner_state.queue.current <- Queue_Interrupting {
             data with
 (* If the player opened the save/load game screen or rolled back/forward, we need to make sure we do not continue to the next command(s) after we complete the current transition(s). *)
                 continue_after_finished =
@@ -153,7 +152,7 @@ Runner_Queue.remove_transition () and Runner_Queue.add_commands_to_queue () set 
 
         data.components_used_by_commands
             |> Set.toList
-            |> List.map (component_id_to_component runner_component_interfaces)
+            |> List.map (component_id_to_component runner_state.runner_component_interfaces)
 (* TODO2 Menu does not implement I_Transitionable because it does not have "real" transitions, only Show and Hide. For the same reason, it should not be possible to interrupt a menu transition. *)
             |> List.iter (fun (runner_component : I_Transitionable) ->
                 #if debug
@@ -169,7 +168,7 @@ We also now address this by using IRefValues for all component states.
             let components_running_transitions =
                 data.components_used_by_commands
                     |> Set.toList
-                    |> List.map (component_id_to_component runner_component_interfaces)
+                    |> List.map (component_id_to_component runner_state.runner_component_interfaces)
                     |> List.filter (fun runner_component-> runner_component.is_running_transition ())
 (* is_running_transition () checks the internal state of each component, which in our experience is the last thing to be updated (that is, after the runner command queue has been notified), so this should be the safest way to make sure the transition is complete. *)
             if components_running_transitions.Length > 0 then
@@ -185,4 +184,4 @@ We also now address this by using IRefValues for all component states.
 
         wait_for_transitions_to_complete ()
 
-    | _ -> error "force_complete_transitions" "Unexpected queue state." ["queue", queue.current] |> invalidOp
+    | _ -> error "force_complete_transitions" "Unexpected queue state." ["queue", runner_state.queue.current] |> invalidOp

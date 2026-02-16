@@ -155,6 +155,13 @@ TODO2 We could use option with .Value.
         notify_history_changed = fun () -> runner_component_interfaces.current.command_menu.current.redraw ()
     }
 
+    let runner_state = {
+        queue = queue
+        scenes = scenes
+        runner_component_interfaces = runner_component_interfaces
+        parser = parser
+    }
+
 (*
 https://fable-hub.github.io/Feliz/#/Hooks/UseElmish
 When you need to trigger events from [an embedded] Elmish component, use React patterns where you pass a callback via the props instead of passing the dispatch function from the parent component.
@@ -165,14 +172,14 @@ When you need to trigger events from [an embedded] Elmish component, use React p
         Background.Background (
             {| expose = background_2 |},
             configuration_1.current.background_configuration,
-            (get_notify_transition_complete scenes runner_component_interfaces queue history Runner_Component_Names.Background parser)
+            (get_notify_transition_complete runner_state history Runner_Component_Names.Background)
         )
 
     let characters_1 = 
         Characters.Characters (
             {| expose = characters_2 |},
             configuration_1.current.characters_configuration,
-            (get_notify_transition_complete scenes runner_component_interfaces queue history Runner_Component_Names.Characters parser),
+            (get_notify_transition_complete runner_state history Runner_Component_Names.Characters),
             characters
         )
 
@@ -180,13 +187,13 @@ When you need to trigger events from [an embedded] Elmish component, use React p
         Command_Menu (
             {| expose = command_menu_2 |},
             {
-                show_or_hide_configuration_screen = fun () -> Runner_UI.show_or_hide_configuration_screen queue runner_component_interfaces
-                show_save_game_screen = fun () -> Runner_UI.show_saved_game_screen queue runner_component_interfaces Save_Game
-                show_load_game_screen = fun () -> Runner_UI.show_saved_game_screen queue runner_component_interfaces Load_Game
+                show_or_hide_configuration_screen = fun () -> Runner_UI.show_or_hide_configuration_screen runner_state
+                show_save_game_screen = fun () -> Runner_UI.show_saved_game_screen runner_state Save_Game
+                show_load_game_screen = fun () -> Runner_UI.show_saved_game_screen runner_state Load_Game
                 can_undo = fun () -> can_undo history runner_component_interfaces
                 can_redo = fun () -> can_redo history runner_component_interfaces
-                undo = fun () -> Runner_UI.undo queue runner_component_interfaces history
-                redo = fun () -> Runner_UI.redo queue runner_component_interfaces history
+                undo = fun () -> Runner_UI.undo runner_state history
+                redo = fun () -> Runner_UI.redo runner_state history
             }
         )
 
@@ -204,21 +211,21 @@ When you need to trigger events from [an embedded] Elmish component, use React p
         Dialogue_Box.Dialogue_Box (
             {| expose = dialogue_box_2 |},
             configuration_1.current.dialogue_box_configuration,
-            (get_notify_transition_complete scenes runner_component_interfaces queue history Runner_Component_Names.Dialogue_Box parser)
+            (get_notify_transition_complete runner_state history Runner_Component_Names.Dialogue_Box)
         )
 
     let image_map_1 =
         Image_Map.Image_Map (
             {| expose = image_map_2 |},
-            (get_notify_transition_complete scenes runner_component_interfaces queue history Runner_Component_Names.Image_Map parser),
-            (get_notify_image_map_selection scenes queue runner_component_interfaces parser)
+            (get_notify_transition_complete runner_state history Runner_Component_Names.Image_Map),
+            (get_notify_image_map_selection runner_state)
         )
 
     let menu_1 =
         Menu.Menu (
             {| expose = menu_2 |},
-            (get_notify_transition_complete scenes runner_component_interfaces queue history Runner_Component_Names.Menu parser),
-            (get_notify_menu_selection scenes queue runner_component_interfaces parser)
+            (get_notify_transition_complete runner_state history Runner_Component_Names.Menu),
+            (get_notify_menu_selection runner_state)
         )
 
     let music_1 = Music {| expose = music_2 |}
@@ -232,7 +239,7 @@ When you need to trigger events from [an embedded] Elmish component, use React p
     let save_load_1 =
         Save_Load (
             {| expose = save_load_2 |},
-            get_load_game runner_component_interfaces history queue,
+            get_load_game runner_state history,
 (* We must delay these calls because the Notifications and Command_Menu components are not ready yet. *)
             (fun () -> notifications_2.current.show_game_paused_notification ()),
             (fun () -> command_menu_2.current.redraw ())
@@ -242,25 +249,25 @@ When you need to trigger events from [an embedded] Elmish component, use React p
 
     React.useImperativeHandle(props.expose, fun () ->
         { new I_Runner with
-            member _.run (reason : Run_Reason) : unit = Runner_UI.run queue scenes runner_component_interfaces reason parser
+            member _.run (reason : Run_Reason) : unit = Runner_UI.run runner_state reason
             member _.get_key_bindings () : Key_To_Key_Binding_Name = configuration_1.current.key_bindings_configuration.key_to_name
-            member _.show_or_hide_configuration_screen () : unit = Runner_UI.show_or_hide_configuration_screen queue runner_component_interfaces
+            member _.show_or_hide_configuration_screen () : unit = Runner_UI.show_or_hide_configuration_screen runner_state
 // We do not use this for now.
 //            member _.hide_configuration_screen (): unit = Runner_UI.hide_configuration_screen runner_component_interfaces
-            member _.handle_escape_key () : unit = Runner_UI.handle_escape_key queue runner_component_interfaces
+            member _.handle_escape_key () : unit = Runner_UI.handle_escape_key runner_state
             member _.show_saved_game_screen (action : Saved_Game_Action) : unit =
-                Runner_UI.show_saved_game_screen queue runner_component_interfaces action
+                Runner_UI.show_saved_game_screen runner_state action
 // We do not use this for now.
 //            member _.hide_saved_game_screen () : unit = Runner_UI.hide_saved_game_screen runner_component_interfaces
             member _.show_or_hide_ui () : unit = Runner_UI.show_or_hide_ui runner_component_interfaces
             member _.download_screenshot () : unit = download_screenshot_1 ()
-            member _.quicksave () : unit = Runner_UI.quicksave queue runner_component_interfaces
-            member _.export_saved_games_from_storage_to_file () : unit = Runner_UI.export_saved_games_from_storage_to_file queue runner_component_interfaces
-            member _.import_saved_games_from_file_to_storage () : unit = Runner_UI.import_saved_games_from_file_to_storage queue runner_component_interfaces
-            member _.export_current_game_to_file () : unit = Runner_UI.export_current_game_to_file queue runner_component_interfaces
-            member _.import_current_game_from_file () : unit = Runner_UI.import_current_game_from_file queue runner_component_interfaces
-            member _.undo () : unit = Runner_UI.undo queue runner_component_interfaces history
-            member _.redo () : unit = Runner_UI.redo queue runner_component_interfaces history
+            member _.quicksave () : unit = Runner_UI.quicksave runner_state
+            member _.export_saved_games_from_storage_to_file () : unit = Runner_UI.export_saved_games_from_storage_to_file runner_state
+            member _.import_saved_games_from_file_to_storage () : unit = Runner_UI.import_saved_games_from_file_to_storage runner_state
+            member _.export_current_game_to_file () : unit = Runner_UI.export_current_game_to_file runner_state
+            member _.import_current_game_from_file () : unit = Runner_UI.import_current_game_from_file runner_state
+            member _.undo () : unit = Runner_UI.undo runner_state history
+            member _.redo () : unit = Runner_UI.redo runner_state history
 (* These are for debugging. *)
             member _.show_queue () : unit = do debug "show_queue" String.Empty ["queue", queue.current]
             member _.show_characters () : unit = do characters_2.current.get_character_data ()

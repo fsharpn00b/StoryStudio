@@ -102,14 +102,12 @@ TODO2 #parsing We could just add a Jump command to the temporary script, but we 
     }
 
 let private handle_command 
-    (scenes : IRefValue<Scene_Map>)
-    (runner_component_interfaces : IRefValue<Runner_Component_Interfaces>)
+    (runner_state : Runner_State)
 (* This function can change both scene and next_command_id if we get a Jump command. *)
     (next_command : Next_Command_Data option)
     (command_1 : Command_Type)
     (error_data : Command_Error_Data_2)
     (menu_variables : Menu_Variables)
-    (parser : Parser)
     : Runner_Command_Data =
 
     let behavior = command_to_behavior command_1
@@ -119,84 +117,84 @@ let private handle_command
         match command_1 with
 
         | Music_Play command_2 ->
-            Some <| fun _ -> do runner_component_interfaces.current.music.current.play command_2
+            Some <| fun _ -> do runner_state.runner_component_interfaces.current.music.current.play command_2
 
         | Music_Stop ->
-            Some <| fun _ -> do runner_component_interfaces.current.music.current.stop ()
+            Some <| fun _ -> do runner_state.runner_component_interfaces.current.music.current.stop ()
 
         | Temporary_Notification command_2 ->
             Some <| fun _ ->
-                do runner_component_interfaces.current.notifications.current.add_temporary_notification { text = eval_js_with_menu_variables<string> command_2.text menu_variables }
+                do runner_state.runner_component_interfaces.current.notifications.current.add_temporary_notification { text = eval_js_with_menu_variables<string> command_2.text menu_variables }
 
         | Permanent_Notification command_2 ->
             Some <| fun _ ->
-                do runner_component_interfaces.current.notifications.current.set_permanent_notification command_2.text menu_variables
+                do runner_state.runner_component_interfaces.current.notifications.current.set_permanent_notification command_2.text menu_variables
 
         | Hide_Permanent_Notification ->
-            Some <| fun _ -> do runner_component_interfaces.current.notifications.current.hide_permanent_notification ()
+            Some <| fun _ -> do runner_state.runner_component_interfaces.current.notifications.current.hide_permanent_notification ()
 
         | Background_Fade_In command_2 ->
             Some <| fun (command_queue_item_id : int<command_queue_item_id>) ->
-                do runner_component_interfaces.current.background.current.fade_in command_2.new_url command_2.transition_time command_queue_item_id
+                do runner_state.runner_component_interfaces.current.background.current.fade_in command_2.new_url command_2.transition_time command_queue_item_id
 
         | Background_Fade_Out command_2 ->
             Some <| fun (command_queue_item_id : int<command_queue_item_id>) ->
-                do runner_component_interfaces.current.background.current.fade_out command_2.transition_time command_queue_item_id
+                do runner_state.runner_component_interfaces.current.background.current.fade_out command_2.transition_time command_queue_item_id
 
         | Background_Cross_Fade command_2 ->
             Some <| fun (command_queue_item_id : int<command_queue_item_id>) ->
-                do runner_component_interfaces.current.background.current.cross_fade command_2.new_url command_2.transition_time command_queue_item_id
+                do runner_state.runner_component_interfaces.current.background.current.cross_fade command_2.new_url command_2.transition_time command_queue_item_id
 
         | Character_Fade_In command_2 ->
             Some <| fun (command_queue_item_id : int<command_queue_item_id>) ->
-                do runner_component_interfaces.current.characters.current.fade_in command_2.character_short_name command_2.url command_2.position command_2.transition_time command_queue_item_id
+                do runner_state.runner_component_interfaces.current.characters.current.fade_in command_2.character_short_name command_2.url command_2.position command_2.transition_time command_queue_item_id
 
         | Character_Fade_Out command_2 ->
             Some <| fun (command_queue_item_id : int<command_queue_item_id>) ->
-                do runner_component_interfaces.current.characters.current.fade_out command_2.character_short_name command_2.transition_time command_queue_item_id
+                do runner_state.runner_component_interfaces.current.characters.current.fade_out command_2.character_short_name command_2.transition_time command_queue_item_id
 
         | Character_Cross_Fade command_2 ->
             Some <| fun (command_queue_item_id : int<command_queue_item_id>) ->
-                do runner_component_interfaces.current.characters.current.cross_fade command_2.character_short_name command_2.url command_2.transition_time command_queue_item_id
+                do runner_state.runner_component_interfaces.current.characters.current.cross_fade command_2.character_short_name command_2.url command_2.transition_time command_queue_item_id
 
         | Character_Move command_2 ->
             Some <| fun (command_queue_item_id : int<command_queue_item_id>) ->
                 match command_2 with
                 | In data ->
-                    do runner_component_interfaces.current.characters.current.move_in data.character_short_name data.url data.direction data.position data.transition_time command_queue_item_id
+                    do runner_state.runner_component_interfaces.current.characters.current.move_in data.character_short_name data.url data.direction data.position data.transition_time command_queue_item_id
                 | Out data ->
-                    do runner_component_interfaces.current.characters.current.move_out data.character_short_name data.direction data.transition_time command_queue_item_id
+                    do runner_state.runner_component_interfaces.current.characters.current.move_out data.character_short_name data.direction data.transition_time command_queue_item_id
 
         | Fade_Out_All transition_time ->
             Some <| fun (command_queue_item_id : int<command_queue_item_id>) ->
                 do
-                    runner_component_interfaces.current.dialogue_box.current.hide true <| Some command_queue_item_id
-                    runner_component_interfaces.current.characters.current.fade_out_all transition_time command_queue_item_id
-                    runner_component_interfaces.current.background.current.fade_out transition_time command_queue_item_id
+                    runner_state.runner_component_interfaces.current.dialogue_box.current.hide true <| Some command_queue_item_id
+                    runner_state.runner_component_interfaces.current.characters.current.fade_out_all transition_time command_queue_item_id
+                    runner_state.runner_component_interfaces.current.background.current.fade_out transition_time command_queue_item_id
 
         | Dialogue_Box_Show ->
             Some <| fun (command_queue_item_id : int<command_queue_item_id>) ->
-                do runner_component_interfaces.current.dialogue_box.current.show true <| Some command_queue_item_id
+                do runner_state.runner_component_interfaces.current.dialogue_box.current.show true <| Some command_queue_item_id
 
         | Dialogue_Box_Hide ->
             Some <| fun (command_queue_item_id : int<command_queue_item_id>) ->
-                do runner_component_interfaces.current.dialogue_box.current.hide true <| Some command_queue_item_id
+                do runner_state.runner_component_interfaces.current.dialogue_box.current.hide true <| Some command_queue_item_id
 
         | Dialogue command_2 ->
             Some <| fun (command_queue_item_id : int<command_queue_item_id>) ->
-                do runner_component_interfaces.current.dialogue_box.current.type_dialogue command_2.character_full_name (eval_js_with_menu_variables<string> command_2.text menu_variables) command_queue_item_id
+                do runner_state.runner_component_interfaces.current.dialogue_box.current.type_dialogue command_2.character_full_name (eval_js_with_menu_variables<string> command_2.text menu_variables) command_queue_item_id
 
         | JavaScript_Inline command_2 ->
             Some <| fun _ ->
                 do
                     eval_js_with_menu_variables<unit> command_2.code menu_variables
-                    runner_component_interfaces.current.notifications.current.update_permanent_notification menu_variables
+                    runner_state.runner_component_interfaces.current.notifications.current.update_permanent_notification menu_variables
 
         | JavaScript_Block command_2 ->
             Some <| fun _ ->
                 do
                     eval_js_with_menu_variables<unit> command_2.code menu_variables
-                    runner_component_interfaces.current.notifications.current.update_permanent_notification menu_variables
+                    runner_state.runner_component_interfaces.current.notifications.current.update_permanent_notification menu_variables
 
 (* Jump and Eval are special cases that change the next scene and/or command. *)
         | Jump _ -> None
@@ -214,7 +212,7 @@ let private handle_command
             }
 
         | Eval eval_data ->
-            handle_eval_command scenes next_command menu_variables parser eval_data.eval_content
+            handle_eval_command runner_state.scenes next_command menu_variables runner_state.parser eval_data.eval_content
 
         | _ -> next_command
 
@@ -359,12 +357,10 @@ let private handle_image_map
 (* Main functions *)
 
 let get_command_data
-    (runner_component_interfaces : IRefValue<Runner_Component_Interfaces>)
-    (scenes : IRefValue<Scene_Map>)
+    (runner_state : Runner_State)
     (next_command_scene_id : int<scene_id>)
     (command : Command_Post_Parse)
     (menu_variables : Menu_Variables)
-    (parser : Parser)
     : Runner_Command_Data =
 
     let next_command =
@@ -379,9 +375,9 @@ let get_command_data
 
     match command.command with
 
-    | Command_Post_Parse_Type.Command command_1 -> handle_command scenes runner_component_interfaces next_command command_1 command.error_data menu_variables parser
+    | Command_Post_Parse_Type.Command command_1 -> handle_command runner_state next_command command_1 command.error_data menu_variables
 
-    | Command_Post_Parse_Type.If command_2 -> handle_if_1 scenes.current next_command command_2 command.error_data menu_variables
+    | Command_Post_Parse_Type.If command_2 -> handle_if_1 runner_state.scenes.current next_command command_2 command.error_data menu_variables
 
     | Command_Post_Parse_Type.End_If ->
         {
@@ -392,16 +388,48 @@ let get_command_data
             next_command = next_command
         }
 
-    | Command_Post_Parse_Type.Menu command_3 -> handle_menu runner_component_interfaces next_command command_3 command.error_data menu_variables
+    | Command_Post_Parse_Type.Menu command_3 -> handle_menu runner_state.runner_component_interfaces next_command command_3 command.error_data menu_variables
 
-    | Command_Post_Parse_Type.Image_Map command_4 -> handle_image_map runner_component_interfaces next_command command_4 command.error_data menu_variables
+    | Command_Post_Parse_Type.Image_Map command_4 -> handle_image_map runner_state.runner_component_interfaces next_command command_4 command.error_data menu_variables
 
     | Command_Post_Parse_Type.End_Image_Map transition_time ->
         {
             command = Some <| fun (command_queue_item_id : int<command_queue_item_id>) ->
-                do runner_component_interfaces.current.image_map.current.fade_out transition_time command_queue_item_id
+                do runner_state.runner_component_interfaces.current.image_map.current.fade_out transition_time command_queue_item_id
             error_data = command.error_data
             behavior = end_image_map_behavior
             components_used = Set.singleton Runner_Component_Names.Image_Map
             next_command = next_command
         }
+
+(* TODO1 #parsing In Runner_Queue_Helpers_2, for some commands (If, Jump, Eval), we essentially run these commands immediately, instead of delaying them and adding them to the queue. These commands have a special function, to change the next command we run. We must run them immediately because otherwise we might add commands that follow them to the queue when we should not. For instance, if we have commands:
+
+Jump <another scene>
+fadeoutall
+
+If we do not run Jump immediately, we will add both commands to the queue, but we do not want to run fadeoutall.
+
+However, this can be a problem because If and Eval can evalulate JavaScript. If we have commands:
+
+js window.state.x = true
+if true === window.state.x
+
+The If will raise an exception because x is undefined. That is because we add the JS command to the queue, but do not run it yet, and then we run the If command immediately, before we run the queue.
+
+For now, we handle this with a new command behavior, Continue_Immediately/run_queue_now = true, which we apply to JS commands. When we encounter a command with this behavior, we stop adding commands to the queue and run the queue.
+
+Remaining work:
+
+- We could change Runner_Command_Signature to return Next_Command_Data, then change Runner_Queue_Helpers_2 to delay If, Jump, and Eval instead of running them immediately. However, for the reason mentioned previously, we would also need to change If, Jump and Eval to behavior Continue_Immediately/run_queue_now = true, to make sure we did not add any commands that follow them to the queue. We're not sure this would work for If.
+
+- We need to see if issue arises for any other command that can affect JS state.
+- menu
+- image_map
+- What else?
+
+We think menu and image_map stop and run the queue, though, so the issue should not arise.
+
+- Just get rid of the queue, or reduce it to running one command at a time, as soon as we encounter it.
+- Keep the Wait_For_Callback/Continue_Immediately command behaviors, but only so we know whether the queue should run the command and then exit and wait for the callback, or recursively call run ().
+*)
+
