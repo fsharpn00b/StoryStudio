@@ -1,12 +1,6 @@
 // Play music.
 //playmusic autumn
 
-// This is to test the eval command.
-/*
-js window.state.eval_command = "fadein night 2.0"
-eval ${window.state.eval_command} endeval
-*/
-
 // Fade in daytime background over 2 seconds.
 fadein day 2.0 // Comment after statement.
 
@@ -21,11 +15,10 @@ else
     fadein l happy 25 1.0
 endif
 
-// JS interpolation in dialogue.
-l Which way should we go? (Lost: ${window.state.player_state.is_lost})
+l Which way should we go?
 
 // This is to test resizing of the permanent notification.
-//status You are absolutely, definitely, positively, sure as heck not lost. endstatus
+//status You are absolutely, definitely, positively, 100 percent not lost. endstatus
 
 // Create a menu whose result is stored in a variable named direction.
 menu direction Which way?
@@ -45,6 +38,7 @@ if 1 === direction
 // If the player goes left, they get lost.
     js window.state.player_state.is_lost = true;
 
+// This is to test temporary notification queuing.
     notify You are now lost. endnotify
     notify You can find your way out of the woods by going right instead of left. endnotify
 // Fade out all characters and background over 2 seconds.

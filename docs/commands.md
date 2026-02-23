@@ -178,6 +178,14 @@ t How about left?
 l Okay!
 ```
 
+Notes:
+- You can use JavaScript interpolation in dialogue. For example:
+
+  ```
+  js window.dialogue = "Hello!"
+  l ${window.dialogue}
+  ```
+
 ## Play music
 
 Syntax:
@@ -227,7 +235,7 @@ Example:
 
 ```
 menu direction Which way?
-// The first menu option is only available is `is_lost` is `false`.
+// The first menu option is only available if `is_lost` is `false`.
 1 left / false === window.state.player_state.is_lost
 2 right
 endmenu
@@ -243,6 +251,18 @@ Notes:
         js window.state.player_state.is_lost = true;
     endif
     ```
+- You can use JavaScript interpolation in a menu description and in menu item descriptions. For example:
+
+  ```
+  js
+  window.menu_description = "Which way?"
+  window.menu_item_description = "(Hint: Don't go this way)"
+  endjs
+  menu direction ${window.menu_description}
+  1 left ${window.menu_item_description}
+  2 right
+  endmenu
+  ```
 
 ## Image map
 
@@ -262,6 +282,7 @@ Example:
 // Show an image map using the background image named `overhead`. Fade in the background image over 1 second.
 imagemap direction overhead 1.0
 // Hotspot 1 has coordinates x1 0%, y1 0%, x2 25%, x2 25%.
+// Hotspot 1 is only available if `is_lost` is `false`.
 1 0 0 25 25 / false === window.state.player_state.is_lost
 // Hotspot 2 has coordinates x1 25%, y1 25%, x2 50%, y2 50%.
 2 25 25 50 50
@@ -273,15 +294,14 @@ hideimagemap 1.0
 Notes:
 - An image map must contain at least one item that does not depend on a conditional.
 - As with [Menu](#menu), after the player chooses an image map item, the image map item index of the player's choice is assigned to a variable named after the image map. In the example, if the player chooses the first item, a variable named `direction` is created with the value `1`.
+- Background names and URLs are specified in [/src/0_data/bgs.txt](https://github.com/fsharpn00b/StoryStudio/blob/main/src/0_data/bgs.txt). For example:
 
-Background names and URLs are specified in [/src/0_data/bgs.txt](https://github.com/fsharpn00b/StoryStudio/blob/main/src/0_data/bgs.txt). For example:
-
-```
-{
-  "name": "day",
-  "url": "/0_assets/bg/forest/day.jpg"
-}
-```
+  ```
+  {
+    "name": "day",
+    "url": "/0_assets/bg/forest/day.jpg"
+  }
+  ```
 
 ## Jump
 
@@ -471,5 +491,47 @@ status This is a permanent notification. endstatus
 ```
 
 Notes:
+- Notifications support newlines.
 - Permanent notifications are displayed above temporary notifications.
 - Temporary notification display time can be configured in the configuration screen, which you can access with the default hotkey `c`.
+- You can use JavaScript interpolation in temporary and permanent notifications. For example:
+
+  ```
+  js window.notification = "Hello!"
+  notify ${window.notification} endnotify
+  ```
+
+
+## Eval
+
+`eval` lets you run an arbitrary command. You can use this for commands that don't support JavaScript interpolation.
+
+Syntax:
+
+```
+eval
+  <statement>
+  ...
+endeval
+```
+
+Example:
+
+```
+// Fade in a random background.
+js
+const n = Math.floor(Math.random() * 3) + 1;
+switch (n) {
+    case 1: window.random_background = "day"; break;
+    case 2: window.random_background = "night"; break;
+    case 3: window.random_background = "path"; break;
+    default: window.alert (`Invalid random number: ${n}`);
+}
+endjs
+eval fadein ${window.random_background} 2.0 endeval
+```
+
+Notes:
+- `eval` supports JavaScript interpolation, as shown in the previous example.
+- Normally, Story Studio checks your script for correctness before running it. For example, if you try to show a background or character sprite that doesn't exist, Story Studio shows an error on startup. This is so you don't have to play through the script to the incorrect statement before discovering the error. However, Story Studio can't check the correctness of evaluated commands. 
+- Story Studio doesn't support nested eval commands.
