@@ -28,6 +28,7 @@ Story Studio is a visual novel framework written in [F#](https://fsharp.org/) th
 	- Store game state such as character statistics and inventory.
 	- Include TypeScript types and lint your code before you run it.
 
+[Configuration and hotkeys](https://github.com/fsharpn00b/StoryStudio/tree/main/docs/configuration.md)
 [Scripting language reference](https://github.com/fsharpn00b/StoryStudio/tree/main/docs/commands.md)
 
 # How to Run
@@ -92,7 +93,8 @@ Development is ongoing as there are more features I want to add.
 [![Saved game screen](https://i.postimg.cc/QMNYhdyL/2.jpg)](https://postimg.cc/NKVkxBtb)
 [![Dialogue](https://i.postimg.cc/d0WH1cbt/3.jpg)](https://postimg.cc/PLwz39fB)
 [![Dialogue](https://i.postimg.cc/pd0GTMwr/4.jpg)](https://postimg.cc/sBh96qDC)
-[![Configuration screen](https://i.postimg.cc/k5j14PkL/5.jpg)](https://postimg.cc/wtmcfZxk)
+[![Configuration screen](https://i.postimg.cc/hvjcLpbC/ksnip_20260224_111245.png)](https://postimg.cc/JD9fm3FJ)
+[![Configuration screen](https://i.postimg.cc/Y0skbYbJ/ksnip_20260224_111247.png)](https://postimg.cc/xNMWdJrR)
 
 # Credits
 
@@ -105,8 +107,3 @@ https://fuelli.itch.io/free-to-use-character-sprites
 
 Background music:
 https://stocktune.com/free-music/whispers-of-autumn-love-292013-173203
-
-# TODO1 Document:
-- Plugins.
-- Configuration screen.
-- Hotkeys, including debug hotkeys.
