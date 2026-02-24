@@ -93,8 +93,8 @@ Development is ongoing as there are more features I want to add.
 [![Saved game screen](https://i.postimg.cc/QMNYhdyL/2.jpg)](https://postimg.cc/NKVkxBtb)
 [![Dialogue](https://i.postimg.cc/d0WH1cbt/3.jpg)](https://postimg.cc/PLwz39fB)
 [![Dialogue](https://i.postimg.cc/pd0GTMwr/4.jpg)](https://postimg.cc/sBh96qDC)
-[![Configuration screen](https://i.postimg.cc/hvjcLpbC/ksnip_20260224_111245.png)](https://postimg.cc/JD9fm3FJ)
-[![Configuration screen](https://i.postimg.cc/Y0skbYbJ/ksnip_20260224_111247.png)](https://postimg.cc/xNMWdJrR)
+[![Configuration screen](https://i.postimg.cc/JhQhjTBJ/5.png)](https://postimg.cc/wt7HpQ2T)
+[![Configuration screen](https://i.postimg.cc/pTXLCDDf/6.png)](https://postimg.cc/XZmW7B1q)
 
 # Credits
 
