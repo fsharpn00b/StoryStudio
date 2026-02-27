@@ -82,6 +82,16 @@ let Main () : ReactElement =
 let root = ReactDOM.createRoot <| document.getElementById "root"
 root.render <| Main ()
 
+(* To run, run
+npm start
+(end)
+
+To build, in root folder, run either:
+dotnet fable src --run npx vite build --emptyOutDir
+npm run build
+(end)
+*)
+
 (* Parser transforms DSL commands into DU commands.
 Runner transforms DU commands into UI component function calls.
 

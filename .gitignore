@@ -1,5 +1,8 @@
 public/bundle.js*
 
+# 20260227 Fable production build output
+dist/
+
 # Node
 node_modules/
 
