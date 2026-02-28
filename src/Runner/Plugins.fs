@@ -54,20 +54,20 @@ let private ensure_interface_registry () =
 
 (* Functions - main *)
 
+[<Emit("import.meta.glob('../0_data/plugins/*.fs.js')")>]
+let private vite_plugin_glob () : obj = jsNative
+
 let private load_script (path : string) =
     promise {
-        let script = document.createElement "script"
-        script?src <- path
-        script?``type`` <- "module"
+        let loaders = vite_plugin_glob ()
+        let loader_1 = loaders?(path)
 
-        let! _ =
-            Promise.create(fun resolve reject ->
-                script?onload <- resolve
-                script?onerror <- reject
-                document.body.appendChild script |> ignore
-            )
-
-        return ()
+        if isNull loader_1 then
+            error "load_script" "Failed to find plugin in Vite module map." ["path", path; "available_paths", JS.Constructors.Object.keys(loaders)] |> invalidOp
+        else
+            let loader_2 = unbox<unit -> JS.Promise<obj>> loader_1
+            let! _ = loader_2 ()
+            return ()
     }
 
 let private load_component (name : string) (path : string) (interface_ref : IRefValue<obj>) : ReactElement =

@@ -1,1 +1,6 @@
-[]
+[
+    {
+        "name" : "Plugin_Template",
+        "path" : "../0_data/plugins/Plugin_Template.fs.js"
+    }
+]

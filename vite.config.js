@@ -10,7 +10,7 @@ function copyStaticFolders() {
   return {
     name: 'copy-static-folders',
     closeBundle() {
-      for (const folderName of ['0_assets', '0_data']) {
+      for (const folderName of ['0_assets']) {
         const source = resolve(configDir, 'src', folderName)
         const target = resolve(configDir, 'dist', folderName)
 
@@ -24,6 +24,12 @@ function copyStaticFolders() {
       if (existsSync(runScriptSource)) {
         cpSync(runScriptSource, runScriptTarget, { force: true })
         chmodSync(runScriptTarget, 0o755)
+      }
+      
+      const runCaddyConfigSource = resolve(configDir, 'src', 'caddy_configuration')
+      const runCaddyConfigTarget = resolve(configDir, 'dist', 'caddy_configuration')
+      if (existsSync(runCaddyConfigSource)) {
+        cpSync(runCaddyConfigSource, runCaddyConfigTarget, { force: true })
       }
     },
   }
