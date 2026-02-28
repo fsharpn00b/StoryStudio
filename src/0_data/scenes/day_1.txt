@@ -4,10 +4,12 @@
 // Fade in daytime background over 2 seconds.
 fadein day 2.0 // Comment after statement.
 
+// This is to test plugins.
+/*
 js
-console.log ("Test")
 window.Interfaces.Plugin_Template.current.show ()
 endjs
+*/
 
 // Display status (permanent notification).
 status ${window.is_lost ()} endstatus

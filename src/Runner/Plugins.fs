@@ -39,6 +39,10 @@ let private error : error_function = error debug_module_name
 
 (* Functions - helper *)
 
+(* We get all available plugin scripts for error reporting. See load_script (). *)
+[<Emit("import.meta.glob('../0_data/plugins/*.fs.js')")>]
+let private vite_plugin_glob () : obj = jsNative
+
 let private get_plugin_paths () : Map<string, string> =
     match Decode.Auto.fromString<{| name : string; path : string |} list> plugins_1 with
     | Ok plugins_2 -> plugins_2 |> List.map (fun entry -> entry.name, entry.path) |> Map.ofList
@@ -53,9 +57,6 @@ let private ensure_interface_registry () =
         window?(interface_registry_name) <- createObj []
 
 (* Functions - main *)
-
-[<Emit("import.meta.glob('../0_data/plugins/*.fs.js')")>]
-let private vite_plugin_glob () : obj = jsNative
 
 let private load_script (path : string) =
     promise {
