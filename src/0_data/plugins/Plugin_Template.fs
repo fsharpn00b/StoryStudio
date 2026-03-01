@@ -11,8 +11,6 @@ open Feliz
 // useElmish
 open Feliz.UseElmish
 
-open Utilities
-
 (* Note This file is in the project only so Fable will compile it to .js, which we can then import to dynamically load the component. *)
 
 (* Import CSS. *)
@@ -94,8 +92,7 @@ let private Plugin_Template
 
     view state_ref dispatch
 
-(* Note plugins_registry_name won't work for plugins written outside the framework. *)
-window?(plugins_registry_name)?Plugin_Template <- Plugin_Template
+window?Plugins?Plugin_Template <- Plugin_Template
 
 (* To call these methods in a script: *)
 (*

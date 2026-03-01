@@ -30,6 +30,7 @@ let configuration_z_index = 7
 let save_load_screen_z_index = 7
 let command_menu_z_index = 8
 
+(* Note Plugin_Template.fs does not import this file, so "Plugins" is hardcoded there. It does not reference interface_registry_name. *)
 let plugins_registry_name = "Plugins"
 let interface_registry_name = "Interfaces"
 
