@@ -29,6 +29,7 @@ Story Studio is a visual novel framework written in [F#](https://fsharp.org/) th
 	- Include TypeScript types and lint your code before you run it.
 
 [Configuration and hotkeys](https://github.com/fsharpn00b/StoryStudio/tree/main/docs/configuration.md)
+
 [Scripting language reference](https://github.com/fsharpn00b/StoryStudio/tree/main/docs/commands.md)
 
 # How to Run
