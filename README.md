@@ -108,7 +108,7 @@ The deployment script is [vite.config.js](/vite.config.js).
 
 Story Studio supports plugins so you can add React components written in JavaScript to your visual novel without having to modify the F# framework.
 
-The plugin configuration file is [plugins.txt](/src/0_data/plugins.txt). By default, it loads the [example plugin](/src/0_data/plugins/Plugin_Template.fs). The example plugin simply shows an `h1` header with the word `Test`. You can show or hide it as follows:
+The plugin configuration file is [plugins.txt](/src/0_data/plugins.txt). By default, it loads the [example plugin](/src/0_data/plugins/Plugin_Template.fs). The example plugin simply shows an `h1` header with the word `Test`. You can show or hide it in your visual novel script as follows:
 
 ```
 js
@@ -122,7 +122,7 @@ endjs
 
 The example plugin is written in F#, but when you build your visual novel, Fable transforms it to `/src/0_data/plugins/Plugin_Template.fs.js`. If you prefer JavaScript, you can copy `Plugin_Template.fs.js` to a new file and use it as a template to develop other plugins. If you want to write a plugin in F#, you must add it to the [Story Studio project](/src/App.fsproj) so Fable transforms it to JavaScript.
 
-For you to access a plugin from a Story Studio script, you must register it:
+To use your plugin in a Story Studio visual novel script, you must register it:
 
     ```F#
     window?Plugins?<your_plugin_name> <- <your_plugin_component_name>
