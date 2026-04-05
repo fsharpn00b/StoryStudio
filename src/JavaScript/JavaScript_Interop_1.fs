@@ -57,7 +57,7 @@ let eval_js_with_exception (code : string) : obj =
 
 let private emit_menu_variables (menu_variables : Menu_Variables) : string =
     (String.Empty, menu_variables) ||> Seq.fold (fun acc kv ->
-        $"{acc}var {kv.Key} = {kv.Value};{Environment.NewLine}"
+        $"{acc}let {kv.Key} = {kv.Value};{Environment.NewLine}"
     )
 
 let eval_js_with_menu_variables<'T> (code : string) (menu_variables : Menu_Variables) : 'T =

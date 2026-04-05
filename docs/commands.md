@@ -263,6 +263,7 @@ Notes:
   2 right
   endmenu
   ```
+- If you use the same menu name more than once, the player's choice for the second menu overwrites the first, and [JavaScript validation](#validating-javascript) fails.
 
 ## Image map
 
@@ -302,6 +303,7 @@ Notes:
     "url": "/0_assets/bg/forest/day.jpg"
   }
   ```
+- If you use the same image map name more than once, the player's choice for the second image map overwrites the first, and [JavaScript validation](#validating-javascript) fails.
 
 ## Jump
 
@@ -402,7 +404,7 @@ Story Studio evaluates each JavaScript statement or block independently. This me
 
 ```
 js
-var x = 1;
+let x = 1;
 endjs
 
 js

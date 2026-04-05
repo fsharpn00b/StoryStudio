@@ -89,7 +89,7 @@ let private handle_menu_javascript (menu : Menu_Data_1) (line_number_1 : int) : 
             combine_javascript_interpolations menu.javascript_interpolations line_number_2
             combine_javascript_interpolations (menu.items |> List.collect (fun menu_item -> menu_item.javascript_interpolations)) line_number_2
             combine_javascript_conditionals (menu.items |> List.choose (fun menu_item -> menu_item.conditional)) line_number_2
-            $"{line_number_2}var {menu.name} = 1;{Environment.NewLine}" |> Some
+            $"{line_number_2}let {menu.name} = 1;{Environment.NewLine}" |> Some
         ] |> List.choose id
     String.concat String.Empty javascript_interpolations_and_conditionals
 
@@ -99,7 +99,7 @@ let private handle_image_map_javascript (image_map : Image_Map_Data) (line_numbe
         [
             combine_javascript_interpolations (image_map.items |> List.collect (fun image_map_item -> image_map_item.javascript_interpolations)) line_number_2
             combine_javascript_conditionals (image_map.items |> List.choose (fun image_map_item -> image_map_item.conditional)) line_number_2
-            $"{line_number_2}var {image_map.name} = 1;{Environment.NewLine}" |> Some
+            $"{line_number_2}let {image_map.name} = 1;{Environment.NewLine}" |> Some
         ] |> List.choose id
     String.concat String.Empty javascript_interpolations_and_conditionals
 
