@@ -36,7 +36,7 @@ let private run_command
 
     let known_error_data_1 = ["source", error_data.source :> obj]
 
-(* Note We also need to catch JavaScript errors in handle_next_command (). For If and Eval commands, we can try to evaluate JavaScript outside the delayed function f (). *)
+(* Note We also need to catch JavaScript errors in handle_next_command (). For If and Eval commands, we try to evaluate JavaScript outside the delayed function f (). *)
     try f () with
     | Run_Time_JavaScript_Error e ->
         let known_error_data_2 = known_error_data_1 @ ["code", e.code; "message", e.inner.Message]
@@ -124,13 +124,15 @@ let rec private handle_next_command
 
         | Some command ->
             let command_data =
-(* Runner_Queue_Helpers_2.get_command_data () can try to evaluate JavaScript for If or Eval commands. *)
+(* Runner_Queue_Helpers_2.get_command_data () can try to evaluate JavaScript for If or Eval commands, rather than return a command that we run with Runner_Queue.run_command (), so we must handle JavaScript errors here. *)
                 try get_command_data runner_state next_command.next_command_scene_id command queue_data.menu_variables with
                 | Run_Time_JavaScript_Error e ->
-                    let known_error_data = ["code", e.code :> obj; "message", e.inner.Message]
+(* command.error_data.source is the source we obtained from the parser (see Parser_1_Semantics.get_semantics ()) and transformed into a command. e.code is what we actually tried to evaluate (see JavaScript_Interop_1.eval_js_with_menu_variables () and eval_js_with_exception ().) *)
+                    let known_error_data = ["source", command.error_data.source :> obj; "code", e.code; "message", e.inner.Message]
                     let script_name, script_line_number = get_script_name_and_line_number runner_state.scenes.current "handle_next_command" command.error_data known_error_data
                     error "handle_next_command" "JavaScript error." (known_error_data @ ["script_name", script_name; "script_line_number", script_line_number]) |> invalidOp
-(* Unlike with run_command, we might see a generic exception here. Runner_Queue_Helpers_2.handle_eval () and handle_if_2 () can raise one. *)
+
+(* Unlike with run_command (), we might see a generic exception here. Runner_Queue_Helpers_2.handle_eval_command () can raise one. *)
                 | e ->
                     let known_error_data = ["message", e.Message :> obj]
                     let script_name, script_line_number = get_script_name_and_line_number runner_state.scenes.current "handle_next_command" command.error_data known_error_data

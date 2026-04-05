@@ -225,7 +225,7 @@ let private handle_command
     }
 
 (* Like Jump and Eval, If is a special case that changes the next command, though not the next scene. *)
-let private handle_if_2
+let private handle_if
     (next_command_1 : Next_Command_Data option)
     (command : If_Block)
     (error_data : Command_Error_Data_2)
@@ -267,27 +267,6 @@ let private handle_if_2
                     next_command_id = next_command_id_1
             }
         }
-
-let private handle_if_1
-    (scenes : Scene_Map)
-    (next_command : Next_Command_Data option)
-    (command : If_Block)
-    (error_data : Command_Error_Data_2)
-    (menu_variables : Menu_Variables)
-    : Runner_Command_Data =
-
-    let known_error_data_1 = ["source", error_data.source :> obj]
-
-// TODO1 #javascript We could remove this. We now handle this in Runner_Queue.handle_next_command () so we can also catch errors in Eval there.
-(* handle_if_1 () does not return a command that is run by Runner_Queue.run_command (), so we must handle JavaScript errors here.
-get_command_data () also does not return a command for End_If, but End_If does not allow JavaScript, so there is no issue there.
-*)
-    try handle_if_2 next_command command error_data menu_variables with
-    | Run_Time_JavaScript_Error e ->
-        let known_error_data_2 = known_error_data_1 @ ["code", e.code; "message", e.inner.Message]
-        let script_name, script_line_number = get_script_name_and_line_number scenes "handle_if_1" error_data known_error_data_2
-        error "handle_if_1" "JavaScript error." (known_error_data_2 @ ["script_name", script_name; "script_line_number", script_line_number]) |> invalidOp
-    | _ -> reraise ()
 
 let private handle_menu
     (runner_component_interfaces : IRefValue<Runner_Component_Interfaces>)
@@ -377,7 +356,7 @@ let get_command_data
 
     | Command_Post_Parse_Type.Command command_1 -> handle_command runner_state next_command command_1 command.error_data menu_variables
 
-    | Command_Post_Parse_Type.If command_2 -> handle_if_1 runner_state.scenes.current next_command command_2 command.error_data menu_variables
+    | Command_Post_Parse_Type.If command_2 -> handle_if next_command command_2 command.error_data menu_variables
 
     | Command_Post_Parse_Type.End_If ->
         {

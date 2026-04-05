@@ -43,7 +43,8 @@ type Key_Bindings_Configuration = {
 
 (* Consts *)
 
-// TODO1 #configuration Consider having Esc open the save screen instead.
+(* TODO2 #configuration Consider having Escape open the save screen instead, unless the configuration screen is already open, in which case, close it. Maybe add a user configuration option to determine what Escape does when the game is running (for example, open configuration screen, open save screen, open load screen). If any of those is already open, return to the game. This would go in Runner_UI.handle_escape_key ().
+*)
 let private permanent_key_bindings = [
     {
         name = "escape"
