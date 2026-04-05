@@ -1,6 +1,6 @@
 module Command_Menu
 
-// console, window
+// console, document
 open Browser.Dom
 // Cmd
 open Elmish
@@ -119,6 +119,17 @@ let private view
                                 do
                                     event.stopPropagation ()
                                     commands.show_or_hide_configuration_screen ()
+                            )
+                        ]
+                        Html.label [
+                            prop.text "Fullscreen"
+                            prop.onClick (fun event ->
+                                do
+                                    event.stopPropagation ()
+                                    if document.fullscreenElement = null then
+                                        document.documentElement.requestFullscreen() |> ignore
+                                    else
+                                        document.exitFullscreen() |> ignore
                             )
                         ]
                     ]

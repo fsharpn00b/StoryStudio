@@ -1,9 +1,6 @@
 /* TODO1 #background Need a better way to scale background/image map on window resize.
 
-- We should let the player choose between fitting background image/image map to window size versus letterboxing/pillarboxing.
-
-- Add command menu command for full screen/exit full screen.
-Browser.Dom.document.documentElement.requestFullscreen() |> ignore
+- We should let the player choose between fitting background image/image map to viewport size versus letterboxing/pillarboxing.
 
 - Letterboxing image map exposes characters behind it. That should be fixed now that characters are contained in an interface_layer.
 - We could also put notifications and command menu in interface layer containers. That way, they would behave as if attached to the top of the background image instead of the top of the viewport.  

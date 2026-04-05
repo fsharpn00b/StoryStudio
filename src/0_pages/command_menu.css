@@ -1,3 +1,4 @@
+/* TODO1 Move this to the dialog box or let the player configure that. */
 #command_menu_container {
   position: fixed;
   top: 0rem;
@@ -9,11 +10,21 @@
 
 #command_menu {
   display: flex;
-  gap: 0.5rem;               /* gap-2 */
-  background-color: rgba(0, 0, 0, 0.4); /* bg-black/40 */
-  border-radius: 9999px;     /* rounded-full */
-  padding: 0.25rem 1rem;     /* py-1 px-4 */
+/* bg-black/40 */
+  background-color: rgba(0, 0, 0, 0.4);
+/* rounded-full */
+  border-radius: 9999px;
+/* Add padding to the left and right sides of the menu. */
+  padding: 0rem 0.5rem;
   pointer-events: auto;
   font-size: 0.5em;
 
+}
+
+#command_menu label {
+  display: block;
+/* Add padding around the labels to separate them and detect mouse clicks. */
+  padding: 0.25rem 0.5rem;
+  cursor: pointer;
+  user-select: none;
 }
