@@ -1,8 +1,16 @@
-/* TODO1 #configuration Move this to the dialog box or let the player configure that. */
 #command_menu_container {
   position: fixed;
   top: 0rem;
   right: 0rem;
+/* TODO2 #configuration This moves the configuration menu to the dialog box.
+Problems:
+- It isn't part of dialogue.css/#dialogue_box_container, so this positioning is based on guesswork and not robust.
+- It remains behind when there is no dialog box (for example, when the author runs fadeoutall or shows an image map) and looks awkward.
+(end)
+
+  right: 25%;
+  bottom: 20%;
+*/
   display: flex;
   justify-content: center;
 /* Pass mouse clicks through to whatever is beneath. */
