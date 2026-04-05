@@ -342,7 +342,7 @@ let Characters
 (* For now there is no such class, but this does not cause an error. *)
         prop.id "characters_container"
         prop.className "interface_layer"
-(* TODO1 If two characters occupy the position, we will need to add individual character z-indices, which the author must set when they display each character. z-index would be a parameter to fadein, movein, etc. *)
+(* TODO1 #characters If two characters occupy the same position, we will need to add individual character z-indices, which the author must set when they display each character. z-index would be a parameter to fadein, movein, etc. *)
         prop.style [style.zIndex characters_container_z_index]
         prop.children characters_3
     ]

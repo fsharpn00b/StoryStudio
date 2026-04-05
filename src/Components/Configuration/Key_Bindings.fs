@@ -43,7 +43,7 @@ type Key_Bindings_Configuration = {
 
 (* Consts *)
 
-// TODO1 Consider having Esc open the save screen instead.
+// TODO1 #configuration Consider having Esc open the save screen instead.
 let private permanent_key_bindings = [
     {
         name = "escape"

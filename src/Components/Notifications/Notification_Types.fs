@@ -3,7 +3,8 @@ module Notification_Types
 open JavaScript_Interop_1
 open Units_Of_Measure
 
-// TODO1 #notifications Notifications can obstruct image map hotspots. They should pass through mouse clicks.
+(* TODO1 #notifications Notifications can obstruct image map hotspots. They should pass through mouse clicks. Why don't they? We don't call event.stopPropagation () or use pointer-events: none.
+*)
 
 (* TODO2 #notifications Add the following animations:
 x 1 When the permanent notification goes from Hidden to Visible or Visible to Hidden, or the temporary notification queue goes from empty to non-empty or from non-empty to empty, fade in or out the background blur.

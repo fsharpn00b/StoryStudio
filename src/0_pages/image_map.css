@@ -1,16 +1,19 @@
+/* See comments on background.css/#background_fade_container. */
 #image_map_container {
   display: grid;
+  overflow: hidden;
 }
 
 #image_map_container:focus {
   outline: none;
 }
 
+/* See comments on background.css/.background_fade_image. */
 #image_map_image {
   grid-area: 1 / 1;
-/* See comments on background.css/.background_fade_image. */
   width: 100vw;
   height: 100vh;
+  object-fit: cover;
 }
 
 .image_map_hotspot {

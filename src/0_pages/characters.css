@@ -22,7 +22,7 @@ TODO2 We could instead use:
     "height", $"{height}vh"
 ]
 
-TODO2 Previously, we did not have #characters_container. We added it so we could attach the characters to the bottom of an interface_layer rather than the bottom of the viewport. That way, if we use letterboxing for the image map background image, the letterboxing should not expose the characters behind the image map.
+TODO2 Previously, we did not have #characters_container. We added it so we could attach the characters to the bottom of an interface_layer rather than the bottom of the viewport. However, it hasn't worked as well as we hoped. We are still using position: absolute. See also the issues with letterboxing/pillarboxing described in background.css/#background_fade_container.
 */
 .character {
   position: absolute;

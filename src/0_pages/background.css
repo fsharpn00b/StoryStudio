@@ -1,14 +1,20 @@
-/* TODO1 #background Need a better way to scale background/image map on window resize.
-
-- We should let the player choose between fitting background image/image map to viewport size versus letterboxing/pillarboxing.
-
-- Letterboxing image map exposes characters behind it. That should be fixed now that characters are contained in an interface_layer.
-- We could also put notifications and command menu in interface layer containers. That way, they would behave as if attached to the top of the background image instead of the top of the viewport.  
-*/
-
 #background_fade_container {
 /* We use a grid so we can put multiple inner containers in the same cell to superimpose them. */
   display: grid;
+/* overflow: hidden and object-fit: cover cause the browser to show as much of the image as it can without resizing it either vertically or horizontally or using letterboxing or pillarboxing.
+
+TODO1 #image_map This will likely cause image map hotspots to become misaligned so they no longer correspond to shaped/labeled sections in the image.
+
+TODO2 Let the player choose between
+1 Current behavior.
+2 Resize background image/image map to fit viewport (remove overflow: hidden and object-fit: cover).
+3 Letterboxing/pillarboxing (change to object-fit: contain).
+
+- Letterboxing/pillarboxing an image map exposes the characters and dialogue box behind it. We thought we fixed this by putting them in interface layers, but we were wrong. It could be that letterboxing/pillarboxing detaches the image map from the edges of the viewport whereas the interface layers are still attached to the edges of the viewport.
+(end)
+- If we fix this, we could also put notifications and command menu in interface layer containers. That way, they would behave as if attached to the edges of the background image/image map instead of to the edges of the viewport.
+*/
+  overflow: hidden;
 }
 
 .background_fade_image {
@@ -19,4 +25,5 @@ So we must set the width/height of the image directly, and we must use vw/vh.
 */
   width: 100vw;
   height: 100vh;
+  object-fit: cover;
 }
