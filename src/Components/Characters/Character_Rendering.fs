@@ -12,7 +12,6 @@ open Character_Types
 open Log
 open Transition
 open Units_Of_Measure
-open Utilities
 
 (* Debug *)
 
@@ -27,21 +26,13 @@ let mutable debug_render_counter = 1
 
 let private get_character_fade_style (position : int<percent>) (height : int<percent>) : (string * string) list =
     [
-        "position", "absolute"
-        "bottom", "0"
         "left", $"{position}%%"
         "height", $"{height}vh"
-        "width", "auto"
-        "zIndex", $"{character_z_index}"
     ]
 
 let private get_character_move_style (height : int<percent>) : (string * string) list = 
     [
-        "position", "absolute"
-        "bottom", "0"
         "height", $"{height}vh"
-        "width", "auto"
-        "zIndex", $"{character_z_index}"
     ]
 
 (* Main functions - rendering *)
@@ -51,8 +42,7 @@ let private view_idle_visible
     : ReactElement =
 
     Html.img [
-(* TODO2 For some reason it is impossible to use a CSS file for this component, even though it works for every other component. In any case, we don't have any static properties or styles to apply at the moment. *)
-//        prop.className "character"
+        prop.className "character"
 (* See
 https://react.dev/learn/rendering-lists
 Keys tell React which array item each component corresponds to, so that it can match them up later. This becomes important if your array items can move (e.g. due to sorting), get inserted, or get deleted. A well-chosen key helps React infer what exactly has happened, and make the correct updates to the DOM tree.
@@ -82,8 +72,6 @@ Unlike with Fade, we do not use the old and new data (which can be either Visibl
         | Visible data, Hidden -> data.url, data.position, data.height
         | _ -> error "view_2_move" "Called with unexpected transition data." ["transition_data", transition_data] |> invalidOp
 
-(* TODO2 For some reason it is impossible to use a CSS file for this component, even though it works for every other component. In any case, we don't have any static properties or styles to apply at the moment. *)
-
     let complete_transition_2 = complete_transition (Some transition_data.command_queue_item_id) true
 
 // TODO1 #transitions This assumes the character width is no more than 20%.
@@ -100,8 +88,7 @@ Unlike with Fade, we do not use the old and new data (which can be either Visibl
         | _ -> error "view_2_move" "Unrecognized move command." ["transition_data", transition_data; "move_data", move_data] |> invalidOp
 
     get_transitionable_image
-(* TODO2 For some reason it is impossible to use a CSS file for this component, even though it works for every other component. In any case, we don't have any static properties or styles to apply at the moment. *)
-        None
+        (Some "character")
         None
         []
         (get_character_move_style height)
@@ -125,8 +112,7 @@ let view_2_fade
     let complete_transition_2 = complete_transition (Some transition_data.command_queue_item_id) true
     let get_transitionable_image_2 =
         get_transitionable_image
-(* TODO2 For some reason it is impossible to use a CSS file for this component, even though it works for every other component. In any case, we don't have any static properties or styles to apply at the moment. *)
-            None
+            (Some "character")
             None
             []
             (get_character_fade_style position height)

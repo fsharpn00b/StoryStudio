@@ -155,6 +155,7 @@ let private view
             prop.onClick (fun event -> do event.stopPropagation ())
 
             prop.id "image_map_container"
+            prop.className "interface_layer"
             prop.style [style.zIndex image_map_z_index]
             prop.children [
                 match state.current with

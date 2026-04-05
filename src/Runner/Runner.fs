@@ -293,4 +293,7 @@ When you need to trigger events from [an embedded] Elmish component, use React p
             yield! plugins |> Seq.map (fun kv -> kv.Value.component_)
         }
 
-    React.fragment children
+    Html.div [
+        prop.id "interface_root"
+        prop.children children
+    ]

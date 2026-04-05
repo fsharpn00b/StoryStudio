@@ -150,6 +150,7 @@ let private view
     | _ ->
         Html.div [
             prop.id "background_fade_container"
+            prop.className "interface_layer"
             prop.children [
                 match state.current with
 (* TODO2 This is still entangled with Fade_State, but that probably cannot be helped.

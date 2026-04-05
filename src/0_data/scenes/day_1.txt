@@ -35,6 +35,8 @@ menu direction Which way?
 2 right
 endmenu
 
+// TODO1 #menu What happens if we have two menus with the same name?
+
 // Fade in the character Tom, with a happy expression, at horizontal position 75%, over 1 second.
 fadein t happy 75 1.0
 

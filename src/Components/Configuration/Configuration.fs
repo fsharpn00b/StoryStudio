@@ -166,6 +166,7 @@ let private view
             prop.onWheel (fun event -> do event.stopPropagation ())
 
             prop.id "configuration_screen"
+            prop.className "interface_layer"
             prop.style [style.zIndex configuration_z_index]
             prop.children [
                 Html.div [

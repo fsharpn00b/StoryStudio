@@ -1,0 +1,32 @@
+/*
+#characters_container {
+}
+*/
+
+/* We must use position: absolute because we use the left attribute to position the character.
+
+TODO2 We could instead use:
+
+#characters_container {
+  display: grid;
+}
+
+.character {
+  grid-area: 1 / 1;
+  align-self: end;
+  justify-self: start;
+}
+
+[
+    "margin-left", $"{position}%%"
+    "height", $"{height}vh"
+]
+
+TODO2 Previously, we did not have #characters_container. We added it so we could attach the characters to the bottom of an interface_layer rather than the bottom of the viewport. That way, if we use letterboxing for the image map background image, the letterboxing should not expose the characters behind the image map.
+*/
+.character {
+  position: absolute;
+/* Stick to bottom. */
+  bottom: 0;
+  width: auto;
+}

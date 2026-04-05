@@ -1,23 +1,13 @@
-/* TODO2 CSS
-- Clean up.
-*/
-
 #configuration_screen {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
 /* Blur effect. */
 /* Final parameter is alpha channel (transparency). */
   background: rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(10px);          /* Frosted glass effect */
-  -webkit-backdrop-filter: blur(10px);  /* Safari support */
+/* Frosted glass effect. */
+  backdrop-filter: blur(10px);
+/* Safari support. */
+  -webkit-backdrop-filter: blur(10px);
   color: white;
   font-family: sans-serif;
-/* Enables vertical scrolling if needed. */
-  overflow-y: auto;
-  overflow-x: hidden;
 }
 
 #configuration_screen:focus {
@@ -35,5 +25,6 @@
 .configuration_grid {
   display: grid;
   grid-template-columns: auto 1fr;
-  gap: 0.5rem 1rem; /* row-gap, column-gap */
+/* Row gap, column gap. */
+  gap: 0.5rem 1rem;
 }

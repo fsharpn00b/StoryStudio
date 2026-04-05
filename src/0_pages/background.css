@@ -1,15 +1,25 @@
+/* TODO1 #background Need a better way to scale background/image map on window resize.
+
+- We should let the player choose between fitting background image/image map to window size versus letterboxing/pillarboxing.
+
+- Add command menu command for full screen/exit full screen.
+Browser.Dom.document.documentElement.requestFullscreen() |> ignore
+
+- Letterboxing image map exposes characters behind it. That should be fixed now that characters are contained in an interface_layer.
+- We could also put notifications and command menu in interface layer containers. That way, they would behave as if attached to the top of the background image instead of the top of the viewport.  
+*/
+
 #background_fade_container {
-  position: relative;
-  width: 100vw;
-  height: 100vh;
-  overflow: hidden;
+/* We use a grid so we can put multiple inner containers in the same cell to superimpose them. */
+  display: grid;
 }
 
 .background_fade_image {
-  position: absolute;
-  top: 0;
-  left: 0;
+  grid-area: 1 / 1;
+/* We cannot set width/height to 100%, because that forces the grid in style.css/#interface_root to expand to the size of the image, which at 1920x1080 is slightly larger than the viewport. The dialogue box and characters are also aligned with the bottom of the grid, so this affects them as well.
+The same thing happens if we do not set any width/height. It seems they cannot flow down from a parent element to an image.
+So we must set the width/height of the image directly, and we must use vw/vh.
+*/
   width: 100vw;
   height: 100vh;
-  object-fit: contain;
 }

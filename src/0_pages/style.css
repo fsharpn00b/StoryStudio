@@ -3,14 +3,19 @@ html, body {
   padding: 0;
   width: 100vw;
   height: 100vh;
-  overflow: hidden;
+}
+
+#interface_root {
+  display: grid;
+}
+
+.interface_layer {
+  grid-area: 1 / 1;
+/* This enables z-index. */
+  position: relative;
 }
 
 .controls {
-/*
-  display: flex;
-  justify-content: flex-end;
-*/
   padding-left: 1rem;
   margin-top: 1rem;
 }

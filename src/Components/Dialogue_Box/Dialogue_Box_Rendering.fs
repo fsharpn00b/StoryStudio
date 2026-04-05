@@ -31,6 +31,7 @@ let view
     let get_dialogue_box (character : string) (text : string) : ReactElement =
         Html.div [
             prop.id "dialogue_box_container"
+            prop.className "interface_layer"
             prop.key "dialogue_box_container"
             prop.style [style.zIndex dialogue_box_z_index]
             prop.children [

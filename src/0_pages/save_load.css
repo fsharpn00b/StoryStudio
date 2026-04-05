@@ -1,22 +1,13 @@
-/* TODO2 CSS
-- Clean up.
-*/
-
 #save_load_screen {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
 /* Blur effect. */
 /* Final parameter is alpha channel (transparency). */
   background: rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(10px);          /* Frosted glass effect */
-  -webkit-backdrop-filter: blur(10px);  /* Safari support */
+/* Frosted glass effect. */
+  backdrop-filter: blur(10px);
+/* Safari support. */
+  -webkit-backdrop-filter: blur(10px);
   color: white;
   font-family: sans-serif;
-
-  overflow-x: hidden;
 }
 
 #save_load_screen:focus {

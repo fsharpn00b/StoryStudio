@@ -1,11 +1,4 @@
 #menu_container {
-/* TODO2 We do not know why this was here. It might have been for the command menu before we fixed its z-order? */
-/*    margin: 20px;*/
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -36,7 +29,7 @@
 
 .menu_item {
     display: inline-block;
-/* Will be overridden by parent width */
+/* Overridden by parent width. */
     width: 100%;
     text-align: center;
     padding: 12px 24px;

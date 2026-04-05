@@ -3,7 +3,7 @@ https://stackoverflow.com/a/58360992
 */
 
 #notifications_container {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
 
@@ -20,7 +20,7 @@ https://stackoverflow.com/a/58360992
   grid-row: 1;
   grid-column: 1;
 
-/* Also use a grid here, so we can put multiple inner containers in the same cell to superimpose them. position: absolute does not work. */
+/* Also use a grid here, so we can put multiple inner containers in the same cell to superimpose them. */
   display: grid;
 }
 
@@ -30,9 +30,9 @@ https://stackoverflow.com/a/58360992
   grid-column: 1;
 
   background: rgba(0, 0, 0, 0.4);
-  /* Frosted glass effect */
+/* Frosted glass effect. */
   backdrop-filter: blur(10px);
-  /* Safari support */
+/* Safari support. */
   -webkit-backdrop-filter: blur(10px);
 }
 
@@ -49,9 +49,9 @@ https://stackoverflow.com/a/58360992
 
 .temporary_notification_container_inner {
   background: rgba(0, 0, 0, 0.4);
-  /* Frosted glass effect */
+/* Frosted glass effect. */
   backdrop-filter: blur(10px);
-  /* Safari support */
+/* Safari support. */
   -webkit-backdrop-filter: blur(10px);
 }
 

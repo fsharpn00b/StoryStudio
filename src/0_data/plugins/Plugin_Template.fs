@@ -61,7 +61,7 @@ let private view
         Html.div [
             prop.id "plugin_template"
             prop.children [
-                Html.h1 "Test"
+                Html.h1 "Plugin test"
             ]
         ]
     else Html.none

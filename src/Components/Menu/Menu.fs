@@ -111,6 +111,7 @@ let private view
                 prop.onClick (fun event -> do event.stopPropagation ())
 
                 prop.id "menu_container"
+                prop.className "interface_layer"
                 prop.style [style.zIndex menu_z_index]
                 prop.children [
                     Html.div [
