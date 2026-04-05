@@ -5,6 +5,7 @@
   right: 0rem;
   display: flex;
   justify-content: center;
+/* Pass mouse clicks through to whatever is beneath. */
   pointer-events: none;
 }
 
@@ -16,9 +17,9 @@
   border-radius: 9999px;
 /* Add padding to the left and right sides of the menu. */
   padding: 0rem 0.5rem;
+/* Unlike the container, the command menu itself can receive mouse clicks. The container's children inherit pointer-events: none, so we must override it. */
   pointer-events: auto;
   font-size: 0.5em;
-
 }
 
 #command_menu label {

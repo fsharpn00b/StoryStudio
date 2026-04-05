@@ -3,7 +3,7 @@
   display: grid;
 /* overflow: hidden and object-fit: cover cause the browser to show as much of the image as it can without resizing it either vertically or horizontally or using letterboxing or pillarboxing.
 
-TODO1 #image_map This will likely cause image map hotspots to become misaligned so they no longer correspond to shaped/labeled sections in the image.
+TODO1 #image_map This can cause image map hotspots to become misaligned so they no longer correspond to shaped/labeled sections in the image. Can we fix that by setting hotspot width/height to vw/vh instead? No, maybe because object-fit: cover causes the image to expand/shrink at both top and bottom or both left and right?
 
 TODO2 Let the player choose between
 1 Current behavior.

@@ -5,8 +5,6 @@ open System
 
 // console, window
 open Browser.Dom
-// jsNative
-open Fable.Core
 // Html, IRefValue, React, ReactComponent, ReactElement
 open Feliz
 
@@ -16,7 +14,6 @@ open Notification_Component
 open Notification_Types
 open Temporary_Notification
 open Transition
-open Units_Of_Measure
 open Utilities
 
 (* Debug *)

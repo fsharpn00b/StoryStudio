@@ -1,6 +1,6 @@
 module Command_Menu
 
-// console, document
+// console, document, window
 open Browser.Dom
 // Cmd
 open Elmish
