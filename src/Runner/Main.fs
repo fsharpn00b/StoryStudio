@@ -20,6 +20,7 @@ open Runner
 open Runner_Types
 open Runner_UI
 open Scripts
+open Units_Of_Measure
 
 (* Debug *)
 
@@ -48,6 +49,10 @@ let Main () : ReactElement =
     let scenes = React.useRef <| get_scene_map parser scripts
     let runner_2 = React.useRef<I_Runner> Unchecked.defaultof<_>
 
+// TODO1 #configuration This needs to be a configuration option.
+    let wheel_action_elapsed_time_threshold = 100L<milliseconds>
+    let last_wheel_action_time = ref 0L<milliseconds>
+
     do React.useEffectOnce(fun () ->
 
         do runner_2.current.run Initial_Run
@@ -67,8 +72,11 @@ let Main () : ReactElement =
             do debug "wheel event handler" String.Empty ["Delta Y", event_2.deltaY]
             #endif
 
-            if event_2.deltaY < 0 then do runner_2.current.undo ()
-            elif event_2.deltaY > 0 then do runner_2.current.redo ()
+            let current_time = DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond |> LanguagePrimitives.Int64WithMeasure
+            if (current_time - last_wheel_action_time.Value) >= wheel_action_elapsed_time_threshold then
+                do last_wheel_action_time.Value <- current_time
+                if event_2.deltaY < 0 then do runner_2.current.undo ()
+                elif event_2.deltaY > 0 then do runner_2.current.redo ()
         ))
 
         window.addEventListener ("keydown", fun (event : Event) -> handle_key_down scenes runner_2 event)
