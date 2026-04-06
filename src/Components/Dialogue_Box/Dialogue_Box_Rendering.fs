@@ -1,5 +1,8 @@
 module Dialogue_Box_Rendering
 
+// String.Empty
+open System
+
 // console, window
 open Browser.Dom
 // Html, IRefValue, ReactElement
@@ -70,7 +73,15 @@ See also get_state ().
         match typing_state.current with
         | Empty -> Html.none
         | Typing_State.Idle dialogue -> get_dialogue_box dialogue.character_full_name dialogue.text
-        | Typing dialogue -> get_dialogue_box dialogue.character dialogue.visible_text
+        | Typing dialogue ->
+            let visible_length =
+                if dialogue.index <= 0 then 0
+                elif dialogue.index >= dialogue.text.Length then dialogue.text.Length
+                else dialogue.index
+            let visible_text =
+                if visible_length = 0 then String.Empty
+                else dialogue.text.Substring(0, visible_length)
+            get_dialogue_box dialogue.character visible_text
     | _ ->
         do warn "view" false "Unexpected Fade_State. Ignoring." ["fade_state", fade_state]
         Html.none

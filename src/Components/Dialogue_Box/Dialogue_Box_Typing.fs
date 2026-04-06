@@ -62,7 +62,7 @@ let private reveal_next
 We do not need to cancel the transition timeout function because it just dispatches a Reveal_Next message, which is handled by this function. All we have to do is not dispatch that message again. *)
             Typing_State.Idle { character_full_name = data.character; text = data.text }, command_queue_item_id |> Dialogue_Box_Types.Notify_Transition_Complete |> Cmd.ofMsg
         else
-            let state_2 = Typing { data with index = data.index + 1; visible_text = data.text.Substring(0, data.index) }
+            let state_2 = Typing { data with index = data.index + 1 }
             state_2, Cmd.ofEffect (fun dispatch ->
                 do reveal_next_timeout_function_handle.current <- Some <| window.setTimeout ((fun () ->
                     dispatch <| Reveal_Next command_queue_item_id
@@ -109,7 +109,6 @@ let update_typing_state
             text = data.text
             typing_speed = data.typing_speed
             index = 0
-            visible_text = String.Empty
             command_queue_item_id = data.command_queue_item_id
         }
         reveal_next state_2 reveal_next_timeout_function_handle configuration data.command_queue_item_id

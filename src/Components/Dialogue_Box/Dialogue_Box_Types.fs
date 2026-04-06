@@ -52,7 +52,6 @@ type Typing_State_Data = {
     text : string
     typing_speed : Dialogue_Box_Typing_Speed
     index : int
-    visible_text : string
     command_queue_item_id : int<command_queue_item_id>
 }
 
