@@ -1,6 +1,20 @@
 :8080 {
+# Serve files from current directory.
     root * .
+# Redirect root to entry page.
     redir / /0_pages/index.html 302
+    header {
+# Disable unneeded browser capabilities.
+        Permissions-Policy: camera=(), microphone=(), geolocation=()
+# Reduce data leakage in URLs.
+        Referrer-Policy: strict-origin-when-cross-origin
+# Prevent downgrade/SSL stripping.
+        Strict-Transport-Security: max-age=31536000; includeSubDomains
+# Prevent MIME sniffing.
+        X-Content-Type-Options: nosniff
+# Prevent embedding in iframes.
+# Content Security Policy directive 'frame-ancestors' is ignored when delivered via a <meta> element.
+        X-Frame-Options "DENY"
+    }
     file_server
 }
-
