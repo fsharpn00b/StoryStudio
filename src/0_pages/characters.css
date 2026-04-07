@@ -29,4 +29,9 @@ TODO2 Previously, we did not have #characters_container. We added it so we could
 /* Stick to bottom. */
   bottom: 0;
   width: auto;
+/* Prevent the player from selecting or dragging the character sprites. */
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-user-drag: none;
 }

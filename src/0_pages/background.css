@@ -26,4 +26,9 @@ So we must set the width/height of the image directly, and we must use vw/vh.
   width: 100vw;
   height: 100vh;
   object-fit: cover;
+/* Prevent the player from selecting or dragging the background image. */
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-user-drag: none;
 }

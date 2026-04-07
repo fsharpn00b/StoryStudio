@@ -64,6 +64,11 @@ let Main () : ReactElement =
             do runner_2.current.run Player_Run
         )
 
+(* Prevent the player from dragging the viewport. *)
+        window.addEventListener ("dragstart", fun (event : Event) ->
+            event.preventDefault ()
+        )
+
         window.addEventListener ("wheel", (fun (event_1 : Event) ->
             let event_2 = event_1 :?> WheelEvent
 

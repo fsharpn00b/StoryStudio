@@ -142,6 +142,7 @@ let Transitionable_Image (
     Html.img [
         prop.key url
         prop.src url
+(* If the caller specified a class name or element id for this image, add it. *)
         yield! match class_name_1 with Some class_name_2 -> [prop.className class_name_2] | None -> []
         yield! match element_id_1 with Some element_id_2 -> [prop.id element_id_2] | None -> []
         yield! additional_properties |> List.map prop.custom

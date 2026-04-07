@@ -14,7 +14,9 @@ https://stackoverflow.com/a/58360992
   grid-template-rows: auto auto;
 /* 1 column, taking up all available width. */
   grid-template-columns: 1fr;
-/* Pass mouse clicks through to whatever is beneath. The container's children inherit this. */
+/* Pass mouse clicks through to whatever is beneath. The container's children inherit this.
+20260507 We are not sure why we have to do this for the notifications container but not for the dialogue box container. According to GPT-5.3 Codex, it might be because the notifications container is a fixed position container and the dialogue box container is a grid container.
+*/
   pointer-events: none;
 }
 
