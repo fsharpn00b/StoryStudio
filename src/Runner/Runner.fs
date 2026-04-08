@@ -295,11 +295,15 @@ When you need to trigger events from [an embedded] Elmish component, use React p
             notifications_1
             save_load_1
             yield! plugins_2 |> Seq.map (fun kv ->
-                Plugin_Host {|
-                    name = kv.Key
-                    path = kv.Value.path
-                    interface_ref = kv.Value.interface_ref
-                |}
+                Feliz.Interop.reactApi.createElement(
+                    Plugin_Host,
+                    {|
+                        key = kv.Key
+                        name = kv.Key
+                        path = kv.Value.path
+                        interface_ref = kv.Value.interface_ref
+                    |}
+                )
             )
         }
 

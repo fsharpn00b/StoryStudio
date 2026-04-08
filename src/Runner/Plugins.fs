@@ -41,7 +41,17 @@ let private error : error_function = error debug_module_name
 
 let private get_plugin_paths () : Map<string, string> =
     match Decode.Auto.fromString<{| name : string; path : string |} list> plugins_1 with
-    | Ok plugins_2 -> plugins_2 |> List.map (fun entry -> entry.name, entry.path) |> Map.ofList
+    | Ok plugins_2 ->
+        let duplicates = duplicates_by (fun (entry : {| name : string; path : string |}) -> entry.name) plugins_2
+        if List.isEmpty duplicates then
+            plugins_2 |> List.map (fun entry -> entry.name, entry.path) |> Map.ofList
+        else
+            let duplicate_names =
+                duplicates
+                    |> List.map fst
+                    |> List.distinct
+                    |> String.concat ", "
+            error "get_plugin_paths" "Plugin names must be unique." ["duplicate_names", duplicate_names] |> invalidOp
     | _ -> error "get_plugins" "Failed to deserialize plugins." ["plugins", plugins_1] |> invalidOp
 
 let private create_interface_ref () : IRefValue<obj> =
