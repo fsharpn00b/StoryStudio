@@ -223,7 +223,7 @@ let overwrite_saved_game_in_storage_1
 
     request_1?onsuccess <- (fun _ ->
         let db = request_1?result
-        let tx = db?transaction (store_name, "readonly")
+        let tx = db?transaction (store_name, "readwrite")
         let store = tx?objectStore store_name
 
         let request_3 = overwrite_saved_game_in_storage_2 store saved_game
