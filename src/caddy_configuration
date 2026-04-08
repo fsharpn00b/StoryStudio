@@ -3,6 +3,7 @@
     root * .
 # Redirect root to entry page.
     redir / /0_pages/index.html 302
+# Content security policy.
     header {
 # Disable unneeded browser capabilities.
         Permissions-Policy: camera=(), microphone=(), geolocation=()

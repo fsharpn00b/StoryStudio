@@ -62,7 +62,8 @@ let private handle_slot_click
 (* We dispatch a message because we also need to update the view to remove the deleted saved game. *)
             dispatch <| Message_Delete_Game saved_game_id
 
-(* This is for debugging the save/load screen. *)
+(* This is to debug how the save/load screen handles overflow. The compile guard is to prevent this from being bundled in production builds. *)
+#if debug
 let private view_saved_game_grid_test_overflow
     ()
     : ReactElement seq =
@@ -79,6 +80,7 @@ let private view_saved_game_grid_test_overflow
                 ]
             ]
         )
+#endif
 
 let private view_saved_game_grid
     (state : Save_Load_Show_Data)
