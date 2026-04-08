@@ -68,7 +68,7 @@ type Menu_Message =
     | Notify_Transition_Complete of int<command_queue_item_id>
     | Menu_Item_Selected of Menu_Item_Selected_Data
 
-// TODO1 Make this have the same structure as Menu_Saveable_State, then delete that.
+// TODO1 #menu Make this have the same structure as Menu_Saveable_State, then delete that. Wait for Fable vnext so we can use IsVisible instead of match.
 type Menu_State = {
     is_visible : bool
     menu_data : Menu_Data_2 option
