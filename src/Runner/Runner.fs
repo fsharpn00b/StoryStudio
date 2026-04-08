@@ -129,10 +129,14 @@ TODO2 We could use option with .Value.
     let notifications_2 = React.useRef<I_Notifications> Unchecked.defaultof<_>
     let save_load_2 = React.useRef<I_Save_Load> Unchecked.defaultof<_>
 
-(* We cannot call this inside React.useEffectOnce (), as it calls React.useRef (). *)
-    let plugins = get_plugins ()
+    let plugins_1 = React.useRef<Plugins_Data option> None
+    if Option.isNone plugins_1.current then
+(* Cache the result of get_plugins () so we do not have to call it on every render. get_plugins () calls React.useRef (), so we cannot call it inside React.useEffectOnce (). Plugins_Data is just a map, so if there are no plugins, it is an empty map. The option type wrapper is just to make sure we initialize the cache only once. *)
+        plugins_1.current <- Some <| get_plugins ()
+(* It is safe to call Option.get () because we know the option is not None. *)
+    let plugins_2 = plugins_1.current |> Option.get
 (* This emits the interface for each plugin. Later, we add the component for each plugin to the children for the Runner component. *)
-    emit_plugin_interfaces plugins
+    emit_plugin_interfaces plugins_2
 
     let runner_component_interfaces = React.useRef<Runner_Component_Interfaces> {
         background = background_2
@@ -145,7 +149,7 @@ TODO2 We could use option with .Value.
         music = music_2
         notifications = notifications_2
         save_load = save_load_2
-        plugins = plugins
+        plugins = plugins_2
     }
 
 (* History is part of state, but must be declared after runner_component_interfaces. *)
@@ -290,7 +294,13 @@ When you need to trigger events from [an embedded] Elmish component, use React p
             music_1
             notifications_1
             save_load_1
-            yield! plugins |> Seq.map (fun kv -> kv.Value.component_)
+            yield! plugins_2 |> Seq.map (fun kv ->
+                Plugin_Host {|
+                    name = kv.Key
+                    path = kv.Value.path
+                    interface_ref = kv.Value.interface_ref
+                |}
+            )
         }
 
     Html.div [

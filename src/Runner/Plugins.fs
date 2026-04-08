@@ -39,24 +39,25 @@ let private error : error_function = error debug_module_name
 
 (* Functions - helper *)
 
-(* We get all available plugin scripts for error reporting. See load_script (). *)
-[<Emit("import.meta.glob('../0_data/plugins/*.fs.js')")>]
-let private vite_plugin_glob () : obj = jsNative
-
 let private get_plugin_paths () : Map<string, string> =
     match Decode.Auto.fromString<{| name : string; path : string |} list> plugins_1 with
     | Ok plugins_2 -> plugins_2 |> List.map (fun entry -> entry.name, entry.path) |> Map.ofList
     | _ -> error "get_plugins" "Failed to deserialize plugins." ["plugins", plugins_1] |> invalidOp
 
-let private ensure_plugin_registry () =
-    if isNull (window?(plugins_registry_name)) then
-        window?(plugins_registry_name) <- createObj []
+let private create_interface_ref () : IRefValue<obj> =
+    createObj ["current" ==> null] |> unbox<IRefValue<obj>>
 
 let private ensure_interface_registry () =
     if isNull (window?(interface_registry_name)) then
         window?(interface_registry_name) <- createObj []
 
-(* Functions - main *)
+let private ensure_plugin_registry () =
+    if isNull (window?(plugins_registry_name)) then
+        window?(plugins_registry_name) <- createObj []
+
+(* We get all available plugin scripts for error reporting. See load_script (). *)
+[<Emit("import.meta.glob('../0_data/plugins/*.fs.js')")>]
+let private vite_plugin_glob () : obj = jsNative
 
 let private load_script (path : string) =
     promise {
@@ -71,40 +72,15 @@ let private load_script (path : string) =
             return ()
     }
 
-let private load_component (name : string) (path : string) (interface_ref : IRefValue<obj>) : ReactElement =
-    let is_loaded, set_is_loaded = React.useState false
-    let is_error, set_is_error = React.useState false
-
-    React.useEffect(
-        (fun () ->
-            let result = promise {
-                ensure_plugin_registry ()
-                do! load_script path
-                set_is_loaded true
-            }
-//            do result |> Promise.catch (fun _ -> set_is_error true) |> ignore
-(* TODO2 This does not stop the app from running, presumably because it is in a React.useEffect function. However, handling the error outside this function creates multiple alerts. For now this is the less painful solution. *)
-            do result |> Promise.catch (fun _ -> error "load_script" "Failed to load plugin script." ["path", path] |> invalidOp) |> ignore
-        ),
-        [||]
-    )
-
-// TODO2 This creates multiple alerts.
-(*
-    if is_error then error "load_script" "Failed to load plugin script." ["path", path] |> invalidOp
-    elif is_loaded then
-*)
-    if is_loaded then
-        let component_ = window?(plugins_registry_name)?(name)
-        Feliz.Interop.reactApi.createElement(component_, {| expose = interface_ref |})
-    else Html.none
+(* Functions - main *)
 
 let get_plugins () : Plugins_Data =
     get_plugin_paths ()
         |> Seq.map (fun kv ->
-            let interface_ref = React.useRef<obj> Unchecked.defaultof<_>
-            let component_ = load_component kv.Key kv.Value interface_ref
-            kv.Key, { component_ = component_; interface_ref = interface_ref }
+            kv.Key, {
+                path = kv.Value
+                interface_ref = create_interface_ref ()
+            }
         )
         |> Map.ofSeq
 
@@ -118,3 +94,34 @@ let emit_plugin_interfaces (plugins : Plugins_Data) : unit =
                 window?(interface_registry_name)?(kv.Key) <- kv.Value.interface_ref
             )
     )
+
+[<ReactComponent>]
+let Plugin_Host
+    (props : {| name : string; path : string; interface_ref : IRefValue<obj> |})
+    : ReactElement =
+
+    let is_loaded, set_is_loaded = React.useState false
+
+    React.useEffect(
+        (fun () ->
+            let result = promise {
+                ensure_plugin_registry ()
+                do! load_script props.path
+                set_is_loaded true
+            }
+//            do result |> Promise.catch (fun _ -> set_is_error true) |> ignore
+(* TODO2 This does not stop the app from running, presumably because it is in a React.useEffect function. However, handling the error outside this function creates multiple alerts. For now this is the less painful solution. *)
+            do result |> Promise.catch (fun _ -> error "load_script" "Failed to load plugin script." ["path", props.path] |> invalidOp) |> ignore
+        ),
+        [| box props.path |]
+    )
+
+// TODO2 This creates multiple alerts.
+(*
+    if is_error then error "load_script" "Failed to load plugin script." ["path", path] |> invalidOp
+    elif is_loaded then
+*)
+    if is_loaded then
+        let component_ = window?(plugins_registry_name)?(props.name)
+        Feliz.Interop.reactApi.createElement(component_, {| expose = props.interface_ref |})
+    else Html.none
