@@ -37,12 +37,18 @@ let private error : error_function = error debug_module_name
 
 (* Types *)
 
+// TODO2 #configuration Runner_History_Configuration and Runner_Configuration should be in Runner_Types, but it hasn't been declared yet.
+type Runner_History_Configuration = {
+    max_history_length : int
+}
+
 type Runner_Configuration = {
 (* These fields cannot be IRefValue because we need to serialize this type. *)
     background_configuration : Background_Configuration
     characters_configuration : Characters_Configuration
     dialogue_box_configuration : Dialogue_Box_Configuration
     temporary_notifications_configuration : Notifications_Configuration
+    history_configuration : Runner_History_Configuration
     key_bindings_configuration : Key_Bindings_Configuration
 }
 
@@ -64,6 +70,10 @@ type I_Configuration =
 (* Consts *)
 
 let private local_storage_name = "vnf_configuration"
+
+(* Note 0 = unlimited. *)
+let min_max_history_length = 0
+let max_max_history_length = 99
 
 let private initial_state = {
     is_visible = false
@@ -101,6 +111,7 @@ let private update_configuration
     (new_typing_speed_value_1 : HTMLTextAreaElement)
     (new_notification_display_time_value_1 : HTMLTextAreaElement)
     (new_notification_transition_time_value_1 : HTMLTextAreaElement)
+    (new_max_history_length_value_1 : HTMLTextAreaElement)
     (new_key_bindings_configuration : Key_Bindings_Configuration)
     : unit =
 
@@ -131,6 +142,15 @@ let private update_configuration
             else new_value_2
 
         do configuration.current <- { configuration.current with temporary_notifications_configuration = { configuration.current.temporary_notifications_configuration with transition_time = new_value_3 |> float |> LanguagePrimitives.FloatWithMeasure } }
+    | _ -> ()
+
+    match Int32.TryParse new_max_history_length_value_1.value with
+    | true, new_value_2 ->
+        let new_value_3 =
+            if new_value_2 < min_max_history_length then min_max_history_length
+            elif new_value_2 > max_max_history_length then max_max_history_length
+            else new_value_2
+        do configuration.current <- { configuration.current with history_configuration = { max_history_length = new_value_3 } }
     | _ -> ()
 
     do configuration.current <- { configuration.current with key_bindings_configuration = new_key_bindings_configuration }
@@ -219,6 +239,22 @@ let private view
                                 ]
                             ]
                         ]
+                        Html.h4 "History"
+                        Html.div [
+                            prop.className "configuration_grid"
+                            prop.children [
+                                Html.label [
+                                    prop.text $"Maximum undo/redo history length (minimum {min_max_history_length}, maximum {max_max_history_length}, 0 = unlimited): "
+                                ]
+                                Html.input [
+                                    prop.id "txt_max_history_length"
+                                    prop.type' "text"
+                                    prop.maxLength 2
+                                    prop.style [style.width (length.em 3)]
+                                    prop.defaultValue configuration.current.history_configuration.max_history_length
+                                ]
+                            ]
+                        ]
                         Html.h4 "Key bindings"
                         Html.div [
                             prop.className "configuration_grid"
@@ -233,13 +269,14 @@ let private view
                     prop.children [
                         Html.button [
                             prop.text "Save"
+// TODO1 #configuration Move to separate function.
                             prop.onClick (fun event ->
                                 do
                                     event.stopPropagation ()
                                     match get_key_bindings_configuration () with
                                     | None -> ()
                                     | Some key_bindings_configuration ->
-                                        update_configuration configuration set_configuration (document.getElementById "txt_typing_speed" :?> HTMLTextAreaElement) (document.getElementById "txt_notification_display_time" :?> HTMLTextAreaElement) (document.getElementById "txt_notification_transition_time" :?> HTMLTextAreaElement) key_bindings_configuration
+                                        update_configuration configuration set_configuration (document.getElementById "txt_typing_speed" :?> HTMLTextAreaElement) (document.getElementById "txt_notification_display_time" :?> HTMLTextAreaElement) (document.getElementById "txt_notification_transition_time" :?> HTMLTextAreaElement) (document.getElementById "txt_max_history_length" :?> HTMLTextAreaElement) key_bindings_configuration
                                         dispatch Hide
                             )
                         ]

@@ -4,7 +4,6 @@ module Runner_Notify
 open Browser.Dom
 open Feliz
 
-open Command_Types
 open Log
 open Runner_Queue
 open Runner_Queue_Transition

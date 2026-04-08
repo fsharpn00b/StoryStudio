@@ -154,6 +154,7 @@ TODO2 We could use option with .Value.
 
 (* History is part of state, but must be declared after runner_component_interfaces. *)
     let history = React.useRef<Runner_History> {
+        configuration = configuration_1.current.history_configuration
         current_index = None
         history = []
         notify_history_changed = fun () -> runner_component_interfaces.current.command_menu.current.redraw ()
@@ -205,7 +206,7 @@ When you need to trigger events from [an embedded] Elmish component, use React p
         Configuration (
             {| expose = configuration_component_2 |},
             configuration_1,
-            set_configuration runner_component_interfaces configuration_1,
+            set_configuration runner_component_interfaces history configuration_1,
 (* We must delay these calls because the Notifications and Command_Menu components are not ready yet. *)
             (fun () -> notifications_2.current.show_game_paused_notification ()),
             (fun () -> command_menu_2.current.redraw ())

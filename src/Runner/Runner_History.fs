@@ -5,6 +5,7 @@ open Browser.Dom
 // IRefValue
 open Feliz
 
+open Configuration
 open Log
 open Runner_State
 open Runner_Transition
@@ -20,25 +21,46 @@ let private error : error_function = error debug_module_name
 
 (* Functions *)
 
+let private sanitize_max_history_length (value : int) : int =
+    if value < min_max_history_length then min_max_history_length
+    elif value > max_max_history_length then max_max_history_length
+    else value
+
+let private truncate_history
+    (history : Runner_Saveable_State list)
+    (max_history_length_1 : int)
+    : Runner_Saveable_State list =
+
+    let max_history_length_2 = sanitize_max_history_length max_history_length_1
+    if max_history_length_2 = 0 then history
+    elif history.Length > max_history_length_2 then history |> List.skip (history.Length - max_history_length_2)
+    else history
+
 let add_to_history
     (runner_state : Runner_State)
     (history : IRefValue<Runner_History>)
     : unit =
 
     do
+        let next_state = get_state runner_state
         history.current <-
             match history.current.current_index with
             | None ->
                 {
                     history.current with
                         current_index = Some 0
-                        history = [get_state runner_state]
+(* max_history_length must be at least 1 (or 0, which means unlimited), so we do not need to truncate the history. *)
+                        history = [next_state]
                 }
             | Some current_index ->
+                let next_history_1 = (List.take (current_index + 1) history.current.history) @ [next_state]
+                let next_history_2 =
+(* This is safe because we place the current index at the end of the list (we have already truncated everything after it) and max_history_length must be at least 1. *)
+                    truncate_history next_history_1 history.current.configuration.max_history_length
                 {
                     history.current with
-                        current_index = Some <| current_index + 1
-                        history = (List.take (current_index + 1) history.current.history) @ [get_state runner_state]
+                        current_index = Some (next_history_2.Length - 1)
+                        history = next_history_2
                 }
         history.current.notify_history_changed ()
 

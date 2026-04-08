@@ -90,6 +90,7 @@ Does Runner_Saveable_State_Running_Data.add to history play any role in undo/red
     | Runner_Saveable_State_Done of Runner_Saveable_State_Component_Data
 
 type Runner_History = {
+    configuration : Runner_History_Configuration
     current_index : int option
     history : Runner_Saveable_State list
     notify_history_changed : unit -> unit
