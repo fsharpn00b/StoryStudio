@@ -45,7 +45,7 @@ let private default_temporary_notifications_configuration : Notifications_Config
 
 let private default_history_configuration : Runner_History_Configuration = {
 (* Note 0 = unlimited. *)
-    max_history_length = 0
+    max_history_length = 20
 }
 
 let default_configuration = {
