@@ -21,14 +21,6 @@ open Utilities
 (* TODO1 #plugins Allow author-configurable plugin hotkeys for players to interact with plugins (for example, press "i" for inventory). Each plugin could export a list of hotkeys tied to functions it defines. Have to handle conflict between that and built-in hotkeys though. Also need to import the plugin hotkeys into our configuration screen. Maybe just let plugin specify default hotkeys, then if they conflict with built-in hotkeys, assign them to the next available letter and let the player configure it. Not very satisfactory.
 *)
 
-(* Consts *)
-
-[<Literal>]
-let plugins_path = "../0_data/plugins.txt?raw"
-
-[<ImportDefault(plugins_path)>]
-let private plugins_1 : string = jsNative
-
 (* Debug *)
 
 let debug_module_name = "Plugins"
@@ -37,22 +29,77 @@ let private debug : log_function = debug debug_module_name
 let private warn : warn_function = warn debug_module_name
 let private error : error_function = error debug_module_name
 
+(* Types *)
+
+type private Plugin_Manifest_Entry = {
+    name : string
+    path : string
+}
+
+(* Consts *)
+
+[<Literal>]
+let plugins_path = "../0_data/plugins.txt?raw"
+
+[<ImportDefault(plugins_path)>]
+let private plugins_1 : string = jsNative
+
 (* Functions - helper *)
 
+let private is_valid_plugin_name (name : string) : bool =
+    let is_valid_char (c : char) = Char.IsLetterOrDigit c || c = '_' || c = '-'
+    not (String.IsNullOrWhiteSpace name) &&
+        is_valid_char name.[0] &&
+        name |> Seq.forall is_valid_char
+
+let private is_valid_plugin_path (path : string) : bool =
+    not (String.IsNullOrWhiteSpace path) &&
+        path.StartsWith("../0_data/plugins/") &&
+        path.EndsWith(".js") &&
+        not (path.Contains("/../")) &&
+        not (path.Contains("..\\")) &&
+        not (path.Contains("?")) &&
+        not (path.Contains("#"))
+
+let private validate_plugin_entries (plugins_2 : Plugin_Manifest_Entry list) : unit =
+    let invalid_names =
+        plugins_2
+            |> List.filter (fun entry -> not <| is_valid_plugin_name entry.name)
+            |> List.map (fun entry -> entry.name)
+    let invalid_paths =
+        plugins_2
+            |> List.filter (fun entry -> not <| is_valid_plugin_path entry.path)
+            |> List.map (fun entry -> $"{entry.name}: {entry.path}")
+
+    if not <| List.isEmpty invalid_names then
+        error
+            "validate_plugin_entries"
+            "Plugin names must be non-empty and use only letters, digits, '_' or '-'."
+            ["invalid_plugin_names", String.concat ", " invalid_names]
+            |> invalidOp
+
+    if not <| List.isEmpty invalid_paths then
+        error
+            "validate_plugin_entries"
+            "Plugin paths must start with '../0_data/plugins/', end with '.js', and not use traversal, query, or fragment syntax."
+            ["invalid_plugin_paths", String.concat ", " invalid_paths]
+            |> invalidOp
+
+    let duplicates = duplicates_by (fun entry -> entry.name) plugins_2
+    if not <| List.isEmpty duplicates then
+        let duplicate_names =
+            duplicates
+                |> List.map fst
+                |> List.distinct
+                |> String.concat ", "
+        error "validate_plugin_entries" "Plugin names must be unique." ["duplicate_names", duplicate_names] |> invalidOp
+
 let private get_plugin_paths () : Map<string, string> =
-    match Decode.Auto.fromString<{| name : string; path : string |} list> plugins_1 with
+    match Decode.Auto.fromString<Plugin_Manifest_Entry list> plugins_1 with
     | Ok plugins_2 ->
-        let duplicates = duplicates_by (fun (entry : {| name : string; path : string |}) -> entry.name) plugins_2
-        if List.isEmpty duplicates then
-            plugins_2 |> List.map (fun entry -> entry.name, entry.path) |> Map.ofList
-        else
-            let duplicate_names =
-                duplicates
-                    |> List.map fst
-                    |> List.distinct
-                    |> String.concat ", "
-            error "get_plugin_paths" "Plugin names must be unique." ["duplicate_names", duplicate_names] |> invalidOp
-    | _ -> error "get_plugins" "Failed to deserialize plugins." ["plugins", plugins_1] |> invalidOp
+        do validate_plugin_entries plugins_2
+        plugins_2 |> List.map (fun entry -> entry.name, entry.path) |> Map.ofList
+    | _ -> error "get_plugin_paths" "Failed to deserialize plugins." ["plugins", plugins_1] |> invalidOp
 
 let private create_interface_ref () : IRefValue<obj> =
     createObj ["current" ==> null] |> unbox<IRefValue<obj>>
@@ -66,7 +113,7 @@ let private ensure_plugin_registry () =
         window?(plugins_registry_name) <- createObj []
 
 (* We get all available plugin scripts for error reporting. See load_script (). *)
-[<Emit("import.meta.glob('../0_data/plugins/*.fs.js')")>]
+[<Emit("import.meta.glob('../0_data/plugins/*.js')")>]
 let private vite_plugin_glob () : obj = jsNative
 
 let private load_script (path : string) =
