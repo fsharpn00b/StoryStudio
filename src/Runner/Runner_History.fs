@@ -9,7 +9,8 @@ open Configuration
 open Log
 open Runner_State
 open Runner_Transition
-open Runner_Types
+open Runner_Types_1
+open Runner_Types_2
 
 (* Debug *)
 

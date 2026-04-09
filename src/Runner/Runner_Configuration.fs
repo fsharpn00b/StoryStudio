@@ -15,7 +15,7 @@ open Dialogue_Box_Types
 open Key_Bindings
 open Log
 open Runner_History
-open Runner_Types
+open Runner_Types_2
 open Notification_Types
 open Units_Of_Measure
 

@@ -7,7 +7,8 @@ open Feliz
 
 open JavaScript_Interop_2
 open Log
-open Runner_Types
+open Runner_Types_1
+open Runner_Types_2
 
 (* Debug *)
 
@@ -44,7 +45,7 @@ If add_to_history is false, which means that when we halted running commands, we
                 image_map = runner_state.runner_component_interfaces.current.image_map.current.get_state ()
                 music = runner_state.runner_component_interfaces.current.music.current.get_state ()
                 notifications = runner_state.runner_component_interfaces.current.notifications.current.get_state ()
-                javascript = get_state_from_js ()
+                javascript_state = get_javascript_state ()
             }
             menu_variables = data.menu_variables
         }
@@ -59,7 +60,7 @@ If add_to_history is false, which means that when we halted running commands, we
             image_map = runner_state.runner_component_interfaces.current.image_map.current.get_state ()
             music = runner_state.runner_component_interfaces.current.music.current.get_state ()
             notifications = runner_state.runner_component_interfaces.current.notifications.current.get_state ()
-            javascript = get_state_from_js ()
+            javascript_state = get_javascript_state ()
         }
 
 (* At this point, we should have forced transitions to complete, or already have been in state Queue_Idle. *)
@@ -93,7 +94,7 @@ We might want to get the state at the most recent pausable point (which might be
         runner_state.runner_component_interfaces.current.image_map.current.set_state component_data.image_map
         runner_state.runner_component_interfaces.current.music.current.set_state component_data.music
         runner_state.runner_component_interfaces.current.notifications.current.set_state component_data.notifications
-        set_state_in_js_with_exception component_data.javascript
+        set_javascript_state_with_exception component_data.javascript_state
 
 (* We set the command state afterward to prevent having it overwritten due to a component completing an existing transition (on its own, not because we called its set_state () method) after we set the command state but before we call the components' set_state () methods.
 *)

@@ -1,5 +1,7 @@
 module Utilities
 
+// Char, String
+open System
 open System.Text.RegularExpressions
 
 // Encode
@@ -17,6 +19,7 @@ let notify_transition_complete_delay_time = 10<milliseconds>
 let wait_for_transitions_to_complete_time = 10<milliseconds>
 
 let hide_save_load_screen_delay_time = 10<milliseconds>
+let wait_for_set_state_to_complete_time = 10<milliseconds>
 
 let background_z_index = 0
 let characters_container_z_index = 1
@@ -34,6 +37,8 @@ let command_menu_z_index = 8
 let plugins_registry_name = "Plugins"
 let interface_registry_name = "Interfaces"
 
+let valid_name_characters = "letters, digits, underscores (_), or dashes (-)"
+
 (* Interfaces *)
 
 type I_Transitionable =
@@ -46,6 +51,12 @@ type I_Transitionable =
 
 (* This is to prevent objects from being printed as "[object Object]". *)
 let inline json_stringify (o : 'a) : string = Encode.Auto.toString (2, o)
+
+let is_valid_name (name : string) : bool =
+    let is_valid_char (c : char) = Char.IsLetterOrDigit c || c = '_' || c = '-'
+    not (String.IsNullOrWhiteSpace name) &&
+        is_valid_char name.[0] &&
+        name |> Seq.forall is_valid_char
 
 let replace_non_alphanumeric_with_underscore (input : string) : string =
     Regex.Replace(input, "[^a-zA-Z0-9]", "_")

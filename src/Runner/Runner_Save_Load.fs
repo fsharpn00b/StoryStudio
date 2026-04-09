@@ -11,8 +11,10 @@ open Log
 open Runner_State
 open Runner_History
 open Runner_Transition
-open Runner_Types
+open Runner_Types_1
+open Runner_Types_2
 open Save_Load_Types
+open Save_Load_Validation
 open Utilities
 
 (* Debug *)
@@ -25,33 +27,30 @@ let private error : error_function = error debug_module_name
 
 (* Main functions - save and load games *)
 
-// TODO2 This transcends Runner? No, configuration should be stored separately anyway.
 let private load_game
     (runner_state : Runner_State)
     (history : IRefValue<Runner_History>)
     (saved_game_state : string)
     : unit =
 
-    match Decode.Auto.fromString<Runner_Saveable_State> saved_game_state with
-    | Ok saved_state ->
-        do
+    let saved_state = parse_and_validate_saved_state saved_game_state
+    do
 (* Clear the history. *)
-            clear_history history
+        clear_history history
 (* We do not need to call force_complete_transitions () because we did so before showing the saved game screen.
 Each UI component's set_state () method dispatches Show or Hide messages with notify_transition_complete = false to prevent commands from auto-continuing unexpectedly.
 *)
-            set_state runner_state saved_state
+        set_state runner_state saved_state
 (* If the state was saved at a point where it should be added to the history (typically, this means a point where we are waiting for player input), add the state to the history again. We need to do this after calling set_state (), because add_to_history () calls get_state ().
 *)
 (* See also Runner_Transition.notify_transition_complete (). *)
-            match saved_state with
-            | Runner_Saveable_State_Running data when data.add_to_history ->
+        match saved_state with
+        | Runner_Saveable_State_Running data when data.add_to_history ->
 (* Include a delay to make sure set_state finishes updating runner_component_interfaces and command_state. *)
-                window.setTimeout((fun () ->
-                    add_to_history runner_state history
-                ), int notify_transition_complete_delay_time) |> ignore
-            | _ -> ()
-    | _ -> error "load_game" "Failed to deserialize saved game." ["saved_game_state", saved_game_state] |> invalidOp
+            window.setTimeout((fun () ->
+                add_to_history runner_state history
+            ), int wait_for_set_state_to_complete_time) |> ignore
+        | _ -> ()
 
 let get_load_game
     (runner_state : Runner_State)

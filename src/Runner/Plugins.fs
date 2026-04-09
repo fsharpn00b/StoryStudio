@@ -15,7 +15,7 @@ open Feliz
 open Thoth.Json
 
 open Log
-open Runner_Types
+open Runner_Types_2
 open Utilities
 
 (* TODO1 #plugins Allow author-configurable plugin hotkeys for players to interact with plugins (for example, press "i" for inventory). Each plugin could export a list of hotkeys tied to functions it defines. Have to handle conflict between that and built-in hotkeys though. Also need to import the plugin hotkeys into our configuration screen. Maybe just let plugin specify default hotkeys, then if they conflict with built-in hotkeys, assign them to the next available letter and let the player configure it. Not very satisfactory.
@@ -46,12 +46,6 @@ let private plugins_1 : string = jsNative
 
 (* Functions - helper *)
 
-let private is_valid_plugin_name (name : string) : bool =
-    let is_valid_char (c : char) = Char.IsLetterOrDigit c || c = '_' || c = '-'
-    not (String.IsNullOrWhiteSpace name) &&
-        is_valid_char name.[0] &&
-        name |> Seq.forall is_valid_char
-
 let private is_valid_plugin_path (path : string) : bool =
     not (String.IsNullOrWhiteSpace path) &&
         path.StartsWith("../0_data/plugins/") &&
@@ -64,7 +58,7 @@ let private is_valid_plugin_path (path : string) : bool =
 let private validate_plugin_entries (plugins_2 : Plugin_Manifest_Entry list) : unit =
     let invalid_names =
         plugins_2
-            |> List.filter (fun entry -> not <| is_valid_plugin_name entry.name)
+            |> List.filter (fun entry -> not <| is_valid_name entry.name)
             |> List.map (fun entry -> entry.name)
     let invalid_paths =
         plugins_2
@@ -74,7 +68,7 @@ let private validate_plugin_entries (plugins_2 : Plugin_Manifest_Entry list) : u
     if not <| List.isEmpty invalid_names then
         error
             "validate_plugin_entries"
-            "Plugin names must be non-empty and use only letters, digits, '_' or '-'."
+            $"Plugin names must be non-empty and use only valid characters: {valid_name_characters}."
             ["invalid_plugin_names", String.concat ", " invalid_names]
             |> invalidOp
 

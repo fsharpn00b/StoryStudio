@@ -34,8 +34,10 @@
     <Compile Include="Components/Configuration/Configuration.fs" />
     <Compile Include="0_data/plugins/Plugin_Template.fs" />
     <Compile Include="Runner/Command_Types.fs" />
+    <Compile Include="Runner/Runner_Types_1.fs" />
     <Compile Include="Save_Load/Save_Load_Types.fs" />
     <Compile Include="Save_Load/Save_Load_Storage_Helpers.fs" />
+    <Compile Include="Save_Load/Save_Load_Validation.fs" />
     <Compile Include="Save_Load/Save_Load_Storage.fs" />
     <Compile Include="Save_Load/Save_Load_Rendering.fs" />
     <Compile Include="Save_Load/Save_Load.fs" />
@@ -47,7 +49,7 @@
     <Compile Include="Parser/Parser_2.fs" />
     <Compile Include="JavaScript/JavaScript_Parser.fs" />
     <Compile Include="JavaScript/JavaScript_Interop_2.fs" />
-    <Compile Include="Runner/Runner_Types.fs" />
+    <Compile Include="Runner/Runner_Types_2.fs" />
     <Compile Include="Runner/Runner_Transition.fs" />
     <Compile Include="Runner/Runner_State.fs" />
     <Compile Include="Runner/Runner_History.fs" />

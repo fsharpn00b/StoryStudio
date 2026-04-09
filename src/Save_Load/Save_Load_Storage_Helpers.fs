@@ -179,7 +179,8 @@ let add_quicksave_or_autosave_to_storage_2
     (screenshot : string)
     (quicksave_or_autosave : Quicksave_Or_Autosave)
     : obj =
-(* We can use put even if the record does not yet exist. *)
+(* For quicksave and autosave, we always overwrite existing records.
+We can use put even if the record does not yet exist. *)
     store?put {|
         id = match quicksave_or_autosave with | Quicksave -> quicksave_record_id | Autosave -> autosave_record_id
         name = match quicksave_or_autosave with | Quicksave -> "_Quicksave" | Autosave -> "_Autosave"

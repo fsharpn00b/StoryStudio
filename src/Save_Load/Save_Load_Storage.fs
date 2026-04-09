@@ -14,6 +14,7 @@ open Thoth.Json
 
 open Log
 open Save_Load_Storage_Helpers
+open Save_Load_Validation
 open Save_Load_Types
 open Units_Of_Measure
 
@@ -309,10 +310,18 @@ let export_current_game_to_file (current_game_state : string) : unit =
 let import_saved_games_from_file_to_storage () : unit =
 
     let handle_file (file_name : string) (file_contents : string) : unit =
-        match Decode.Auto.fromString<New_Saved_Game list> file_contents with
-        | Ok saved_games -> do add_saved_games_to_storage saved_games
-        | Error error ->
-            do warn "import_saved_games_from_file_to_storage" true "Failed to deserialize saved games from file." ["file_name", file_name; "error", error]
+        match validate_import_file_contents file_contents with
+        | Error validation_error ->
+            warn "import_saved_games_from_file_to_storage" true "Failed to validate saved games file." ["file_name", file_name; "error", validation_error]
+        | Ok () ->
+            match Decode.Auto.fromString<New_Saved_Game list> file_contents with
+            | Ok saved_games ->
+                match validate_saved_games_for_import saved_games with
+                | Ok () -> add_saved_games_to_storage saved_games
+                | Error validation_error ->
+                    warn "import_saved_games_from_file_to_storage" true "Failed to validate saved game data." ["file_name", file_name; "error", validation_error]
+            | Error decode_error ->
+                warn "import_saved_games_from_file_to_storage" true "Failed to deserialize saved games from file." ["file_name", file_name; "error", decode_error]
 
     open_read_file_dialog handle_file
 
@@ -322,13 +331,22 @@ let import_current_game_from_file
     : unit =
 
     let handle_file (file_name : string) (file_contents : string) : unit =
-        match Decode.Auto.fromString<New_Saved_Game list> file_contents with
+        match validate_import_file_contents file_contents with
+        | Error validation_error ->
+            warn "import_current_game_from_file" true "Failed to validate saved game file." ["file_name", file_name; "error", validation_error]
+        | Ok () ->
+            match Decode.Auto.fromString<New_Saved_Game list> file_contents with
 (* For simplicity, we always export a list of saved games, whether we are exporting all saved games or only the current game. *)
-        | Ok (head :: _) ->
-            if window.confirm $"Load save '{head.name}'? Current progress will be lost." then
-                do dispatch <| Message_Load_Game head.game_state
-        | Ok [] -> do warn "import_current_game_from_file" true "File does not contain any saved games." ["file_name", file_name]
-        | Error error ->
-            do warn "import_current_game_from_file" true "Failed to deserialize saved games from file." ["file_name", file_name; "error", error]
+            | Ok (head :: _) ->
+                match validate_saved_game head with
+                | Ok () ->
+                    if window.confirm $"Load save '{head.name}'? Current progress will be lost." then
+                        dispatch <| Message_Load_Game head.game_state
+                | Error validation_error ->
+                    warn "import_current_game_from_file" true "Failed to validate saved game data." ["file_name", file_name; "error", validation_error]
+            | Ok [] ->
+                warn "import_current_game_from_file" true "File does not contain any saved games." ["file_name", file_name]
+            | Error decode_error ->
+                warn "import_current_game_from_file" true "Failed to deserialize saved games from file." ["file_name", file_name; "error", decode_error]
 
     open_read_file_dialog handle_file

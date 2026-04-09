@@ -10,7 +10,7 @@ open Log
 open Runner_History
 open Runner_Queue
 open Runner_Save_Load
-open Runner_Types
+open Runner_Types_2
 open Units_Of_Measure
 
 (* Debug *)

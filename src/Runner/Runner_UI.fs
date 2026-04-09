@@ -16,7 +16,7 @@ open Log
 open Runner_History
 open Runner_Save_Load
 open Runner_Transition
-open Runner_Types
+open Runner_Types_2
 open Save_Load_Types
 open Utilities
 
@@ -127,7 +127,7 @@ let run
 (* window.state must be defined, so we provide an empty definition here in case the author does not define it. If they do, their definition will replace ours. *)
     if Initial_Run = reason then
         do
-            set_state_in_js_with_exception "{}"
+            set_javascript_state_with_exception "{}"
             poll_for_plugins_to_be_ready ()
     else do continuation ()
 
@@ -322,6 +322,6 @@ The --save-dev means you are installing the package only for dev purposes, not t
         | "javascript" -> scenes.current |> check_javascript
         | "state" ->
             do
-                show_js_state ()
+                show_javascript_state ()
                 runner.current.show_menu_variables ()
         | _ -> warn "handle_key_down" true "Unrecognized key binding." ["key", event_2.key; "binding", name]

@@ -9,11 +9,21 @@ open Browser.Dom
 open Browser.Types
 open Feliz
 
+open Log
 open Save_Load_Storage
 open Save_Load_Storage_Helpers
 open Save_Load_Types
+open Save_Load_Validation
 open Units_Of_Measure
 open Utilities
+
+(* Debug *)
+
+let debug_module_name = "Save_Load_Rendering"
+
+let private debug : log_function = debug debug_module_name
+let private warn : warn_function = warn debug_module_name
+let private error : error_function = error debug_module_name
 
 (* Helper functions - rendering *)
 
@@ -25,12 +35,20 @@ let private handle_save_new
     match window.prompt ("Enter save name:", get_current_timestamp ()) with
     | null -> ()
     | save_name ->
-        dispatch <| Message_Save_New_Game {
-            name = save_name
-            timestamp = DateTime.UtcNow
-            screenshot = state.screenshot
-            game_state = state.current_game_state
-        }
+        let validate_saved_game_name_result = validate_saved_game_name save_name
+        match validate_saved_game_name_result with
+        | Error (message, data) ->
+            do warn "handle_save_new" true message data
+            ()
+        | Ok () ->
+            match state.saved_games |> Seq.tryFind (fun kv -> kv.Value.name = save_name) with
+            | Some saved_game ->
+                if window.confirm $"Overwrite saved game '{save_name}'?" then
+(* We dispatch a message because we also need to update the view to hide the saved games screen. *)
+                    dispatch <| Message_Save_Existing_Game { id = saved_game.Key; name = save_name; screenshot = state.screenshot; timestamp = DateTime.UtcNow; game_state = state.current_game_state }
+            | None ->
+(* We dispatch a message because we also need to update the view to hide the saved games screen. *)
+                dispatch <| Message_Save_New_Game { name = save_name; screenshot = state.screenshot; timestamp = DateTime.UtcNow; game_state = state.current_game_state }
 
 let private handle_slot_click
     (saved_game_id : int<saved_game_id>)

@@ -5,8 +5,6 @@ open System
 
 // console, window
 open Browser.Dom
-// ? operator
-open Fable.Core.JsInterop
 
 open Utilities
 
@@ -21,9 +19,29 @@ When we catch a .NET exception, we extract the message.
 
 (* Types *)
 
-type log_function = string -> string -> (string * obj) list -> unit
-type warn_function = string -> bool -> string -> (string * obj) list -> unit 
-type error_function = string -> string -> (string * obj) list -> string
+(* TODO1 #logging Replace (string * obj) list with Error_Data everywhere.
+
+- Also consider types:
+type Warning_Data = {
+    module_name : string
+    function_name : string
+    alert : bool
+    message : string
+    data : Error_Data
+}
+
+type Error_Data = {
+    module_name : string
+    function_name : string
+    message : string
+    data : (string * obj) list
+}
+*)
+type Error_Data = (string * obj) list
+
+type log_function = string -> string -> Error_Data -> unit
+type warn_function = string -> bool -> string -> Error_Data -> unit 
+type error_function = string -> string -> Error_Data -> string
 
 type private Severity =
     | Debug
@@ -37,7 +55,7 @@ let private log
     (function_name : string) 
     (severity_1 : Severity)
     (message : string)
-    (data_1 : (string * obj) list)
+    (data_1 : Error_Data)
     : string =
     let severity_2 =
         match severity_1 with
@@ -52,15 +70,15 @@ let private log
 
     $"{severity_2}{module_name}.{function_name}: {message}{Environment.NewLine}{data_2}"
 
-let debug (module_name : string) (function_name : string) (message : string) (data : (string * obj) list) : unit =
+let debug (module_name : string) (function_name : string) (message : string) (data : Error_Data) : unit =
     do console.log (log module_name function_name Debug message data)
 
-let warn (module_name : string) (function_name : string) (alert : bool) (message : string) (data : (string * obj) list) =
+let warn (module_name : string) (function_name : string) (alert : bool) (message : string) (data : Error_Data) =
     if alert then
         do window.alert $"{message}{Environment.NewLine}See browser console for more information."
     do console.log (log module_name function_name Warning message data)
 
-let error (module_name : string) (function_name : string) (message : string) (data : (string * obj) list) : string =
+let error (module_name : string) (function_name : string) (message : string) (data : Error_Data) : string =
 (* Given that an error stops the program, we always alert the player. *)
     do window.alert $"{message}{Environment.NewLine}See browser console for more information."
     log module_name function_name Error message data

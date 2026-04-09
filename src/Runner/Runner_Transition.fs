@@ -6,7 +6,7 @@ open Browser.Dom
 open Feliz
 
 open Log
-open Runner_Types
+open Runner_Types_2
 open Utilities
 
 (* Debug *)
