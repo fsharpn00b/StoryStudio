@@ -1,5 +1,19 @@
 # Commands
 
+## Comments
+
+Syntax:
+
+```
+// <comment>
+```
+
+```
+/*
+<multi-line comment>
+*/
+```
+
 ## Fade in background
 
 Syntax:
@@ -220,6 +234,47 @@ stopmusic
 
 Stops playing the current music track.
 
+## Notifications
+
+### Temporary notification
+
+Syntax:
+
+```
+notify <text> endnotify
+```
+
+Example:
+
+```
+notify This is a temporary notification. endnotify
+```
+
+### Permanent notification
+
+Syntax:
+
+```
+status <text> endstatus
+```
+
+Example:
+
+```
+status This is a permanent notification. endstatus
+```
+
+Notes:
+- Notifications support newlines.
+- Permanent notifications are displayed above temporary notifications.
+- Temporary notification display time can be configured in the configuration screen, which you can access with the default hotkey `c`.
+- You can use JavaScript interpolation in temporary and permanent notifications. For example:
+
+  ```
+  js window.notification = "Hello!"
+  notify ${window.notification} endnotify
+  ```
+
 ## Menu
 
 Syntax:
@@ -369,20 +424,6 @@ Notes:
 - You can have zero, one, or many `elseif` branches.
 - You can use `elif` in place of `elseif`.
 
-## Comments
-
-Syntax:
-
-```
-// <comment>
-```
-
-```
-/*
-<multi-line comment>
-*/
-```
-
 ## JavaScript
 
 Syntax:
@@ -461,48 +502,6 @@ Notes:
     ```
 
     you might have saved the exported JavaScript file to a folder outside where you installed TypeScript.
-
-## Notifications
-
-### Temporary notification
-
-Syntax:
-
-```
-notify <text> endnotify
-```
-
-Example:
-
-```
-notify This is a temporary notification. endnotify
-```
-
-### Permanent notification
-
-Syntax:
-
-```
-status <text> endstatus
-```
-
-Example:
-
-```
-status This is a permanent notification. endstatus
-```
-
-Notes:
-- Notifications support newlines.
-- Permanent notifications are displayed above temporary notifications.
-- Temporary notification display time can be configured in the configuration screen, which you can access with the default hotkey `c`.
-- You can use JavaScript interpolation in temporary and permanent notifications. For example:
-
-  ```
-  js window.notification = "Hello!"
-  notify ${window.notification} endnotify
-  ```
-
 
 ## Eval
 
