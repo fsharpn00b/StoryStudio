@@ -158,6 +158,18 @@ let private update_configuration
     set_configuration configuration.current
     set_configuration_in_local_storage configuration
 
+let private handle_save_button_click
+    (configuration : IRefValue<Runner_Configuration>)
+    (set_configuration : Runner_Configuration -> unit)
+    (dispatch : Configuration_Message -> unit)
+    : unit =
+
+    match get_key_bindings_configuration () with
+    | None -> ()
+    | Some key_bindings_configuration ->
+        update_configuration configuration set_configuration (document.getElementById "txt_typing_speed" :?> HTMLTextAreaElement) (document.getElementById "txt_notification_display_time" :?> HTMLTextAreaElement) (document.getElementById "txt_notification_transition_time" :?> HTMLTextAreaElement) (document.getElementById "txt_max_history_length" :?> HTMLTextAreaElement) key_bindings_configuration
+        dispatch Hide
+
 (* Main functions - rendering *)
 
 let private view
@@ -269,15 +281,10 @@ let private view
                     prop.children [
                         Html.button [
                             prop.text "Save"
-// TODO1 #configuration Move to separate function.
                             prop.onClick (fun event ->
                                 do
                                     event.stopPropagation ()
-                                    match get_key_bindings_configuration () with
-                                    | None -> ()
-                                    | Some key_bindings_configuration ->
-                                        update_configuration configuration set_configuration (document.getElementById "txt_typing_speed" :?> HTMLTextAreaElement) (document.getElementById "txt_notification_display_time" :?> HTMLTextAreaElement) (document.getElementById "txt_notification_transition_time" :?> HTMLTextAreaElement) (document.getElementById "txt_max_history_length" :?> HTMLTextAreaElement) key_bindings_configuration
-                                        dispatch Hide
+                                    handle_save_button_click configuration set_configuration dispatch
                             )
                         ]
                         Html.button [

@@ -16,7 +16,7 @@ type Runner_Saveable_State_Component_Data = {
     background : Background_State
     dialogue : Dialogue_Box_Saveable_State
     characters : Characters_Saveable_State
-    menu : Menu_Saveable_State
+    menu : Menu_State
     image_map : Image_Map_State
     music : Music_State
     notifications : Notifications_Saveable_State

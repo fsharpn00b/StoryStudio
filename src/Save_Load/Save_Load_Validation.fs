@@ -32,7 +32,6 @@ let private error : error_function = error debug_module_name
 
 (* Consts *)
 
-// TODO1 Find out why these are security risks.
 (* Validation bounds for imported save files. *)
 let private max_import_file_length = 5_000_000
 let private max_imported_saved_games = 100
@@ -126,7 +125,6 @@ let validate_javascript_state_json
     (state_json : string)
     : unit =
 
-// TODO1 #validation Make sure we can return a value from a try block.
     let parsed =
         try
             parse_json state_json

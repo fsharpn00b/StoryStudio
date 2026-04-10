@@ -212,6 +212,7 @@ let get_key_binding_elements
 
 (* Functions - configuration *)
 
+(* This expects the configuration screen to be open. *)
 let private get_key_binding (binding : Key_Binding) : string =
     let element = document.getElementById $"txt_{binding.name}"
     if not <| isNull element then (element :?> HTMLTextAreaElement).value

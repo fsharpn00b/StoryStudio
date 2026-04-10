@@ -68,13 +68,7 @@ type Menu_Message =
     | Notify_Transition_Complete of int<command_queue_item_id>
     | Menu_Item_Selected of Menu_Item_Selected_Data
 
-// TODO1 #menu Make this have the same structure as Menu_Saveable_State, then delete that. Wait for Fable vnext so we can use IsVisible instead of match.
-type Menu_State = {
-    is_visible : bool
-    menu_data : Menu_Data_2 option
-}
-
-type Menu_Saveable_State =
+type Menu_State =
     | Visible of Menu_Data_2
     | Hidden
 
@@ -84,8 +78,8 @@ type I_Menu =
     abstract member show : Menu_Data_2 -> bool -> int<command_queue_item_id> option -> unit
     abstract member hide : bool -> int<command_queue_item_id> option -> unit
     abstract member is_visible : unit -> bool
-    abstract member get_state : unit -> Menu_Saveable_State
-    abstract member set_state : Menu_Saveable_State -> unit
+    abstract member get_state : unit -> Menu_State
+    abstract member set_state : Menu_State -> unit
 
 (* Debug *)
 
@@ -103,59 +97,49 @@ let private view
     (dispatch : Menu_Message -> unit)
     : ReactElement =
 
-    if state.is_visible then
-        match state.menu_data with
-        | None -> error "view" "visible is true, but menu_data is missing." [] |> invalidOp
-        | Some menu_data_2 ->
-            Html.div [
+    match state with
+    | Visible menu_data ->
+        Html.div [
 (* Make sure this screen can receive focus. This is not strictly needed if we are not stopping propagation of key down events, but we are leaving it here for now in case it is useful later. *)
-                prop.ref element_ref
-                prop.tabIndex 0
+            prop.ref element_ref
+            prop.tabIndex 0
 (* Unlike in the configuration screen, we do not stop the propagation of key down events. *)
 (* Prevent a mouse click from calling Runner.run (). *)
-                prop.onClick (fun event -> do event.stopPropagation ())
+            prop.onClick (fun event -> do event.stopPropagation ())
 
-                prop.id "menu_container"
-                prop.className "interface_layer"
-                prop.style [style.zIndex menu_z_index]
-                prop.children [
-                    Html.div [
-                        prop.id "menu_description"
-                        prop.text menu_data_2.text
-                    ]
-                    Html.ul [
-                        prop.id "menu"
-                        prop.children [
-                            for item in menu_data_2.items do
-                                Html.li [
-                                    prop.className "menu_item"
-                                    prop.text item.text
-                                    prop.onClick (fun event ->
-                                        do
-                                            event.stopPropagation ()
-                                            dispatch <| Menu_Item_Selected {
-                                                name = menu_data_2.name
-                                                value = item.value
-                                            })
-                                ]
-                        ]
+            prop.id "menu_container"
+            prop.className "interface_layer"
+            prop.style [style.zIndex menu_z_index]
+            prop.children [
+                Html.div [
+                    prop.id "menu_description"
+                    prop.text menu_data.text
+                ]
+                Html.ul [
+                    prop.id "menu"
+                    prop.children [
+                        for item in menu_data.items do
+                            Html.li [
+                                prop.className "menu_item"
+                                prop.text item.text
+                                prop.onClick (fun event ->
+                                    do
+                                        event.stopPropagation ()
+                                        dispatch <| Menu_Item_Selected {
+                                            name = menu_data.name
+                                            value = item.value
+                                        })
+                            ]
                     ]
                 ]
             ]
-    else Html.none
+        ]
+    | Hidden -> Html.none
 
 (* Main functions - state *)
 
-let private get_state
-    (state : Menu_State)
-    : Menu_Saveable_State =
-    match state.is_visible, state.menu_data with
-    | true, Some menu_data_2 ->
-        Visible menu_data_2
-    | _ -> Hidden
-
 let private set_state
-    (saved_state : Menu_Saveable_State)
+    (saved_state : Menu_State)
     (dispatch : Menu_Message -> unit)
     : unit =
     match saved_state with
@@ -187,10 +171,7 @@ let private update
             else Cmd.none
 
 (* A saved game can restore a different menu while the menu is already visible. Always replace the menu data on Show so visible items/text match restored JS state. *)
-        let new_state = {
-            is_visible = true
-            menu_data = Some data.data
-        }
+        let new_state = Visible data.data
 (* If the Show message was dispatched by the show () interface method, meaning it came from a command, we should notify Runner the transition is complete. If the Show message was dispatched by set_state (), meaning the player loaded a saved game or called undo or redo, we should not notify Runner, because we do not want to automatically continue to the next command. That should not happen anyway with undo or redo, because the history only includes points at which we do not automatically continue anyway (typically, this means points where we are waiting for player input). For the moment, it should also not happen with loading a saved game, because we do not automatically continue from that either, but we could change that behavior at some point.
 *)
         new_state, command
@@ -204,12 +185,8 @@ let private update
                 | None -> error "update/Hide" "Hide_Menu_Data.is_notify_transition_complete is true, but Hide_Menu_Data.command_queue_item_id is None." ["Hide_Menu_Data", data] |> invalidOp
             else Cmd.none
 
-        let new_state = {
-            is_visible = false
-            menu_data = None
-        }
 (* See the comments for Show. There is one additional case here: the hide () method was called from notify_menu_selection (). In that case, notify_menu_selection () calls get_next_command () itself, rather than use notify_transition_complete (). *)
-        new_state, command
+        Hidden, command
 
 (* We must delay before notifying Runner the transition is complete. Otherwise, Runner receives the message before is_visible is updated. Runner_State.get_state () then records an incorrect value for is_visible, which leads to unwanted behavior for save/load and undo/redo.
 
@@ -240,7 +217,7 @@ let Menu
 
     let state, dispatch =
         React.useElmish (
-            ({ is_visible = false; menu_data = None }, Cmd.none),
+            (Hidden, Cmd.none),
             update notify_transition_complete notify_menu_selection,
             [||]
         )
@@ -249,7 +226,7 @@ let Menu
 
 (* Give focus to this component when it is visible. This is so we can prevent mouse click and key down events leaking to the game. *)
     let element_ref = React.useRef None
-    React.useEffect((fun () -> if state.is_visible then element_ref.current?focus()), [| box state.is_visible |])
+    React.useEffect((fun () -> match state with | Visible _ -> element_ref.current?focus() | Hidden -> ()), [| box state |])
 
     React.useImperativeHandle(props.expose, fun () ->
         {
@@ -274,9 +251,9 @@ let Menu
                         is_notify_transition_complete = is_notify_transition_complete
                         command_queue_item_id = command_queue_item_id_2
                     }
-                member _.is_visible (): bool = state_ref.current.is_visible
-                member _.get_state () = get_state state_ref.current
-                member _.set_state (saved_state : Menu_Saveable_State) = set_state saved_state dispatch
+                member _.is_visible () : bool = match state_ref.current with | Visible _ -> true | Hidden -> false
+                member _.get_state () = state_ref.current
+                member _.set_state (saved_state : Menu_State) = set_state saved_state dispatch
 (* For now, menu does not have transitions. *)
             interface I_Transitionable with
                 member _.is_running_transition () : bool = false
