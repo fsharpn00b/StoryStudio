@@ -12,6 +12,7 @@ open Feliz
 open Feliz.UseElmish
 
 open Log
+open Runner_Types_1
 open Save_Load_Rendering
 open Save_Load_Storage
 open Save_Load_Storage_Helpers
@@ -31,10 +32,17 @@ let private error : error_function = error debug_module_name
 let show
     (dispatch : Save_Load_Message -> unit)
     (action : Saved_Game_Action)
-    (current_game_state : string)
+    (runner_saveable_state_json : string)
     : unit =
 
     promise {
+(* TODO1 #save We cannot open the save/load screen when there is no background, such as when the author uses the fade_out_all command, because we try to take a screenshot in preparation for the user saving or exporting the game.
+
+Error:
+Uncaught (in promise) DOMException: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at downscale_screenshot (http://localhost:5173/Save_Load/Save_Load_Storage_Helpers.fs.js:49:9)
+    at http://localhost:5173/Save_Load/Save_Load.fs.js:35:23
+*)
         let! canvas = get_canvas ()
         let! usage = get_usage ()
         let! saved_games = get_saved_game_display_data_from_storage ()
@@ -46,7 +54,7 @@ let show
     } |> Promise.iter (fun results ->
         dispatch <| Show {
             action = action
-            current_game_state = current_game_state
+            runner_saveable_state_json = runner_saveable_state_json
             screenshot = results.screenshot
             saved_games = results.saved_games
             usage = results.usage
@@ -71,7 +79,7 @@ let is_visible (state_ref : IRefValue<Save_Load_State>) : bool =
 
 let private update
 (* load_game is Runner_State.load_game (), closed over runner_component_interfaces, history, and queue. All it needs is the saved game state. *)
-    (load_game : string -> unit)
+    (load_game : Runner_Saveable_State -> unit)
     (show_game_paused_notification : unit -> unit)
     (message : Save_Load_Message)
     (state_1 : Save_Load_State)
@@ -84,7 +92,7 @@ let private update
     | Show data ->
         Visible {
             action = data.action
-            current_game_state = data.current_game_state
+            runner_saveable_state_json = data.runner_saveable_state_json
             screenshot = data.screenshot
             saved_games = data.saved_games
             usage = data.usage
@@ -101,8 +109,8 @@ let private update
             if action = state_2.action then state_1, Cmd.none
             else Visible { state_2 with action = action }, Cmd.none
 
-    | Message_Load_Game game_state ->
-        do load_game game_state
+    | Message_Load_Game runner_saveable_state ->
+        do load_game runner_saveable_state
 (* Delay before we hide the save/load game screen, so the mouse click to select the saved game does not also cause us to call Runner_Queue.run (). For now, return the state unchanged. *)
         state_1, Cmd.ofEffect (fun dispatch ->
             do window.setTimeout ((fun () ->
@@ -151,7 +159,7 @@ let private update
 [<ReactComponent>]
 let Save_Load
     (props : {| expose : IRefValue<I_Save_Load> |},
-    load_game : string -> unit,
+    load_game : Runner_Saveable_State -> unit,
     show_game_paused_notification : unit -> unit,
     redraw_command_menu : unit -> unit
     )
@@ -180,13 +188,13 @@ Unlike Configuration_State, Save_Load_State does not have a simple is_visible fl
 
 The caller must send the current game state, and we must take a screenshot, in case the player switches from the load screen to the save screen without returning to the game.
 *)
-                member _.show (action : Saved_Game_Action) (current_game_state : string) = show dispatch action current_game_state
+                member _.show (action : Saved_Game_Action) (runner_saveable_state_json : string) = show dispatch action runner_saveable_state_json
                 member _.export_saved_games_from_storage_to_file () = export_saved_games_from_storage_to_file ()
-                member _.import_saved_games_from_file_to_storage () = import_saved_games_from_file_to_storage ()
-                member _.export_current_game_to_file (current_game_state : string) = export_current_game_to_file current_game_state 
-                member _.import_current_game_from_file () = import_current_game_from_file dispatch
+                member _.import_saved_games_from_file_to_storage () = open_read_file_dialog <| import_saved_game_or_games_from_file Import_All_Saved_Games
+                member _.export_current_game_to_file (runner_saveable_state_json : string) = export_current_game_to_file runner_saveable_state_json 
+                member _.import_current_game_from_file () = open_read_file_dialog <| import_saved_game_or_games_from_file (Import_Current_Game dispatch)
                 member _.download_screenshot () : unit = download_screenshot_1 ()
-                member _.quicksave_or_autosave (current_game_state : string) (quicksave_or_autosave : Quicksave_Or_Autosave) = add_quicksave_or_autosave_to_storage_1 current_game_state quicksave_or_autosave
+                member _.quicksave_or_autosave (runner_saveable_state_json : string) (quicksave_or_autosave : Quicksave_Or_Autosave) = add_quicksave_or_autosave_to_storage_1 runner_saveable_state_json quicksave_or_autosave
                 member _.hide () = dispatch <| Hide
                 member _.switch (action : Saved_Game_Action) = dispatch <| Switch action
                 member _.is_visible (): bool = is_visible state_ref

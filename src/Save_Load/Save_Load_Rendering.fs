@@ -45,10 +45,10 @@ let private handle_save_new
             | Some saved_game ->
                 if window.confirm $"Overwrite saved game '{save_name}'?" then
 (* We dispatch a message because we also need to update the view to hide the saved games screen. *)
-                    dispatch <| Message_Save_Existing_Game { id = saved_game.Key; name = save_name; screenshot = state.screenshot; timestamp = DateTime.UtcNow; game_state = state.current_game_state }
+                    dispatch <| Message_Save_Existing_Game { id = saved_game.Key; name = save_name; screenshot = state.screenshot; timestamp = DateTime.UtcNow; runner_saveable_state_json = state.runner_saveable_state_json }
             | None ->
 (* We dispatch a message because we also need to update the view to hide the saved games screen. *)
-                dispatch <| Message_Save_New_Game { name = save_name; screenshot = state.screenshot; timestamp = DateTime.UtcNow; game_state = state.current_game_state }
+                dispatch <| Message_Save_New_Game { name = save_name; screenshot = state.screenshot; timestamp = DateTime.UtcNow; runner_saveable_state_json = state.runner_saveable_state_json }
 
 let private handle_slot_click
     (saved_game_id : int<saved_game_id>)
@@ -67,13 +67,28 @@ let private handle_slot_click
                 name = existing_saved_game_name
                 screenshot = state.screenshot
                 timestamp = DateTime.UtcNow
-                game_state = state.current_game_state
+                runner_saveable_state_json = state.runner_saveable_state_json
             }
 
     | Load_Game ->
         if window.confirm $"Load save '{existing_saved_game_name}'? Current progress will be lost." then
 (* We dispatch a message because we also need to update the view to remove the deleted saved game. *)
-            get_saved_game_from_storage saved_game_id |> Promise.iter (fun saved_game_state -> dispatch <| Message_Load_Game saved_game_state)
+(* Save_Load_Storage.get_saved_game_from_storage () returns a serialized Runner_Saveable_State rather than a New_Saved_Game. The former is all we need to load the game. The latter also contains the ID, name, screenshot, and timestamp, which we only need to show all saved games in the save/load screen.
+*)
+            promise {
+                try
+                    let! runner_saveable_state_json = get_saved_game_from_storage saved_game_id
+
+                    match validate_and_parse_runner_saveable_state runner_saveable_state_json with
+                    | Ok runner_saveable_state ->
+                        dispatch <| Message_Load_Game runner_saveable_state
+                    | Error (message, error_data) ->
+                        warn "handle_slot_click" true message (["saved_game_id", saved_game_id; "saved_game_name", existing_saved_game_name] @ error_data)
+
+                with e ->
+                    warn "handle_slot_click" true "Failed to get saved game from storage." ["saved_game_id", saved_game_id; "saved_game_name", existing_saved_game_name; "error_message", e.Message]
+            }
+            |> ignore
 
     | Delete_Game ->
         if window.confirm $"Delete save '{existing_saved_game_name}'? This CANNOT be undone!" then
@@ -185,6 +200,16 @@ window.prompt () seems to intercept key down events before window receives them,
                                         handle_save_new state_2 dispatch
                                 )
                             ]
+(* TODO1 #save Add buttons to export current game or all saved games. These should not close the save/load screen.
+
+- When we export or import all save games, do we include autosave and quicksave?
+*)
+                        | Load_Game ->
+(* TODO1 #save Add buttons to import current game or all saved games. These should not close the save/load screen.
+
+- As it is, what happens if you import the current save game using f while the save/load or configuration screen is open?
+*)
+                            Html.none
                         | Delete_Game ->
                             Html.button [
                                 prop.text "Delete All"
@@ -194,7 +219,6 @@ window.prompt () seems to intercept key down events before window receives them,
                                         do dispatch <| Message_Delete_All_Games
                                 )
                             ]
-                        | _ -> Html.none
                         Html.button [
                             prop.text "Exit"
                             prop.onClick (fun event ->

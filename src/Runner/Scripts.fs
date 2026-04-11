@@ -36,10 +36,10 @@ let entry_scene_id = 0<scene_id>
 let temporary_scene_id_for_eval_command = -1<scene_id>
 let scene_initial_command_id = 0<command_id>
 
-let game_state_name = "state"
-(* This is used by JavaScript_Interop_2.set_state_in_js (). We define it close to game_state_name so that if we change game_state_name, we won't forget to change set_state_in_js_emit accordingly. We can't insert a variable into a constant expression, and we need a constant expression to define an attribute. *)
+let javascript_state_name = "state"
+(* This is used by JavaScript_Interop_2.set_state_in_js (). We define it close to javascript_state_name so that if we change javascript_state_name, we won't forget to change set_javascript_state_emit accordingly. We can't insert a variable into a constant expression, and we need a constant expression to define an attribute. *)
 [<Literal>]
-let set_state_in_js_emit = "window.state = JSON.parse($0);"
+let set_javascript_state_emit = "window.state = JSON.parse($0);"
 
 (* See Parser_1_Grammar.get_grammar_text (). *)
 let keywords =
@@ -126,20 +126,20 @@ let get_backgrounds () : Map<string, string> =
     match Decode.Auto.fromString<{| name : string; url : string |} list> backgrounds_1 with
     | Ok backgrounds_2 ->
         backgrounds_2 |> List.map (fun entry -> entry.name, entry.url) |> Map.ofList
-    | _ -> error "get_backgrounds" "Failed to deserialize backgrounds." ["backgrounds", backgrounds_1] |> invalidOp
+    | Error message -> error "get_backgrounds" "Failed to deserialize backgrounds." ["backgrounds", backgrounds_1; "error_message", message] |> invalidOp
 
 let get_character_inputs () : Character_Input_Map =
     match Decode.fromString characters_decoder characters_1 with
     | Ok characters_2 ->
         do validate_character_inputs characters_2    
         characters_2 |> List.map (fun character -> character.short_name, character) |> Map.ofList
-    | _ -> error "get_character_inputs" "Failed to deserialize characters." ["characters", characters_1] |> invalidOp
+    | Error message -> error "get_character_inputs" "Failed to deserialize characters." ["characters", characters_1; "error_message", message] |> invalidOp
 
 let get_music () : Map<string, string> =
     match Decode.Auto.fromString<{| name : string; url : string |} list> music_1 with
     | Ok music_2 ->
         music_2 |> List.map (fun entry -> entry.name, entry.url) |> Map.ofList
-    | _ -> error "get_music" "Failed to deserialize music." ["music", music_1] |> invalidOp
+    | Error message -> error "get_music" "Failed to deserialize music." ["music", music_1; "error_message", message] |> invalidOp
 
 let get_scripts () : Script list =
 (* ID 0 is reserved for the entry scene. *)

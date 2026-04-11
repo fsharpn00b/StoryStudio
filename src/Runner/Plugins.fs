@@ -93,7 +93,7 @@ let private get_plugin_paths () : Map<string, string> =
     | Ok plugins_2 ->
         do validate_plugin_entries plugins_2
         plugins_2 |> List.map (fun entry -> entry.name, entry.path) |> Map.ofList
-    | _ -> error "get_plugin_paths" "Failed to deserialize plugins." ["plugins", plugins_1] |> invalidOp
+    | Error message -> error "get_plugin_paths" "Failed to deserialize plugins." ["plugins", plugins_1; "error_message", message] |> invalidOp
 
 let private create_interface_ref () : IRefValue<obj> =
     createObj ["current" ==> null] |> unbox<IRefValue<obj>>

@@ -149,7 +149,7 @@ let open_db () =
             name = String.Empty
             timestamp = DateTime.UtcNow
             screenshot = String.Empty
-            game_state = String.Empty 
+            runner_saveable_state_json = String.Empty 
         |}
         store?delete highest_built_in_record_id
     )
@@ -161,7 +161,7 @@ let add_saved_game_to_storage_2 (store : obj) (saved_game : New_Saved_Game) : ob
         name = saved_game.name
         timestamp = saved_game.timestamp
         screenshot = saved_game.screenshot
-        game_state = saved_game.game_state    
+        runner_saveable_state_json = saved_game.runner_saveable_state_json    
     |}
 
 let overwrite_saved_game_in_storage_2 (store : obj) (saved_game : Existing_Saved_Game) : obj =
@@ -170,12 +170,12 @@ let overwrite_saved_game_in_storage_2 (store : obj) (saved_game : Existing_Saved
         name = saved_game.name
         timestamp = saved_game.timestamp
         screenshot = saved_game.screenshot
-        game_state = saved_game.game_state
+        runner_saveable_state_json = saved_game.runner_saveable_state_json
     |}
 
 let add_quicksave_or_autosave_to_storage_2
     (store : obj)
-    (current_game_state : string)
+    (runner_saveable_state_json : string)
     (screenshot : string)
     (quicksave_or_autosave : Quicksave_Or_Autosave)
     : obj =
@@ -186,5 +186,5 @@ We can use put even if the record does not yet exist. *)
         name = match quicksave_or_autosave with | Quicksave -> "_Quicksave" | Autosave -> "_Autosave"
         timestamp = DateTime.UtcNow
         screenshot = screenshot
-        game_state = current_game_state
+        runner_saveable_state_json = runner_saveable_state_json
     |}

@@ -45,7 +45,7 @@ If add_to_history is false, which means that when we halted running commands, we
                 image_map = runner_state.runner_component_interfaces.current.image_map.current.get_state ()
                 music = runner_state.runner_component_interfaces.current.music.current.get_state ()
                 notifications = runner_state.runner_component_interfaces.current.notifications.current.get_state ()
-                javascript_state = get_javascript_state ()
+                javascript_state_json = get_javascript_state_json ()
             }
             menu_variables = data.menu_variables
         }
@@ -60,7 +60,7 @@ If add_to_history is false, which means that when we halted running commands, we
             image_map = runner_state.runner_component_interfaces.current.image_map.current.get_state ()
             music = runner_state.runner_component_interfaces.current.music.current.get_state ()
             notifications = runner_state.runner_component_interfaces.current.notifications.current.get_state ()
-            javascript_state = get_javascript_state ()
+            javascript_state_json = get_javascript_state_json ()
         }
 
 (* At this point, we should have forced transitions to complete, or already have been in state Queue_Idle. *)
@@ -94,7 +94,7 @@ We might want to get the state at the most recent pausable point (which might be
         runner_state.runner_component_interfaces.current.image_map.current.set_state component_data.image_map
         runner_state.runner_component_interfaces.current.music.current.set_state component_data.music
         runner_state.runner_component_interfaces.current.notifications.current.set_state component_data.notifications
-        set_javascript_state_with_exception component_data.javascript_state
+        set_javascript_state_with_exception component_data.javascript_state_json
 
 (* We set the command state afterward to prevent having it overwritten due to a component completing an existing transition (on its own, not because we called its set_state () method) after we set the command state but before we call the components' set_state () methods.
 *)

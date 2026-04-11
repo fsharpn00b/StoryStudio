@@ -37,7 +37,13 @@ let private warn
     warn debug_module_name function_name alert $"{message} {warn_recommendation}" data
 let private error : error_function = error debug_module_name
 
-(* Main functions - get saved games *)
+(* Types *)
+
+type Import_Saved_Games_File_Action =
+    | Import_Current_Game of (Save_Load_Message -> unit)
+    | Import_All_Saved_Games
+
+(* Functions - get saved games from storage *)
 
 let get_saved_game_display_data_from_storage ()
     : JS.Promise<Saved_Games_Display_Data> =
@@ -97,7 +103,7 @@ The boundary between (1) the action we perform in the database and (2) its resul
                     do
                         warn "get_saved_game_from_storage" true "Failed to get saved game." ["saved_game_id", saved_game_id]
                         reject <| new Exception "Failed to get saved game."
-                | Some result_2 -> do resolve result_2?game_state
+                | Some result_2 -> do resolve result_2?runner_saveable_state_json
             )
 
             request_2?onerror <- (fun ex ->
@@ -114,7 +120,7 @@ The boundary between (1) the action we perform in the database and (2) its resul
         )
     )
 
-let get_all_saved_games_from_storage ()
+let private get_all_saved_games_from_storage ()
     : JS.Promise<Existing_Saved_Game list> =
 
     Promise.create (fun resolve reject ->
@@ -137,7 +143,7 @@ let get_all_saved_games_from_storage ()
                         name = results_2?value?name
                         timestamp = results_2?value?timestamp
                         screenshot = results_2?value?screenshot
-                        game_state = results_2?value?game_state 
+                        runner_saveable_state_json = results_2?value?runner_saveable_state_json 
                     }
                     do
                         results_1 <- saved_game :: results_1
@@ -156,7 +162,7 @@ let get_all_saved_games_from_storage ()
         )
     )
 
-(* Main functions - add saved games *)
+(* Functions - add saved games to storage *)
 
 let add_saved_game_to_storage_1
     (saved_game : New_Saved_Game)
@@ -174,7 +180,9 @@ let add_saved_game_to_storage_1
 
     request_1?onerror <- (fun ex -> do warn "add_saved_game_to_storage" true "Failed to open database." ["error", ex])
 
-let add_saved_games_to_storage (saved_games : New_Saved_Game list) : unit =
+(* When we import saved games into storage, we do not clear the existing saved games, and we use the add function (see Save_Load_Storage_Helpers.add_saved_game_to_storage_2 ()), so ID collisions should not be an issue.
+*)
+let private add_saved_games_to_storage (saved_games : New_Saved_Game list) : unit =
     let request_1 = open_db ()
 
     request_1?onsuccess <- (fun _ ->
@@ -191,7 +199,7 @@ let add_saved_games_to_storage (saved_games : New_Saved_Game list) : unit =
     request_1?onerror <- (fun ex -> do warn "set_saved_games_in_storage" true "Failed to open database." ["error", ex])
 
 let add_quicksave_or_autosave_to_storage_1
-    (current_game_state : string)
+    (runner_saveable_state : string)
     (quicksave_or_autosave : Quicksave_Or_Autosave)
     : unit =
 
@@ -207,14 +215,14 @@ let add_quicksave_or_autosave_to_storage_1
             let tx = db?transaction (store_name, "readwrite")
             let store = tx?objectStore store_name
 
-            let request_2 = add_quicksave_or_autosave_to_storage_2 store current_game_state screenshot quicksave_or_autosave
+            let request_2 = add_quicksave_or_autosave_to_storage_2 store runner_saveable_state screenshot quicksave_or_autosave
             request_2?onerror <- (fun ex -> do warn "add_quicksave_or_autosave_to_storage_1" true "Failed to store saved game." ["error", ex])
         )
 
         request_1?onerror <- (fun ex -> do warn "add_quicksave_or_autosave_to_storage_1" true "Failed to open database." ["error", ex])
     )
 
-(* Main functions - update saved games *)
+(* Functions - update saved games in storage *)
 
 let overwrite_saved_game_in_storage_1
     (saved_game : Existing_Saved_Game)
@@ -233,7 +241,7 @@ let overwrite_saved_game_in_storage_1
 
     request_1?onerror <- (fun ex -> warn "overwrite_saved_game_in_storage" true "Failed to open database." ["error", ex])
 
-(* Main functions - delete saved games *)
+(* Functions - delete saved games from storage *)
 
 let delete_saved_game_from_storage
     (saved_game_id : int<saved_game_id>)
@@ -266,7 +274,7 @@ let delete_all_saved_games_from_storage () : unit =
 
     request_1?onerror <- (fun ex -> do warn "delete_all_saved_games_from_storage" true "Failed to open database." ["error", ex])
 
-(* Main functions - export saved games *)
+(* Functions - export saved games to file *)
 
 let export_saved_games_from_storage_to_file () : unit =
     let file_name = $"{get_current_timestamp ()}.json"
@@ -278,14 +286,14 @@ let export_saved_games_from_storage_to_file () : unit =
                     name = saved_game.name
                     screenshot = saved_game.screenshot
                     timestamp = saved_game.timestamp
-                    game_state = saved_game.game_state
+                    runner_saveable_state_json = saved_game.runner_saveable_state_json
                 }
             )
             let json = Encode.Auto.toString (0, saved_games_2)
             download_file file_name "text/json" json
         )
 
-let export_current_game_to_file (current_game_state : string) : unit =
+let export_current_game_to_file (runner_saveable_state : string) : unit =
     match window.prompt ("Enter save name:", get_current_timestamp ()) with
     | null -> ()
     | save_name ->
@@ -298,55 +306,56 @@ let export_current_game_to_file (current_game_state : string) : unit =
                 name = save_name
                 screenshot = downscale_screenshot canvas screenshot_max_width screenshot_mime_type screenshot_encoder_options
                 timestamp = DateTime.UtcNow
-                game_state = current_game_state
+                runner_saveable_state_json = runner_saveable_state
             }
 (* import_saved_games_from_file () expects a list of saved games. *)
             let json = Encode.Auto.toString (0, [ saved_game ])
             download_file file_name "text/json" json
         )
 
-(* Main functions - import saved games *)
+(* Functions - import saved games from file *)
 
-let import_saved_games_from_file_to_storage () : unit =
-
-    let handle_file (file_name : string) (file_contents : string) : unit =
-        match validate_import_file_contents file_contents with
-        | Error validation_error ->
-            warn "import_saved_games_from_file_to_storage" true "Failed to validate saved games file." ["file_name", file_name; "error", validation_error]
-        | Ok () ->
-            match Decode.Auto.fromString<New_Saved_Game list> file_contents with
-            | Ok saved_games ->
-                match validate_saved_games_for_import saved_games with
-                | Ok () -> add_saved_games_to_storage saved_games
-                | Error validation_error ->
-                    warn "import_saved_games_from_file_to_storage" true "Failed to validate saved game data." ["file_name", file_name; "error", validation_error]
-            | Error decode_error ->
-                warn "import_saved_games_from_file_to_storage" true "Failed to deserialize saved games from file." ["file_name", file_name; "error", decode_error]
-
-    open_read_file_dialog handle_file
-
-(* This lets players save and load their game even if they do not have indexeddb support. *)
-let import_current_game_from_file
+let private import_current_game
+(* This is for error reporting. *)
+    (file_name : string)
+    (saved_games_1 : New_Saved_Game list)
     (dispatch : Save_Load_Message -> unit)
     : unit =
 
-    let handle_file (file_name : string) (file_contents : string) : unit =
-        match validate_import_file_contents file_contents with
-        | Error validation_error ->
-            warn "import_current_game_from_file" true "Failed to validate saved game file." ["file_name", file_name; "error", validation_error]
-        | Ok () ->
-            match Decode.Auto.fromString<New_Saved_Game list> file_contents with
-(* For simplicity, we always export a list of saved games, whether we are exporting all saved games or only the current game. *)
-            | Ok (head :: _) ->
-                match validate_saved_game head with
-                | Ok () ->
-                    if window.confirm $"Load save '{head.name}'? Current progress will be lost." then
-                        dispatch <| Message_Load_Game head.game_state
-                | Error validation_error ->
-                    warn "import_current_game_from_file" true "Failed to validate saved game data." ["file_name", file_name; "error", validation_error]
-            | Ok [] ->
-                warn "import_current_game_from_file" true "File does not contain any saved games." ["file_name", file_name]
-            | Error decode_error ->
-                warn "import_current_game_from_file" true "Failed to deserialize saved games from file." ["file_name", file_name; "error", decode_error]
+(* If the player imports a file with multiple saved games, we load the saved game with the latest timestamp. *)
+    let saved_games_2 = saved_games_1 |> List.sortByDescending (fun saved_game -> saved_game.timestamp)
+(* We have already made sure saved_games_2 is not empty in import_saved_game_or_games_from_file (). *)
+    let saved_game = saved_games_2.Head
+    match validate_saved_game saved_game with
 
-    open_read_file_dialog handle_file
+    | Ok runner_saveable_state ->
+        if window.confirm $"Load save '{saved_game.name}'? Current progress will be lost." then
+            dispatch <| Message_Load_Game runner_saveable_state
+
+    | Error validation_error ->
+        warn "import_current_game" true "Failed to validate saved game data." ["file_name", file_name; "error_message", validation_error]
+
+let import_saved_game_or_games_from_file
+    (action : Import_Saved_Games_File_Action)
+    (file_name : string)
+    (file_contents : string)
+    : unit =
+
+    match validate_import_file_contents file_contents with
+    | Error (message, data) ->
+        warn "import_saved_game_or_games_from_file" true "Failed to validate saved game file." (["file_name", file_name; "error_message", message] @ data)
+
+    | Ok saved_games ->
+
+        match action with
+
+        | Import_All_Saved_Games ->
+(* We do this validation here, instead of in validate_import_file_contents (), because there is no need to validate all games if we only import one. *)
+            match validate_saved_games saved_games with
+
+            | Ok () -> add_saved_games_to_storage saved_games
+
+            | Error (message, data) ->
+                warn "import_saved_game_or_games_from_file" true "Failed to validate saved game data." (["file_name", file_name; "error_message", message] @ data)
+
+        | Import_Current_Game dispatch -> import_current_game file_name saved_games dispatch

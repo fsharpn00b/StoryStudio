@@ -20,7 +20,7 @@ type Runner_Saveable_State_Component_Data = {
     image_map : Image_Map_State
     music : Music_State
     notifications : Notifications_Saveable_State
-    javascript_state : string
+    javascript_state_json : string
 }
 
 (* A field that uses this type should always be optional. None means there is no next command. *)

@@ -98,7 +98,7 @@ let get_configuration_from_local_storage () : Runner_Configuration option =
     | json ->
         match Decode.Auto.fromString<Runner_Configuration> json with
         | Ok configuration -> Some configuration
-        | _ -> error "get_configuration_from_local_storage" "Failed to deserialize configuration." ["json", json] |> invalidOp
+        | Error message -> error "get_configuration_from_local_storage" "Failed to deserialize configuration." ["json", json; "error_message", message] |> invalidOp
 
 let private set_configuration_in_local_storage
     (configuration : IRefValue<Runner_Configuration>) : unit =
