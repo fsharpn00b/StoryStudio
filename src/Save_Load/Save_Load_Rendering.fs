@@ -7,13 +7,16 @@ open System
 open Browser.Dom
 // HTMLElement
 open Browser.Types
+// Html, IRefValue, ReactElement
 open Feliz
 
 open Log
-open Save_Load_Storage
-open Save_Load_Storage_Helpers
+open Runner_Types_1
+open Save_Load_File
+open Save_Load_Helpers
+open Save_Load_Storage_Load
+open Save_Load_Storage_Update_Delete
 open Save_Load_Types
-open Save_Load_Validation
 open Units_Of_Measure
 open Utilities
 
@@ -27,73 +30,26 @@ let private error : error_function = error debug_module_name
 
 (* Helper functions - rendering *)
 
-let private handle_save_new
-    (state : Save_Load_Show_Data)
-    (dispatch : Save_Load_Message -> unit)
-    : unit =
-
-    match window.prompt ("Enter save name:", get_current_timestamp ()) with
-    | null -> ()
-    | save_name ->
-        let validate_saved_game_name_result = validate_saved_game_name save_name
-        match validate_saved_game_name_result with
-        | Error (message, data) ->
-            do warn "handle_save_new" true message data
-            ()
-        | Ok () ->
-            match state.saved_games |> Seq.tryFind (fun kv -> kv.Value.name = save_name) with
-            | Some saved_game ->
-                if window.confirm $"Overwrite saved game '{save_name}'?" then
-(* We dispatch a message because we also need to update the view to hide the saved games screen. *)
-                    dispatch <| Message_Save_Existing_Game { id = saved_game.Key; name = save_name; screenshot = state.screenshot; timestamp = DateTime.UtcNow; runner_saveable_state_json = state.runner_saveable_state_json }
-            | None ->
-(* We dispatch a message because we also need to update the view to hide the saved games screen. *)
-                dispatch <| Message_Save_New_Game { name = save_name; screenshot = state.screenshot; timestamp = DateTime.UtcNow; runner_saveable_state_json = state.runner_saveable_state_json }
-
 let private handle_slot_click
-    (saved_game_id : int<saved_game_id>)
+    (existing_saved_game_id : int<saved_game_id>)
     (existing_saved_game_name : string)
-    (state : Save_Load_Show_Data)
+    (action : Saved_Game_Action)
+    (runner_saveable_state_json : string)
+(* load_game is Runner_State.load_game (), closed over runner_component_interfaces, history, and queue. All it needs is the saved game state. *)
+    (load_game : Runner_Saveable_State -> unit)
     (dispatch : Save_Load_Message -> unit)
     : unit =
 
-    match state.action with
+    match action with
 
     | Save_Game ->
-        if window.confirm $"Overwrite saved game '{existing_saved_game_name}'?" then
-(* We dispatch a message because we also need to update the view to hide the saved games screen. *)
-            dispatch <| Message_Save_Existing_Game {
-                id = saved_game_id
-                name = existing_saved_game_name
-                screenshot = state.screenshot
-                timestamp = DateTime.UtcNow
-                runner_saveable_state_json = state.runner_saveable_state_json
-            }
+        do overwrite_existing_game_in_storage_1 existing_saved_game_id existing_saved_game_name runner_saveable_state_json dispatch
 
     | Load_Game ->
-        if window.confirm $"Load save '{existing_saved_game_name}'? Current progress will be lost." then
-(* We dispatch a message because we also need to update the view to remove the deleted saved game. *)
-(* Save_Load_Storage.get_saved_game_from_storage () returns a serialized Runner_Saveable_State rather than a New_Saved_Game. The former is all we need to load the game. The latter also contains the ID, name, screenshot, and timestamp, which we only need to show all saved games in the save/load screen.
-*)
-            promise {
-                try
-                    let! runner_saveable_state_json = get_saved_game_from_storage saved_game_id
-
-                    match validate_and_parse_runner_saveable_state runner_saveable_state_json with
-                    | Ok runner_saveable_state ->
-                        dispatch <| Message_Load_Game runner_saveable_state
-                    | Error (message, error_data) ->
-                        warn "handle_slot_click" true message (["saved_game_id", saved_game_id; "saved_game_name", existing_saved_game_name] @ error_data)
-
-                with e ->
-                    warn "handle_slot_click" true "Failed to get saved game from storage." ["saved_game_id", saved_game_id; "saved_game_name", existing_saved_game_name; "error_message", e.Message]
-            }
-            |> ignore
+        do get_saved_game_from_storage_1 existing_saved_game_id existing_saved_game_name load_game dispatch
 
     | Delete_Game ->
-        if window.confirm $"Delete save '{existing_saved_game_name}'? This CANNOT be undone!" then
-(* We dispatch a message because we also need to update the view to remove the deleted saved game. *)
-            dispatch <| Message_Delete_Game saved_game_id
+        do delete_saved_game_from_storage_1 existing_saved_game_id existing_saved_game_name dispatch
 
 (* This is to debug how the save/load screen handles overflow. The compile guard is to prevent this from being bundled in production builds. *)
 #if debug
@@ -117,6 +73,8 @@ let private view_saved_game_grid_test_overflow
 
 let private view_saved_game_grid
     (state : Save_Load_Show_Data)
+(* load_game is Runner_State.load_game (), closed over runner_component_interfaces, history, and queue. All it needs is the saved game state. *)
+    (load_game : Runner_Saveable_State -> unit)
     (dispatch : Save_Load_Message -> unit)
     : ReactElement seq =
 
@@ -127,7 +85,7 @@ let private view_saved_game_grid
                 prop.onClick (fun event ->
                     do
                         event.stopPropagation ()
-                        handle_slot_click kv.Key kv.Value.name state dispatch
+                        handle_slot_click kv.Key kv.Value.name state.action state.runner_saveable_state_json load_game dispatch
                 )
                 prop.children [
                     Html.img [ prop.src kv.Value.screenshot ]
@@ -141,6 +99,8 @@ let private view_saved_game_grid
 let view
     (element_ref : IRefValue<HTMLElement option>)
     (state_1 : IRefValue<Save_Load_State>)
+(* load_game is Runner_State.load_game (), closed over runner_component_interfaces, history, and queue. All it needs is the saved game state. *)
+    (load_game : Runner_Saveable_State -> unit)
     (dispatch : Save_Load_Message -> unit)
     : ReactElement =
 
@@ -185,38 +145,64 @@ window.prompt () seems to intercept key down events before window receives them,
                     prop.id "save_load_grid"
 (* This is for debugging the save/load screen. *)
 //                    prop.children (view_saved_game_grid_test_overflow ())
-                    prop.children (view_saved_game_grid state_2 dispatch)
+                    prop.children (view_saved_game_grid state_2 load_game dispatch)
                 ]
                 Html.div [
                     prop.className "controls"
                     prop.children [
                         match state_2.action with
+
                         | Save_Game ->
                             Html.button [
                                 prop.text "New Save"
                                 prop.onClick (fun event ->
                                     do
                                         event.stopPropagation ()
-                                        handle_save_new state_2 dispatch
+                                        create_new_saved_game state_2 dispatch
                                 )
                             ]
-(* TODO1 #save Add buttons to export current game or all saved games. These should not close the save/load screen.
+                            Html.button [
+                                prop.text "Export Current Game"
+                                prop.onClick (fun event ->
+                                    do
+                                        event.stopPropagation ()
+                                        export_current_game_to_file state_2.runner_saveable_state_json
+                                )
+                            ]
+                            Html.button [
+                                prop.text "Export All Saved Games"
+                                prop.onClick (fun event ->
+                                    do
+                                        event.stopPropagation ()
+                                        export_saved_games_from_storage_to_file ()
+                                )
+                            ]
 
-- When we export or import all save games, do we include autosave and quicksave?
-*)
                         | Load_Game ->
-(* TODO1 #save Add buttons to import current game or all saved games. These should not close the save/load screen.
-
-- As it is, what happens if you import the current save game using f while the save/load or configuration screen is open?
-*)
-                            Html.none
+                            Html.button [
+                                prop.text "Import Current Game"
+                                prop.onClick (fun event ->
+                                    do
+                                        event.stopPropagation ()
+                                        open_read_file_dialog (import_saved_game_from_file load_game dispatch)
+                                )
+                            ]
+                            Html.button [
+                                prop.text "Import All Saved Games"
+                                prop.onClick (fun event ->
+                                    do
+                                        event.stopPropagation ()
+                                        open_read_file_dialog (import_saved_games_from_file dispatch)
+                                )
+                            ]
+                            
                         | Delete_Game ->
                             Html.button [
                                 prop.text "Delete All"
                                 prop.onClick (fun event ->
-                                    do event.stopPropagation ()
-                                    if window.confirm "Delete all saved games? This CANNOT be undone!" then
-                                        do dispatch <| Message_Delete_All_Games
+                                    do
+                                        event.stopPropagation ()
+                                        delete_all_saved_games_from_storage_1 dispatch
                                 )
                             ]
                         Html.button [

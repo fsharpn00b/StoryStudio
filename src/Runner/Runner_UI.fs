@@ -194,61 +194,6 @@ let show_or_hide_ui
                 runner_component_interfaces.current.command_menu.current.show ()
                 runner_component_interfaces.current.notifications.current.show ()
 
-let quicksave
-    (runner_state : Runner_State)
-    : unit =
-
-(* If the save/load screen is visible, hide it so we can get an accurate screenshot of the player's game. *)
-    do
-        if runner_state.runner_component_interfaces.current.save_load.current.is_visible () then
-            runner_state.runner_component_interfaces.current.save_load.current.hide ()
-        quicksave_or_autosave runner_state Quicksave
-        runner_state.runner_component_interfaces.current.notifications.current.show_game_paused_notification ()
-
-let export_current_game_to_file
-    (runner_state : Runner_State)
-    : unit =
-
-(* If the save/load screen is visible, hide it so we can get an accurate screenshot of the player's game. *)
-    do
-        if runner_state.runner_component_interfaces.current.save_load.current.is_visible () then
-            runner_state.runner_component_interfaces.current.save_load.current.hide ()
-        Runner_Save_Load.export_current_game_to_file runner_state
-(* TODO2 #pause There is no way to detect when the player closes the save file dialogue, and therefore no way to delay this notification. We could have a temporary notification that is dismissed by a click instead of using a timer. That should be separate from timed notifications, so it doesn't hide them. *)
-        runner_state.runner_component_interfaces.current.notifications.current.show_game_paused_notification ()
-
-let import_current_game_from_file
-    (runner_state : Runner_State)
-    : unit =
-
-(* If the save/load screen is visible, hide it. *)
-    do
-        if runner_state.runner_component_interfaces.current.save_load.current.is_visible () then
-            runner_state.runner_component_interfaces.current.save_load.current.hide ()
-(* See comments for export_current_game_to_file (). We have the same issue with the open file dialogue. *)
-        Runner_Save_Load.import_current_game_from_file runner_state
-        runner_state.runner_component_interfaces.current.notifications.current.show_game_paused_notification ()
-
-(* We do not hide the save/load screen for this, as it does not affect the current game. *)
-let export_saved_games_from_storage_to_file
-    (runner_state : Runner_State)
-    : unit =
-
-(* See comments for export_current_game_to_file (). *)
-    do
-        Runner_Save_Load.export_saved_games_from_storage_to_file runner_state
-        runner_state.runner_component_interfaces.current.notifications.current.show_game_paused_notification ()
-
-(* We do not hide the save/load screen for this, as it does not affect the current game. *)
-let import_saved_games_from_file_to_storage
-    (runner_state : Runner_State)
-    : unit =
-
-(* See comments for export_current_game_to_file (). *)
-    do
-        Runner_Save_Load.import_saved_games_from_file_to_storage runner_state
-        runner_state.runner_component_interfaces.current.notifications.current.show_game_paused_notification ()
-
 let undo
     (runner_state : Runner_State)
     (history : IRefValue<Runner_History>)
@@ -295,8 +240,6 @@ let handle_key_down
         | "delete_game" -> runner.current.show_saved_game_screen Delete_Game
         | "escape" -> runner.current.handle_escape_key ()
         | "quicksave" -> runner.current.quicksave ()
-        | "export_saved_games" -> runner.current.export_saved_games_from_storage_to_file ()
-        | "import_saved_games" -> runner.current.import_saved_games_from_file_to_storage ()
         | "export_current_game" -> runner.current.export_current_game_to_file ()
         | "import_current_game" ->
             do

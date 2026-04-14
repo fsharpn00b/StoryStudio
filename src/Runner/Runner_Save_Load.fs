@@ -53,6 +53,7 @@ Each UI component's set_state () method dispatches Show or Hide messages with no
 
 let get_load_game
     (runner_state : Runner_State)
+// TODO1 #runner Why is history not part of runner state?
     (history : IRefValue<Runner_History>)
     : Runner_Saveable_State -> unit =
 (* Close load_game () over all these parameters so it becomes a string -> unit that we can pass to UI components.
@@ -73,12 +74,17 @@ let quicksave_or_autosave
         if not is_indexeddb_supported then
             match quicksave_or_autosave with
             | Quicksave -> window.alert $"This browser does not support IndexedDB. {warn_recommendation}"
+(* Do not show an alert for autosave. *)
             | Autosave -> ()
         else
             force_complete_transitions runner_state true (fun () ->
                 let runner_saveable_state = get_state runner_state
                 let json = Encode.Auto.toString (0, runner_saveable_state)
-                do runner_state.runner_component_interfaces.current.save_load.current.quicksave_or_autosave json quicksave_or_autosave
+                do
+                    runner_state.runner_component_interfaces.current.save_load.current.quicksave_or_autosave json quicksave_or_autosave
+(* TODO1 #save Send a notification that says both quicksave done and game paused (due to forcing transition completion).
+*)
+                    runner_state.runner_component_interfaces.current.notifications.current.show_game_paused_notification ()
             )
 
 let export_current_game_to_file
@@ -88,7 +94,10 @@ let export_current_game_to_file
     do force_complete_transitions runner_state true (fun () ->
         let runner_saveable_state = get_state runner_state
         let json = Encode.Auto.toString (0, runner_saveable_state)
-        do runner_state.runner_component_interfaces.current.save_load.current.export_current_game_to_file json
+        do 
+            runner_state.runner_component_interfaces.current.save_load.current.export_current_game_to_file json
+(* TODO2 #pause There is no way to detect when the player closes the save file dialogue, and therefore no way to delay this notification. We could have a temporary notification that is dismissed by a click instead of using a timer. That should be separate from timed notifications, so it doesn't hide them. *)
+            runner_state.runner_component_interfaces.current.notifications.current.show_game_paused_notification ()
     )
 
 let import_current_game_from_file
@@ -96,23 +105,10 @@ let import_current_game_from_file
     : unit =
     
     do force_complete_transitions runner_state true (fun () ->
-        runner_state.runner_component_interfaces.current.save_load.current.import_current_game_from_file ()
-    )
-
-let export_saved_games_from_storage_to_file
-    (runner_state : Runner_State)
-    : unit =
-    
-    do force_complete_transitions runner_state true (fun () ->
-        runner_state.runner_component_interfaces.current.save_load.current.export_saved_games_from_storage_to_file ()
-    )
-
-let import_saved_games_from_file_to_storage
-    (runner_state : Runner_State)
-    : unit =
-    
-    do force_complete_transitions runner_state true (fun () ->
-        runner_state.runner_component_interfaces.current.save_load.current.import_saved_games_from_file_to_storage ()
+        do
+            runner_state.runner_component_interfaces.current.save_load.current.import_current_game_from_file ()
+(* See comments for export_current_game_to_file (). We have the same issue with the open file dialogue. *)
+            runner_state.runner_component_interfaces.current.notifications.current.show_game_paused_notification ()
     )
 
 let show_saved_game_screen
@@ -126,9 +122,10 @@ let show_saved_game_screen
         do debug "show_saved_game_screen" "Runner_State.force_complete_transitions () done." []
         #endif
 
+(* Get and serialize the runner saveable state in case the player wants to save the game. *)
         let runner_saveable_state = get_state runner_state
-        let json = Encode.Auto.toString (0, runner_saveable_state)
-        do runner_state.runner_component_interfaces.current.save_load.current.show action json
+        let runner_saveable_state_json = Encode.Auto.toString (0, runner_saveable_state)
+        do runner_state.runner_component_interfaces.current.save_load.current.show action runner_saveable_state_json
     )
 
 (* TODO2 Issues with surf. We put this here because these issues mostly seem to involve key input, and many key inputs involve save/load.

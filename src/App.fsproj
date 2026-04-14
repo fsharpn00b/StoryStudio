@@ -36,9 +36,13 @@
     <Compile Include="Runner/Command_Types.fs" />
     <Compile Include="Runner/Runner_Types_1.fs" />
     <Compile Include="Save_Load/Save_Load_Types.fs" />
+    <Compile Include="Save_Load/Save_Load_Helpers.fs" />
     <Compile Include="Save_Load/Save_Load_Storage_Helpers.fs" />
     <Compile Include="Save_Load/Save_Load_Validation.fs" />
-    <Compile Include="Save_Load/Save_Load_Storage.fs" />
+    <Compile Include="Save_Load/Save_Load_Storage_Load.fs" />
+    <Compile Include="Save_Load/Save_Load_Storage_Add.fs" />
+    <Compile Include="Save_Load/Save_Load_Storage_Update_Delete.fs" />
+    <Compile Include="Save_Load/Save_Load_File.fs" />
     <Compile Include="Save_Load/Save_Load_Rendering.fs" />
     <Compile Include="Save_Load/Save_Load.fs" />
     <Compile Include="Runner/Scripts.fs" />

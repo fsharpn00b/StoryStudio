@@ -29,6 +29,7 @@ let image_map_z_index = 4
 let menu_z_index = 4
 let image_map_hotspot_z_index = 5
 let notifications_z_index = 6
+// TODO1 #configuration We should set the z-indices for configuration and save/load screen higher, so they also hide plugins.
 let configuration_z_index = 7
 let save_load_screen_z_index = 7
 let command_menu_z_index = 8

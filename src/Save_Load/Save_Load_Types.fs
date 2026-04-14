@@ -8,7 +8,6 @@ open Browser.Dom
 // ? operator
 open Fable.Core.JsInterop
 
-open Runner_Types_1
 open Units_Of_Measure
 
 (* Types - public *)
@@ -17,6 +16,10 @@ type Saved_Game_Action =
     | Save_Game
     | Load_Game
     | Delete_Game
+
+type Import_Saved_Games_File_Action =
+    | Import_Current_Game
+    | Import_All_Saved_Games
 
 (* Types - formerly private *)
 
@@ -60,7 +63,6 @@ type Save_Load_Usage_Data = {
 type Save_Load_Show_Data = {
     action : Saved_Game_Action
     runner_saveable_state_json : string
-    screenshot : string
     saved_games : Saved_Games_Display_Data
     usage : Save_Load_Usage_Data
 }
@@ -70,14 +72,10 @@ type Save_Load_State =
     | Visible of Save_Load_Show_Data
 
 type Save_Load_Message =
+    | Redraw
     | Show of Save_Load_Show_Data
     | Hide
     | Switch of Saved_Game_Action
-    | Message_Save_New_Game of New_Saved_Game
-    | Message_Save_Existing_Game of Existing_Saved_Game
-    | Message_Load_Game of Runner_Saveable_State
-    | Message_Delete_Game of int<saved_game_id>
-    | Message_Delete_All_Games
 
 type Quicksave_Or_Autosave = Quicksave | Autosave
 
@@ -89,8 +87,6 @@ type I_Save_Load =
     abstract member switch : Saved_Game_Action -> unit
     abstract member is_visible : unit -> bool
     abstract member quicksave_or_autosave : string -> Quicksave_Or_Autosave -> unit
-    abstract member export_saved_games_from_storage_to_file : unit -> unit
-    abstract member import_saved_games_from_file_to_storage : unit -> unit
 (* These let players save and load their game even if they do not have indexeddb support. *)
     abstract member export_current_game_to_file : string -> unit
     abstract member import_current_game_from_file : unit -> unit

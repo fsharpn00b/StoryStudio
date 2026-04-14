@@ -153,8 +153,6 @@ type I_Runner =
     abstract member show_or_hide_ui : unit -> unit
     abstract member download_screenshot : unit -> unit
     abstract member quicksave : unit -> unit
-    abstract member export_saved_games_from_storage_to_file : unit -> unit
-    abstract member import_saved_games_from_file_to_storage : unit -> unit
     abstract member export_current_game_to_file : unit -> unit
     abstract member import_current_game_from_file : unit -> unit
     abstract member undo : unit -> unit

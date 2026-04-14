@@ -103,28 +103,16 @@ let private default_key_bindings : Key_Binding list = [
         default_key = "q"
     }
     {
-        name = "export_saved_games"
-        display_name = "Export saved games to file"
-        configuration_display_order = 7
-        default_key = "e"
-    }
-    {
-        name = "import_saved_games"
-        display_name = "Import saved games from file"
-        configuration_display_order = 8
-        default_key = "i"
-    }
-    {
         name = "export_current_game"
         display_name = "Export current game to file"
         configuration_display_order = 9
-        default_key = "x"
+        default_key = "e"
     }
     {
         name = "import_current_game"
         display_name = "Import current game from file"
         configuration_display_order = 10
-        default_key = "f"
+        default_key = "i"
     }
     {
         name = "configuration"

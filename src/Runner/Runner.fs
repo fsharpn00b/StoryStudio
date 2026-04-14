@@ -30,6 +30,7 @@ open Runner_Save_Load
 open Runner_Types_2
 open Runner_UI
 open Save_Load
+open Save_Load_Helpers
 open Save_Load_Types
 
 // TODO1 #ui Need to see how well this renders on mobile. Hopefully that can be handled at CSS level though.
@@ -266,11 +267,9 @@ When you need to trigger events from [an embedded] Elmish component, use React p
 //            member _.hide_saved_game_screen () : unit = Runner_UI.hide_saved_game_screen runner_component_interfaces
             member _.show_or_hide_ui () : unit = Runner_UI.show_or_hide_ui runner_component_interfaces
             member _.download_screenshot () : unit = download_screenshot_1 ()
-            member _.quicksave () : unit = Runner_UI.quicksave runner_state
-            member _.export_saved_games_from_storage_to_file () : unit = Runner_UI.export_saved_games_from_storage_to_file runner_state
-            member _.import_saved_games_from_file_to_storage () : unit = Runner_UI.import_saved_games_from_file_to_storage runner_state
-            member _.export_current_game_to_file () : unit = Runner_UI.export_current_game_to_file runner_state
-            member _.import_current_game_from_file () : unit = Runner_UI.import_current_game_from_file runner_state
+            member _.quicksave () : unit = quicksave_or_autosave runner_state Quicksave
+            member _.export_current_game_to_file () : unit = export_current_game_to_file runner_state
+            member _.import_current_game_from_file () : unit = import_current_game_from_file runner_state
             member _.undo () : unit = Runner_UI.undo runner_state history
             member _.redo () : unit = Runner_UI.redo runner_state history
 (* These are for debugging. *)
