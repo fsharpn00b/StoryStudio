@@ -39,16 +39,17 @@ let private error : error_function = error debug_module_name
 (* See Save_Load_Storage_Update_Delete.fs for create_new_saved_game (). *)
 
 let private add_saved_game_to_storage_2
+    (database_configuration : Database_Configuration)
     (saved_game : New_Saved_Game)
     : JS.Promise<Result<unit, string * Error_Data>> =
 
     Promise.create (fun resolve _ ->
-        let request_1 = open_db ()
+        let request_1 = open_db database_configuration
 
         request_1?onsuccess <- (fun _ ->
             let db = request_1?result
-            let tx = db?transaction (store_name, "readwrite")
-            let store = tx?objectStore store_name
+            let tx = db?transaction (database_configuration.store_name, "readwrite")
+            let store = tx?objectStore database_configuration.store_name
             let request_2 = add_saved_game_to_storage_3 store saved_game
 
             request_2?onsuccess <- (fun _ ->
@@ -66,6 +67,7 @@ let private add_saved_game_to_storage_2
     )
 
 let add_saved_game_to_storage_1
+    (database_configuration : Database_Configuration)
     (saved_game_name : string)
     (runner_saveable_state_json : string)
     (dispatch : Save_Load_Message -> unit)
@@ -86,7 +88,7 @@ let add_saved_game_to_storage_1
                     warn "add_saved_game_to_storage_1" true message (["saved_game_name", saved_game_name] @ error_data)
 
                 | Ok screenshot ->
-                    let! result_2 = add_saved_game_to_storage_2 {
+                    let! result_2 = add_saved_game_to_storage_2 database_configuration {
                         name = saved_game_name
                         screenshot = screenshot
                         timestamp = DateTime.UtcNow
@@ -111,12 +113,13 @@ let add_saved_game_to_storage_1
 (* When we import saved games into storage, we do not clear the existing saved games, and we use the add function (see Save_Load_Storage_Helpers.add_saved_game_to_storage_2 ()), so ID collisions should not be an issue.
 *)
 let add_saved_games_to_storage
+    (database_configuration : Database_Configuration)
 (* Previously we took a New_Saved_Game list. We now take an Existing_Saved_Game list because we need to distinguish quicksave and autosave from other saved games. *)
     (saved_games : Existing_Saved_Game list)
     : JS.Promise<Result<unit, string * Error_Data>> =
 
     Promise.create (fun resolve _ ->
-        let request_1 = open_db ()
+        let request_1 = open_db database_configuration
         let mutable settled = false
 
         let settle value =
@@ -126,8 +129,8 @@ let add_saved_games_to_storage
 
         request_1?onsuccess <- (fun _ ->
             let db = request_1?result
-            let tx = db?transaction (store_name, "readwrite")
-            let store = tx?objectStore store_name
+            let tx = db?transaction (database_configuration.store_name, "readwrite")
+            let store = tx?objectStore database_configuration.store_name
 
             tx?oncomplete <- (fun _ ->
                 settle (Ok ())
@@ -169,18 +172,19 @@ let add_saved_games_to_storage
     )
 
 let add_autosave_or_quicksave_to_storage_2
+    (database_configuration : Database_Configuration)
     (screenshot : string)
     (runner_saveable_state : string)
     (autosave_or_quicksave : Autosave_or_Quicksave)
     : JS.Promise<Result<unit, string * Error_Data>> =
 
     Promise.create (fun resolve _ ->
-        let request_1 = open_db ()
+        let request_1 = open_db database_configuration
 
         request_1?onsuccess <- (fun _ ->
             let db = request_1?result
-            let tx = db?transaction (store_name, "readwrite")
-            let store = tx?objectStore store_name
+            let tx = db?transaction (database_configuration.store_name, "readwrite")
+            let store = tx?objectStore database_configuration.store_name
 
             let request_2 = add_autosave_or_quicksave_to_storage_3 store runner_saveable_state screenshot autosave_or_quicksave
 
@@ -199,6 +203,7 @@ let add_autosave_or_quicksave_to_storage_2
     )
 
 let add_autosave_or_quicksave_to_storage_1
+    (database_configuration : Database_Configuration)
     (runner_saveable_state_json : string)
     (autosave_or_quicksave : Autosave_or_Quicksave)
     : unit =
@@ -218,7 +223,7 @@ let add_autosave_or_quicksave_to_storage_1
                     warn "add_autosave_or_quicksave_to_storage_1" true message (["autosave_or_quicksave", autosave_or_quicksave] @ error_data)
 
                 | Ok screenshot ->
-                    let! result_2 = add_autosave_or_quicksave_to_storage_2 screenshot runner_saveable_state_json autosave_or_quicksave
+                    let! result_2 = add_autosave_or_quicksave_to_storage_2 database_configuration screenshot runner_saveable_state_json autosave_or_quicksave
                     match result_2 with
 
                     | Ok () -> ()

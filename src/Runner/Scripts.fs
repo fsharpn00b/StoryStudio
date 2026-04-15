@@ -2,8 +2,6 @@ module Scripts
 
 // String
 open System
-// Regex
-open System.Text.RegularExpressions
 
 // console, window
 open Browser.Dom
@@ -15,6 +13,7 @@ open Thoth.Json
 open Character_Types
 open Command_Types
 open Log
+open Save_Load_Types
 open Units_Of_Measure
 open Utilities
 
@@ -30,6 +29,8 @@ let backgrounds_path = "../0_data/bgs.txt?raw"
 let characters_path = "../0_data/chars.txt?raw"
 [<Literal>]
 let music_path = "../0_data/music.txt?raw"
+[<Literal>]
+let database_configuration_path = "../0_data/db.txt?raw"
 
 let entry_script_name = "start.txt"
 let entry_scene_name = "start"
@@ -82,6 +83,9 @@ let private error : error_function = error debug_module_name
 
 (* Functions - helper *)
 
+[<ImportDefault(database_configuration_path)>]
+let private database_configuration_1 : string = jsNative
+
 [<ImportDefault(backgrounds_path)>]
 let private backgrounds_1 : string = jsNative
 
@@ -113,27 +117,40 @@ let private character_decoder : Decoder<Character_Input> =
 
 let private characters_decoder = Decode.list character_decoder
 
+let private validate_database_configuration (database_configuration : Database_Configuration) : unit =
+    if not <| is_valid_name database_configuration.database_name then
+        error "validate_database_configuration" $"Database name must be non-empty and use only valid characters: {valid_name_characters}." ["invalid_database_name", database_configuration.database_name] |> invalidOp
+    elif not <| is_valid_name database_configuration.store_name then
+        error "validate_database_configuration" $"Store name must be non-empty and use only valid characters: {valid_name_characters}." ["invalid_store_name", database_configuration.store_name] |> invalidOp
+
 let private validate_background_inputs (backgrounds : {| name : string; url : string |} list) : unit =
     backgrounds |> List.iter (fun entry ->
         if not <| is_valid_name entry.name then
-            error "validate_background_inputs" "Background name contains non-alphanumeric character." ["background_name", entry.name] |> invalidOp
+            error "validate_background_inputs" $"Background names must be non-empty and use only valid characters: {valid_name_characters}." ["invalid_background_name", entry.name] |> invalidOp
     )
 
 let private validate_music_inputs (music : {| name : string; url : string |} list) : unit =
     music |> List.iter (fun entry ->
         if not <| is_valid_name entry.name then
-            error "validate_music_inputs" "Music name contains non-alphanumeric character." ["music_name", entry.name] |> invalidOp
+            error "validate_music_inputs" $"Music names must be non-empty and use only valid characters: {valid_name_characters}." ["invalid_music_name", entry.name] |> invalidOp
     )
 
 let private validate_character_inputs (characters : Character_Input list) : unit =
     characters |> List.iter (fun character ->
         if not <| is_valid_name character.short_name then
-            error "validate_character_inputs" "Character short name contains non-alphanumeric character." ["character", character] |> invalidOp
+            error "validate_character_inputs" $"Character short names must be non-empty and use only valid characters: {valid_name_characters}." ["invalid_character", character] |> invalidOp
         elif List.contains character.short_name keywords then
             error "validate_character_inputs" "Character short name collides with a keyword." ["character", character; "keywords", keywords] |> invalidOp
     )
 
 (* Functions - main *)
+
+let get_database_configuration () : Database_Configuration =
+    match Decode.Auto.fromString<Database_Configuration> database_configuration_1 with
+    | Ok database_configuration_2 ->
+        do validate_database_configuration database_configuration_2
+        database_configuration_2
+    | Error message -> error "get_database_configuration" "Failed to deserialize database configuration." ["database_configuration", database_configuration_1; "error_message", message] |> invalidOp
 
 let get_backgrounds () : Map<string, string> =
     match Decode.Auto.fromString<{| name : string; url : string |} list> backgrounds_1 with

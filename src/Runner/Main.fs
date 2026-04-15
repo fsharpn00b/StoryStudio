@@ -36,6 +36,7 @@ let private error : error_function = error debug_module_name
 - Eventually we might rename this component from Runner_Test to simply Main, since it seems to drive the program at this point.
 *)
 
+let database_configuration = get_database_configuration ()
 let character_inputs= get_character_inputs ()
 (* get_parser uses a try/catch block. *)
 let scripts = get_scripts ()
@@ -88,7 +89,7 @@ let Main () : ReactElement =
     )
 
     let runner_1 =
-        Runner {| expose = runner_2 |} character_inputs scenes parser
+        Runner {| expose = runner_2 |} database_configuration character_inputs scenes parser
 
     runner_1
 

@@ -32,6 +32,7 @@ let private error : error_function = error debug_module_name
 (* Main functions - interface *)
 
 let show
+    (database_configuration : Database_Configuration)
     (dispatch : Save_Load_Message -> unit)
     (action : Saved_Game_Action)
     (runner_saveable_state_json : string)
@@ -40,7 +41,7 @@ let show
     promise {
         try
             let! usage = get_usage ()
-            let! saved_games = get_saved_game_display_data_from_storage ()
+            let! saved_games = get_saved_game_display_data_from_storage database_configuration
             match saved_games with
 
             | Ok saved_games ->
@@ -65,6 +66,7 @@ let is_visible (state_ref : IRefValue<Save_Load_State>) : bool =
     | Hidden -> false
 
 let private update
+    (database_configuration : Database_Configuration)
     (show_game_paused_notification : unit -> unit)
     (message : Save_Load_Message)
     (state_1 : Save_Load_State)
@@ -77,7 +79,7 @@ let private update
     | Redraw ->
         match state_1 with
         | Visible state_2 ->
-            state_1, Cmd.ofEffect (fun dispatch -> show dispatch state_2.action state_2.runner_saveable_state_json)
+            state_1, Cmd.ofEffect (fun dispatch -> show database_configuration dispatch state_2.action state_2.runner_saveable_state_json)
         | Hidden -> state_1, Cmd.none
 
     | Show data ->
@@ -107,6 +109,7 @@ let private update
 [<ReactComponent>]
 let Save_Load
     (props : {| expose : IRefValue<I_Save_Load> |},
+    database_configuration : Database_Configuration,
     load_game : Runner_Saveable_State -> unit,
     show_game_paused_notification : unit -> unit,
     redraw_command_menu : unit -> unit
@@ -115,7 +118,7 @@ let Save_Load
 
 (* State *)
 
-    let state, dispatch = React.useElmish ((initial_state, Cmd.none), update show_game_paused_notification, [||])
+    let state, dispatch = React.useElmish ((initial_state, Cmd.none), update database_configuration show_game_paused_notification, [||])
     let state_ref = React.useRef state
     do state_ref.current <- state
 
@@ -136,12 +139,12 @@ Unlike Configuration_State, Save_Load_State does not have a simple is_visible fl
 
 The caller must send the current game state, and we must take a screenshot, in case the player switches from the load screen to the save screen without returning to the game.
 *)
-                member _.show (action : Saved_Game_Action) (runner_saveable_state_json : string) = show dispatch action runner_saveable_state_json
+                member _.show (action : Saved_Game_Action) (runner_saveable_state_json : string) = show database_configuration dispatch action runner_saveable_state_json
                 member _.export_current_game_to_file (runner_saveable_state_json : string) = export_current_game_to_file runner_saveable_state_json 
                 member _.import_current_game_from_file () =
                     open_read_file_dialog (import_saved_game_from_file load_game dispatch)
                 member _.download_screenshot () : unit = download_screenshot_1 ()
-                member _.autosave_or_quicksave (runner_saveable_state_json : string) (autosave_or_quicksave : Autosave_or_Quicksave) = add_autosave_or_quicksave_to_storage_1 runner_saveable_state_json autosave_or_quicksave
+                member _.autosave_or_quicksave (runner_saveable_state_json : string) (autosave_or_quicksave : Autosave_or_Quicksave) = add_autosave_or_quicksave_to_storage_1 database_configuration runner_saveable_state_json autosave_or_quicksave
                 member _.hide () = dispatch <| Hide
                 member _.switch (action : Saved_Game_Action) = dispatch <| Switch action
                 member _.is_visible (): bool = is_visible state_ref
@@ -150,4 +153,4 @@ The caller must send the current game state, and we must take a screenshot, in c
 
 (* Render *)
 
-    view element_ref state_ref load_game dispatch
+    view database_configuration element_ref state_ref load_game dispatch

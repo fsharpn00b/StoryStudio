@@ -41,16 +41,17 @@ let private error : error_function = error debug_module_name
 (* Functions - update saved games in storage *)
 
 let private overwrite_saved_game_in_storage_2
+    (database_configuration : Database_Configuration)
     (saved_game : Existing_Saved_Game)
     : JS.Promise<Result<unit, string * Error_Data>> =
 
     Promise.create (fun resolve _ ->
-        let request_1 = open_db ()
+        let request_1 = open_db database_configuration
 
         request_1?onsuccess <- (fun _ ->
             let db = request_1?result
-            let tx = db?transaction (store_name, "readwrite")
-            let store = tx?objectStore store_name
+            let tx = db?transaction (database_configuration.store_name, "readwrite")
+            let store = tx?objectStore database_configuration.store_name
 
             let request_2 = overwrite_saved_game_in_storage_3 store saved_game
 
@@ -69,6 +70,7 @@ let private overwrite_saved_game_in_storage_2
     )
 
 let overwrite_existing_game_in_storage_1
+    (database_configuration : Database_Configuration)
     (existing_saved_game_id : int<saved_game_id>)
     (existing_saved_game_name : string)
     (runner_saveable_state_json : string)
@@ -93,7 +95,7 @@ let overwrite_existing_game_in_storage_1
                         do warn "overwrite_existing_game_in_storage_1" true message (error_data_1 @ error_data)
 
                     | Ok screenshot ->
-                        let! result_2 = overwrite_saved_game_in_storage_2 {
+                        let! result_2 = overwrite_saved_game_in_storage_2 database_configuration {
                             id = existing_saved_game_id
                             name = existing_saved_game_name
                             screenshot = screenshot
@@ -119,6 +121,7 @@ let overwrite_existing_game_in_storage_1
 
 (* This must be defined after overwrite_existing_game_in_storage_1 (), so it cannot go in the add saved games to storage section. *)
 let create_new_saved_game
+    (database_configuration : Database_Configuration)
     (state : Save_Load_Show_Data)
     (dispatch : Save_Load_Message -> unit)
     : unit =
@@ -138,24 +141,25 @@ let create_new_saved_game
             match state.saved_games |> Seq.tryFind (fun kv -> kv.Value.name = save_name) with
 
             | Some saved_game ->
-                do overwrite_existing_game_in_storage_1 saved_game.Key save_name state.runner_saveable_state_json dispatch
+                do overwrite_existing_game_in_storage_1 database_configuration saved_game.Key save_name state.runner_saveable_state_json dispatch
 
             | None ->
-                do add_saved_game_to_storage_1 save_name state.runner_saveable_state_json dispatch
+                do add_saved_game_to_storage_1 database_configuration save_name state.runner_saveable_state_json dispatch
 
 (* Functions - delete saved games from storage *)
 
 let private delete_saved_game_from_storage_2
+    (database_configuration : Database_Configuration)
     (saved_game_id : int<saved_game_id>)
     : JS.Promise<Result<unit, string * Error_Data>> =
 
     Promise.create (fun resolve _ ->
-        let request_1 = open_db ()
+        let request_1 = open_db database_configuration
 
         request_1?onsuccess <- (fun _ ->
             let db = request_1?result
-            let tx = db?transaction (store_name, "readwrite")
-            let store = tx?objectStore store_name
+            let tx = db?transaction (database_configuration.store_name, "readwrite")
+            let store = tx?objectStore database_configuration.store_name
             let request_2 = store?delete saved_game_id
 
             request_2?onsuccess <- (fun _ ->
@@ -173,6 +177,7 @@ let private delete_saved_game_from_storage_2
     )
 
 let delete_saved_game_from_storage_1
+    (database_configuration : Database_Configuration)
     (existing_saved_game_id : int<saved_game_id>)
     (existing_saved_game_name : string)
     (dispatch : Save_Load_Message -> unit)
@@ -184,7 +189,7 @@ let delete_saved_game_from_storage_1
 
         promise {
             try
-                let! result = delete_saved_game_from_storage_2 existing_saved_game_id
+                let! result = delete_saved_game_from_storage_2 database_configuration existing_saved_game_id
 
                 match result with
                 
@@ -200,17 +205,17 @@ let delete_saved_game_from_storage_1
         } |> Promise.iter ignore
 
 let private delete_all_saved_games_from_storage_2
-    ()
+    (database_configuration : Database_Configuration)
     : JS.Promise<Result<unit, string * Error_Data>> =
 
     Promise.create (fun resolve _ ->
 
-        let request_1 = open_db ()
+        let request_1 = open_db database_configuration
 
         request_1?onsuccess <- (fun _ ->
             let db = request_1?result
-            let tx = db?transaction (store_name, "readwrite")
-            let store = tx?objectStore store_name
+            let tx = db?transaction (database_configuration.store_name, "readwrite")
+            let store = tx?objectStore database_configuration.store_name
             let request_2 = store?clear ()
 
             request_2?onsuccess <- (fun _ ->
@@ -228,13 +233,14 @@ let private delete_all_saved_games_from_storage_2
     )
 
 let delete_all_saved_games_from_storage_1
+    (database_configuration : Database_Configuration)
     (dispatch : Save_Load_Message -> unit)
     : unit =
 
     if window.confirm "Delete all saved games? This CANNOT be undone!" then
         promise {
             try
-                let! result = delete_all_saved_games_from_storage_2 ()
+                let! result = delete_all_saved_games_from_storage_2 database_configuration
                 match result with
 
                 | Ok () ->

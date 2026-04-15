@@ -34,13 +34,14 @@ dotnet add package Fable.Browser.Navigator
         }
     }
 
-let open_db () =
+let open_db
+    (database_configuration : Database_Configuration) =
 (* open is an F# keyword, so we must escape it. *)
-    let request = indexedDB?``open`` (database_name, 1)
+    let request = indexedDB?``open`` (database_configuration.database_name, 1)
 
     request?onupgradeneeded <- (fun _ ->
         let db = request?result
-        let store = db?createObjectStore (store_name, {| keyPath = "id"; autoIncrement = true |})
+        let store = db?createObjectStore (database_configuration.store_name, {| keyPath = "id"; autoIncrement = true |})
 (* It seems it is necessary to add a record to establish the fields for this table. We believe this also establishes the initial value of the autoincremented id field. *)
         store?add {|
             id = highest_built_in_record_id

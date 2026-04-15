@@ -1,0 +1,5 @@
+{
+  "database_name": "story_studio",
+  "store_name": "forest_hike"
+}
+

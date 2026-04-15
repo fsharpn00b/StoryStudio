@@ -96,6 +96,7 @@ let private error : error_function = error debug_module_name
 [<ReactComponent>]
 let Runner
     (props : {| expose : IRefValue<I_Runner> |})
+    (database_configuration : Database_Configuration)
     (characters : Character_Input_Map)
     (scenes : IRefValue<Scene_Map>)
     (parser : Parser)
@@ -246,6 +247,7 @@ When you need to trigger events from [an embedded] Elmish component, use React p
     let save_load_1 =
         Save_Load (
             {| expose = save_load_2 |},
+            database_configuration,
             get_load_game runner_state,
 (* We must delay these calls because the Notifications and Command_Menu components are not ready yet. *)
             (fun () -> notifications_2.current.show_game_paused_notification ()),

@@ -31,6 +31,7 @@ let private error : error_function = error debug_module_name
 (* Helper functions - rendering *)
 
 let private handle_slot_click
+    (database_configuration : Database_Configuration)
     (existing_saved_game_id : int<saved_game_id>)
     (existing_saved_game_name : string)
     (action : Saved_Game_Action)
@@ -43,13 +44,13 @@ let private handle_slot_click
     match action with
 
     | Save_Game ->
-        do overwrite_existing_game_in_storage_1 existing_saved_game_id existing_saved_game_name runner_saveable_state_json dispatch
+        do overwrite_existing_game_in_storage_1 database_configuration existing_saved_game_id existing_saved_game_name runner_saveable_state_json dispatch
 
     | Load_Game ->
-        do get_saved_game_from_storage_1 existing_saved_game_id existing_saved_game_name load_game dispatch
+        do get_saved_game_from_storage_1 database_configuration existing_saved_game_id existing_saved_game_name load_game dispatch
 
     | Delete_Game ->
-        do delete_saved_game_from_storage_1 existing_saved_game_id existing_saved_game_name dispatch
+        do delete_saved_game_from_storage_1 database_configuration existing_saved_game_id existing_saved_game_name dispatch
 
 (* This is to debug how the save/load screen handles overflow. The compile guard is to prevent this from being bundled in production builds. *)
 #if debug
@@ -72,6 +73,7 @@ let private view_saved_game_grid_test_overflow
 #endif
 
 let private view_saved_game_grid
+    (database_configuration : Database_Configuration)
     (state : Save_Load_Show_Data)
 (* load_game is Runner_State.load_game (), closed over runner_component_interfaces, history, and queue. All it needs is the saved game state. *)
     (load_game : Runner_Saveable_State -> unit)
@@ -86,7 +88,7 @@ let private view_saved_game_grid
                 prop.onClick (fun event ->
                     do
                         event.stopPropagation ()
-                        handle_slot_click kv.Key kv.Value.name state.action state.runner_saveable_state_json load_game dispatch
+                        handle_slot_click database_configuration kv.Key kv.Value.name state.action state.runner_saveable_state_json load_game dispatch
                 )
                 prop.children [
                     Html.img [ prop.src kv.Value.screenshot ]
@@ -98,6 +100,7 @@ let private view_saved_game_grid
 (* Main functions - public *)
 
 let view
+    (database_configuration : Database_Configuration)
     (element_ref : IRefValue<HTMLElement option>)
     (state_1 : IRefValue<Save_Load_State>)
 (* load_game is Runner_State.load_game (), closed over runner_component_interfaces, history, and queue. All it needs is the saved game state. *)
@@ -146,7 +149,7 @@ window.prompt () seems to intercept key down events before window receives them,
                     prop.id "save_load_grid"
 (* This is for debugging the save/load screen. *)
 //                    prop.children (view_saved_game_grid_test_overflow ())
-                    prop.children (view_saved_game_grid state_2 load_game dispatch)
+                    prop.children (view_saved_game_grid database_configuration state_2 load_game dispatch)
                 ]
                 Html.div [
                     prop.className "controls"
@@ -159,7 +162,7 @@ window.prompt () seems to intercept key down events before window receives them,
                                 prop.onClick (fun event ->
                                     do
                                         event.stopPropagation ()
-                                        create_new_saved_game state_2 dispatch
+                                        create_new_saved_game database_configuration state_2 dispatch
                                 )
                             ]
                             Html.button [
@@ -175,7 +178,7 @@ window.prompt () seems to intercept key down events before window receives them,
                                 prop.onClick (fun event ->
                                     do
                                         event.stopPropagation ()
-                                        export_saved_games_from_storage_to_file ()
+                                        export_saved_games_from_storage_to_file database_configuration
                                 )
                             ]
 
@@ -193,7 +196,7 @@ window.prompt () seems to intercept key down events before window receives them,
                                 prop.onClick (fun event ->
                                     do
                                         event.stopPropagation ()
-                                        open_read_file_dialog (import_saved_games_from_file dispatch)
+                                        open_read_file_dialog (import_saved_games_from_file database_configuration dispatch)
                                 )
                             ]
                             
@@ -203,7 +206,7 @@ window.prompt () seems to intercept key down events before window receives them,
                                 prop.onClick (fun event ->
                                     do
                                         event.stopPropagation ()
-                                        delete_all_saved_games_from_storage_1 dispatch
+                                        delete_all_saved_games_from_storage_1 database_configuration dispatch
                                 )
                             ]
                         Html.button [

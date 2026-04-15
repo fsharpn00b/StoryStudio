@@ -33,12 +33,14 @@ let private error : error_function = error debug_module_name
 
 (* Functions - export saved games to file *)
 
-let export_saved_games_from_storage_to_file () : unit =
+let export_saved_games_from_storage_to_file
+    (database_configuration : Database_Configuration)
+    : unit =
     let file_name = $"{get_current_timestamp ()}.json"
 
     promise {
         try
-            let! result = get_all_saved_games_from_storage ()
+            let! result = get_all_saved_games_from_storage database_configuration
             match result with
 
             | Ok saved_games ->
@@ -119,6 +121,7 @@ let private import_current_game
         warn "import_current_game" true "Failed to validate saved game data." ["file_name", file_name; "error_message", validation_error]
 
 let private import_all_games
+    (database_configuration : Database_Configuration)
 (* This is for error reporting. *)
     (file_name : string)
     (saved_games : Existing_Saved_Game list)
@@ -132,7 +135,7 @@ let private import_all_games
     
         promise {
             try
-                let! result = add_saved_games_to_storage saved_games
+                let! result = add_saved_games_to_storage database_configuration saved_games
                 match result with
 
                 | Ok () ->
@@ -150,6 +153,7 @@ let private import_all_games
         warn "import_all_games" true "Failed to validate saved game data." (["file_name", file_name; "error_message", message] @ data)
 
 let import_saved_games_from_file
+    (database_configuration : Database_Configuration)
     (dispatch : Save_Load_Message -> unit)
     (file_name : string)
     (file_contents : string)
@@ -160,7 +164,7 @@ let import_saved_games_from_file
         warn "import_saved_games_from_file" true "Failed to validate saved game file." (["file_name", file_name; "error_message", message] @ data)
 
     | Ok saved_games ->
-        do import_all_games file_name saved_games dispatch
+        do import_all_games database_configuration file_name saved_games dispatch
 
 let import_saved_game_from_file
 (* load_game is Runner_State.load_game (), closed over runner_component_interfaces, history, and queue. All it needs is the saved game state. *)

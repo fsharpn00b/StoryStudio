@@ -12,6 +12,12 @@ open Units_Of_Measure
 
 (* Types - public *)
 
+(* For now, we only store saved games in the database, so we put this type here. *)
+type Database_Configuration = {
+    database_name : string
+    store_name : string
+}
+
 type Saved_Game_Action =
     | Save_Game
     | Load_Game
@@ -95,9 +101,6 @@ type I_Save_Load =
 
 (* Consts *)
 
-let database_name = "story_studio"
-(* TODO1 #save This will cause conflicts if there are multiple Story Studio games in the same browser. We should instead read this from a configuration file. *)
-let store_name = "story_studio_saved_games"
 (* When the user exports either the current game or all saved games to a file, we include the records IDs. However, when we import one or more saved games from a file, we assign new record IDs. We only use record IDs for quicksave and autosave.
 
 TODO2 #save If the player creates a new saved game and enters the name of an existing saved game, we overwrite the existing saved game. This is probably not needed, as a new saved game with a previously used name would still have a different ID.
