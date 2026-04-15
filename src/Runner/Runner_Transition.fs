@@ -104,7 +104,7 @@ To address the possible race condition, we had force_complete_transitions () rec
 *)
 (* 20251221 Where do we call Runner_State.get_state ()?
 1 Runner_State.add_to_history (). That is called in Runner_Queue.remove_transition_2 () after there are no remaining running commands and we have just set the queue state to Queue_Idle.
-2 Runner_State.quicksave_or_autosave (). We call force_complete_transitions () here.
+2 Runner_State.autosave_or_quicksave (). We call force_complete_transitions () here.
 3 Runner_State.export_current_game_to_file (). We call force_complete_transitions () here.
 4 Runner_State.show_saved_game_screen (). We call force_complete_transitions () here.
 (end)
@@ -115,7 +115,7 @@ x Where do we call Runner_State.force_complete_transitions ()?
 2 Runner_State.undo_redo ()
 3 Runner_State.show_saved_game_screen ()
 4 Runner_State.show_configuration_screen ()
-5 Runner_State.quicksave_or_autosave ()
+5 Runner_State.autosave_or_quicksave ()
 6 Runner_State.export_current_game_to_file ()
 7 Runner.import_current_game_from_file ()
 (end)

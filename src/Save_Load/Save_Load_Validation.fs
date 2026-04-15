@@ -131,10 +131,10 @@ let validate_saved_game_name
     else
         Ok ()
 
-(* New_Saved_Game is what we store in storage and in exported files. It contains Runner_Saveable_State plus metadata (the ID, name, screenshot, and timestamp) that the player uses to select a game from the save/load screen. Runner_Saveable_State is what actually contains the game state and is what we use to load the game. We validate the metadata to make sure the player is not trying to import a corrupted or malicious exported file.
+(* Existing_Saved_Game is what we store in storage and in exported files. It contains Runner_Saveable_State plus metadata (the ID, name, screenshot, and timestamp) that the player uses to select a game from the save/load screen. Runner_Saveable_State is what actually contains the game state and is what we use to load the game. We validate the metadata to make sure the player is not trying to import a corrupted or malicious exported file.
 *)
 let validate_saved_game
-    (saved_game : New_Saved_Game)
+    (saved_game : Existing_Saved_Game)
     : Result<Runner_Saveable_State, string * Error_Data> =
 
     match validate_saved_game_name saved_game.name with
@@ -158,7 +158,7 @@ let validate_saved_game
             validate_and_parse_runner_saveable_state saved_game.runner_saveable_state_json
 
 let validate_saved_games
-    (saved_games : New_Saved_Game list)
+    (saved_games : Existing_Saved_Game list)
     : Result<unit, string * Error_Data> =
 
     if List.isEmpty saved_games then
@@ -186,14 +186,14 @@ let validate_saved_games
 (* This does not try to parse the file contents. The caller must do that. *)
 let validate_import_file_contents
     (file_contents : string)
-    : Result<New_Saved_Game list, string * Error_Data> =
+    : Result<Existing_Saved_Game list, string * Error_Data> =
 
     if String.IsNullOrWhiteSpace file_contents then
         Error ("File is empty.", [])
     elif file_contents.Length > max_import_file_length then
         Error ("File is too large.", ["file_size", file_contents.Length; "max_file_size", max_import_file_length])
     else
-        match Decode.Auto.fromString<New_Saved_Game list> file_contents with
+        match Decode.Auto.fromString<Existing_Saved_Game list> file_contents with
 
 (* For simplicity, we always export a list of saved games, whether we are exporting all saved games or only the current game. *)
         | Ok saved_games ->

@@ -7,13 +7,21 @@ open System
 open Browser
 // Element, HTMLAnchorElement, HTMLCanvasElement
 open Browser.Types
-
 // Import, jsNative
 open Fable.Core
 // ? operator
 open Fable.Core.JsInterop
 
+open Log
 open Save_Load_Types
+
+(* Debug *)
+
+let debug_module_name = "Save_Load_Helpers"
+
+let private debug : log_function = debug debug_module_name
+let private warn : warn_function = warn debug_module_name
+let private error : error_function = error debug_module_name
 
 (* Helper functions - miscellaneous, public *)
 
@@ -72,53 +80,69 @@ let private html_to_canvas (element : Element) : JS.Promise<HTMLCanvasElement> =
 [<ImportDefault("html2canvas")>]
 let private html_to_canvas_with_options (element : Element) (options : obj) : JS.Promise<HTMLCanvasElement> = jsNative
 
-let get_canvas (ignore_save_load_and_configuration : bool) : JS.Promise<HTMLCanvasElement> =
+let get_canvas (ignore_save_load_and_configuration : bool) : JS.Promise<Result<HTMLCanvasElement, string * Error_Data>> =
 (* To use this, run
 dotnet add package Fable.Promise
 (end)
 *)
     promise {
-        let element = document.getElementById screenshot_element_id
-        let! canvas =
-            if ignore_save_load_and_configuration then
+        try
+            let element = document.getElementById screenshot_element_id
+            let! canvas =
+                if ignore_save_load_and_configuration then
 (* We can also tell html2canvas to ignore an element by adding the following property to the element:
 prop.custom ("data-html2canvas-ignore", "true")
 (end)
 *)
-                let ignored_element_ids = set [ "save_load_screen"; "configuration_screen" ]
-                let ignore_elements (element : Browser.Types.Element) : bool =
-                    ignored_element_ids.Contains element.id
-                let options =
-                    createObj [
+                    let ignored_element_ids = set [ "save_load_screen"; "configuration_screen" ]
+                    let ignore_elements (element : Browser.Types.Element) : bool =
+                        ignored_element_ids.Contains element.id
+                    let options =
+                        createObj [
 (* This field must take a function that returns a bool. *)
-                        "ignoreElements" ==> System.Func<Browser.Types.Element, bool>(ignore_elements)
-                    ]
-                html_to_canvas_with_options element options
-            else
-                html_to_canvas element
+                            "ignoreElements" ==> System.Func<Browser.Types.Element, bool>(ignore_elements)
+                        ]
+                    html_to_canvas_with_options element options
+                else
+                    html_to_canvas element
+            return Ok canvas
 
-        return canvas
+        with e ->
+            return Error ("Failed to get canvas.", ["error", e])
     }
 
+(* Previously, this failed if the background was hidden. This is probably because the background determines the canvas size. See the comment in background.css/.background_fade_image. We now handle this case by filling the canvas with black. *)
 let downscale_screenshot
     (canvas: HTMLCanvasElement)
     (max_width: int)
     (mime_type : string)
     (encoder_options : float)
-    : string =
+    : Result<string, string * Error_Data> =
 
-    let scale = float max_width / float canvas.width
-    let new_width = max_width
-    let new_height = int (float canvas.height * scale)
+    try
+        let offscreen = document.createElement "canvas" :?> HTMLCanvasElement
+        let ctx = offscreen.getContext_2d ()
 
-    let offscreen = document.createElement "canvas" :?> HTMLCanvasElement
-    offscreen.width <- new_width
-    offscreen.height <- new_height
+        if max_width <= 0 then
+            Error ("Invalid screenshot width.", ["max_width", max_width])
+        elif canvas.width <= 0 || canvas.height <= 0 then
+(* Work around html2canvas returning a zero-size canvas when one or more key UI elements are hidden. *)
+            offscreen.width <- max_width
+            offscreen.height <- max_width
+            ctx.fillStyle <- U3.Case1 "black"
+            ctx.fillRect (0., 0., float offscreen.width, float offscreen.height)
+            Ok <| offscreen.toDataURL (mime_type, encoder_options)
+        else
+            let scale = float max_width / float canvas.width
+            let new_width = max_width
+            let new_height = max 1 (int (float canvas.height * scale))
+            offscreen.width <- new_width
+            offscreen.height <- new_height
+            ctx.drawImage (U3.Case2 canvas, 0., 0., float new_width, float new_height)
+            Ok <| offscreen.toDataURL (mime_type, encoder_options)
 
-    let ctx = offscreen.getContext_2d ()
-    ctx.drawImage (U3.Case2 canvas, 0., 0., float new_width, float new_height)
-
-    offscreen.toDataURL (mime_type, encoder_options)
+    with e ->
+        Error ("Failed to downscale screenshot.", ["error", e])
 
 let private download_screenshot_2 
     (canvas: HTMLCanvasElement)
@@ -141,8 +165,12 @@ let private download_screenshot_2
 let download_screenshot_1 () : unit =
     promise {
 (* For manual screenshots, do not exclude the save/load or configuration screens, as the player might be trying to report a bug in them. *)
-        let! canvas = get_canvas false
-        return canvas
-    } |> Promise.iter (fun canvas ->
-        download_screenshot_2 canvas "image/png"
-    )
+        let! result = get_canvas false
+        match result with
+
+        | Ok canvas ->
+            do download_screenshot_2 canvas "image/png"
+        
+        | Error (message, error_data) ->
+            warn "download_screenshot_1" true message error_data
+    } |> Promise.iter ignore

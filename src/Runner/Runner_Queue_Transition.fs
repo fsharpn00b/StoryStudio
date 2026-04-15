@@ -63,7 +63,7 @@ let private remove_transition_2
         if queue_data.add_to_history then
             add_to_history runner_state history
         if queue_data.autosave then
-            quicksave_or_autosave runner_state Save_Load_Types.Autosave
+            autosave_or_quicksave runner_state Save_Load_Types.Autosave
 (* Run the next command(s) if specified. *)
         if queue_data.continue_after_finished then
             run runner_state Handle_Queue_Empty

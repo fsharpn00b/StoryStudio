@@ -64,15 +64,15 @@ We can close over command_state because it is a reference.
 *)
     fun (runner_saveable_state : Runner_Saveable_State) -> do load_game runner_state history runner_saveable_state
 
-let quicksave_or_autosave
+let autosave_or_quicksave
     (runner_state : Runner_State)
-    (quicksave_or_autosave : Quicksave_Or_Autosave)
+    (autosave_or_quicksave : Autosave_or_Quicksave)
     : unit =
 
     do
 // TODO2 We should also show a warning in the save/load screen. Even surf supports indexeddb, so this is not high priority.
         if not is_indexeddb_supported then
-            match quicksave_or_autosave with
+            match autosave_or_quicksave with
             | Quicksave -> window.alert $"This browser does not support IndexedDB. {warn_recommendation}"
 (* Do not show an alert for autosave. *)
             | Autosave -> ()
@@ -81,7 +81,7 @@ let quicksave_or_autosave
                 let runner_saveable_state = get_state runner_state
                 let json = Encode.Auto.toString (0, runner_saveable_state)
                 do
-                    runner_state.runner_component_interfaces.current.save_load.current.quicksave_or_autosave json quicksave_or_autosave
+                    runner_state.runner_component_interfaces.current.save_load.current.autosave_or_quicksave json autosave_or_quicksave
 (* TODO1 #save Send a notification that says both quicksave done and game paused (due to forcing transition completion).
 *)
                     runner_state.runner_component_interfaces.current.notifications.current.show_game_paused_notification ()

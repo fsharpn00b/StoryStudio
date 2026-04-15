@@ -79,6 +79,7 @@ let private view_saved_game_grid
     : ReactElement seq =
 
     state.saved_games
+(* Map iterates in ascending key order, so we do not need to sort this. *)
         |> Seq.map (fun kv ->
             Html.div [
                 prop.className "saved_game_slot"

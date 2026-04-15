@@ -41,18 +41,9 @@ let export_saved_games_from_storage_to_file () : unit =
             let! result = get_all_saved_games_from_storage ()
             match result with
 
-            | Ok saved_games_1 ->
+            | Ok saved_games ->
 
-(* Disard the database record IDs before exporting. If we re-import these saved games, we will assign new database record IDs then. *)
-                let saved_games_2 = saved_games_1 |> List.map (fun saved_game ->
-                    {
-                        name = saved_game.name
-                        screenshot = saved_game.screenshot
-                        timestamp = saved_game.timestamp
-                        runner_saveable_state_json = saved_game.runner_saveable_state_json
-                    }
-                )
-                let json = Encode.Auto.toString (0, saved_games_2)
+                let json = Encode.Auto.toString (0, saved_games)
                 download_file file_name "text/json" json
 
             | Error (message, error_data) ->
@@ -68,27 +59,43 @@ let export_current_game_to_file (runner_saveable_state : string) : unit =
     | null -> ()
     | save_name ->
         promise {
-            let! canvas = get_canvas true
-            return canvas
-        } |> Promise.iter (fun canvas ->
-            let file_name = $"{get_current_timestamp ()}.json"
-            let saved_game = {
-                name = save_name
-                screenshot = downscale_screenshot canvas screenshot_max_width screenshot_mime_type screenshot_encoder_options
-                timestamp = DateTime.UtcNow
-                runner_saveable_state_json = runner_saveable_state
-            }
+            try
+                let! result = get_canvas true
+                match result with
+
+                | Error (message, error_data) ->
+                    warn "export_current_game_to_file" true message (["save_name", save_name] @ error_data)
+
+                | Ok canvas ->
+                    match downscale_screenshot canvas screenshot_max_width screenshot_mime_type screenshot_encoder_options with
+
+                    | Error (message, error_data) ->
+                        warn "export_current_game_to_file" true message (["save_name", save_name] @ error_data)
+
+                    | Ok screenshot ->
+                        let saved_game = {
+(* We only need to distinguish quicksave and autosave from other saved games. *)
+                            id = non_autosave_or_quicksave_record_id
+                            name = save_name
+                            screenshot = screenshot
+                            timestamp = DateTime.UtcNow
+                            runner_saveable_state_json = runner_saveable_state
+                        }
 (* import_saved_games_from_file () expects a list of saved games. *)
-            let json = Encode.Auto.toString (0, [ saved_game ])
-            download_file file_name "text/json" json
-        )
+                        let json = Encode.Auto.toString (0, [ saved_game ])
+                        let file_name = $"{get_current_timestamp ()}.json"
+                        download_file file_name "text/json" json
+
+            with e ->
+                warn "export_current_game_to_file" true "Unknown error." ["save_name", save_name; "error", e]
+        } |> Promise.iter ignore
 
 (* Functions - import saved games from file *)
 
 let private import_current_game
 (* This is for error reporting. *)
     (file_name : string)
-    (saved_games_1 : New_Saved_Game list)
+    (saved_games_1 : Existing_Saved_Game list)
 (* load_game is Runner_State.load_game (), closed over runner_component_interfaces, history, and queue. All it needs is the saved game state. *)
     (load_game : Runner_Saveable_State -> unit)
     (dispatch : Save_Load_Message -> unit)
@@ -111,14 +118,10 @@ let private import_current_game
     | Error validation_error ->
         warn "import_current_game" true "Failed to validate saved game data." ["file_name", file_name; "error_message", validation_error]
 
-(* TODO1 #save When we export or import all save games, do we include autosave and quicksave?
-We use add to import games, which gives each a new ID, so we would duplicate autosave and quicksave.
-We should probably, when importing all save games, look for the quicksave and autosave IDs, and use put for those.
-*)
 let private import_all_games
 (* This is for error reporting. *)
     (file_name : string)
-    (saved_games : New_Saved_Game list)
+    (saved_games : Existing_Saved_Game list)
     (dispatch : Save_Load_Message -> unit)
     : unit =
 

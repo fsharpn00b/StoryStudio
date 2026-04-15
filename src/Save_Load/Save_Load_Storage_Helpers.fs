@@ -41,6 +41,7 @@ let open_db () =
     request?onupgradeneeded <- (fun _ ->
         let db = request?result
         let store = db?createObjectStore (store_name, {| keyPath = "id"; autoIncrement = true |})
+(* It seems it is necessary to add a record to establish the fields for this table. We believe this also establishes the initial value of the autoincremented id field. *)
         store?add {|
             id = highest_built_in_record_id
             name = String.Empty
@@ -70,17 +71,17 @@ let overwrite_saved_game_in_storage_3 (store : obj) (saved_game : Existing_Saved
         runner_saveable_state_json = saved_game.runner_saveable_state_json
     |}
 
-let add_quicksave_or_autosave_to_storage_3
+let add_autosave_or_quicksave_to_storage_3
     (store : obj)
     (runner_saveable_state_json : string)
     (screenshot : string)
-    (quicksave_or_autosave : Quicksave_Or_Autosave)
+    (autosave_or_quicksave : Autosave_or_Quicksave)
     : obj =
 (* For quicksave and autosave, we always overwrite existing records.
 We can use put even if the record does not yet exist. *)
     store?put {|
-        id = match quicksave_or_autosave with | Quicksave -> quicksave_record_id | Autosave -> autosave_record_id
-        name = match quicksave_or_autosave with | Quicksave -> "_Quicksave" | Autosave -> "_Autosave"
+        id = match autosave_or_quicksave with | Quicksave -> quicksave_record_id | Autosave -> autosave_record_id
+        name = match autosave_or_quicksave with | Quicksave -> "_Quicksave" | Autosave -> "_Autosave"
         timestamp = DateTime.UtcNow
         screenshot = screenshot
         runner_saveable_state_json = runner_saveable_state_json

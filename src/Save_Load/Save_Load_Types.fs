@@ -28,6 +28,7 @@ type Saved_Game_Display_Data = {
     screenshot : string
 }
 
+// TODO2 #save Not sure why this is a map instead of just a list.
 type Saved_Games_Display_Data = Map<int<saved_game_id>, Saved_Game_Display_Data>
 
 (* This represents a saved game in indexeddb for display in the save/load screen. We do not export or import this to or from a file. *)
@@ -40,7 +41,7 @@ type Existing_Saved_Game = {
 Save_Load_Validation.validate_and_parse_runner_saveable_state ()
 
 It is serialized by:
-Runner_Save_Load.quicksave_or_autosave ()
+Runner_Save_Load.autosave_or_quicksave ()
 .export_current_game_to_file ()
 .show_saved_game_screen ()
 *)
@@ -77,7 +78,7 @@ type Save_Load_Message =
     | Hide
     | Switch of Saved_Game_Action
 
-type Quicksave_Or_Autosave = Quicksave | Autosave
+type Autosave_or_Quicksave = Quicksave | Autosave
 
 (* Interfaces *)
 
@@ -86,7 +87,7 @@ type I_Save_Load =
     abstract member hide : unit -> unit
     abstract member switch : Saved_Game_Action -> unit
     abstract member is_visible : unit -> bool
-    abstract member quicksave_or_autosave : string -> Quicksave_Or_Autosave -> unit
+    abstract member autosave_or_quicksave : string -> Autosave_or_Quicksave -> unit
 (* These let players save and load their game even if they do not have indexeddb support. *)
     abstract member export_current_game_to_file : string -> unit
     abstract member import_current_game_from_file : unit -> unit
@@ -94,11 +95,21 @@ type I_Save_Load =
 
 (* Consts *)
 
-let database_name = "vnf_saved_games"
-let store_name = "vnf_saved_games"
-let quicksave_record_id = 1<saved_game_id>
-let autosave_record_id = quicksave_record_id + 1<saved_game_id>
-let highest_built_in_record_id = autosave_record_id
+let database_name = "story_studio"
+(* TODO1 #save This will cause conflicts if there are multiple Story Studio games in the same browser. We should instead read this from a configuration file. *)
+let store_name = "story_studio_saved_games"
+(* When the user exports either the current game or all saved games to a file, we include the records IDs. However, when we import one or more saved games from a file, we assign new record IDs. We only use record IDs for quicksave and autosave.
+
+TODO2 #save If the player creates a new saved game and enters the name of an existing saved game, we overwrite the existing saved game. This is probably not needed, as a new saved game with a previously used name would still have a different ID.
+
+TODO2 #save When we import a saved game, we discard the ID unless it is autosave or quicksave. Otherwise we just add the saved game to storage and get a new ID. It is possible to introduce a name collision this way, but the IDs are still different.
+
+TODO2 #save Do not let the player enter "quicksave" or "autosave" as saved game names? Again, this is not strictly needed, but might prevent confusion.
+ *)
+let non_autosave_or_quicksave_record_id = 1<saved_game_id>
+let autosave_record_id = non_autosave_or_quicksave_record_id + 1<saved_game_id>
+let quicksave_record_id = autosave_record_id + 1<saved_game_id>
+let highest_built_in_record_id = quicksave_record_id
 
 let date_time_format = "yyyyMMdd_HHmmss"
 

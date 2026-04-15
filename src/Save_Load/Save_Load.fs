@@ -31,14 +31,6 @@ let private error : error_function = error debug_module_name
 
 (* Main functions - interface *)
 
-(* TODO1 #save We cannot open the save/load screen when there is no background, such as when the author uses the fade_out_all command, because we try to take a screenshot in preparation for the user saving or exporting the game. We should add a try/catch and warning around the screenshot function.
-
-Error:
-Uncaught (in promise) DOMException: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
-at downscale_screenshot (http://localhost:5173/Save_Load/Save_Load_Storage_Helpers.fs.js:49:9)
-at http://localhost:5173/Save_Load/Save_Load.fs.js:35:23
-*)
-
 let show
     (dispatch : Save_Load_Message -> unit)
     (action : Saved_Game_Action)
@@ -149,7 +141,7 @@ The caller must send the current game state, and we must take a screenshot, in c
                 member _.import_current_game_from_file () =
                     open_read_file_dialog (import_saved_game_from_file load_game dispatch)
                 member _.download_screenshot () : unit = download_screenshot_1 ()
-                member _.quicksave_or_autosave (runner_saveable_state_json : string) (quicksave_or_autosave : Quicksave_Or_Autosave) = add_quicksave_or_autosave_to_storage_1 runner_saveable_state_json quicksave_or_autosave
+                member _.autosave_or_quicksave (runner_saveable_state_json : string) (autosave_or_quicksave : Autosave_or_Quicksave) = add_autosave_or_quicksave_to_storage_1 runner_saveable_state_json autosave_or_quicksave
                 member _.hide () = dispatch <| Hide
                 member _.switch (action : Saved_Game_Action) = dispatch <| Switch action
                 member _.is_visible (): bool = is_visible state_ref

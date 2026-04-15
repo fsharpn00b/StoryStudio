@@ -80,27 +80,37 @@ let overwrite_existing_game_in_storage_1
     if window.confirm $"Overwrite saved game '{existing_saved_game_name}'?" then
         promise {
             try
-                let! canvas = get_canvas true
-                let screenshot = downscale_screenshot canvas screenshot_max_width screenshot_mime_type screenshot_encoder_options
+                let! result_1 = get_canvas true
+                match result_1 with
 
-                let! result = overwrite_saved_game_in_storage_2 {
-                    id = existing_saved_game_id
-                    name = existing_saved_game_name
-                    screenshot = screenshot
-                    timestamp = DateTime.UtcNow
-                    runner_saveable_state_json = runner_saveable_state_json
-                }
+                | Error (message, error_data) ->
+                    do warn "overwrite_existing_game_in_storage_1" true message (error_data_1 @ error_data)
 
-                match result with
+                | Ok canvas ->
+                    match downscale_screenshot canvas screenshot_max_width screenshot_mime_type screenshot_encoder_options with
 
-                | Ok () ->
+                    | Error (message, error_data) ->
+                        do warn "overwrite_existing_game_in_storage_1" true message (error_data_1 @ error_data)
+
+                    | Ok screenshot ->
+                        let! result_2 = overwrite_saved_game_in_storage_2 {
+                            id = existing_saved_game_id
+                            name = existing_saved_game_name
+                            screenshot = screenshot
+                            timestamp = DateTime.UtcNow
+                            runner_saveable_state_json = runner_saveable_state_json
+                        }
+
+                        match result_2 with
+
+                        | Ok () ->
 (* Delay before we hide the save/load game screen, so the mouse click to select the saved game does not also cause us to call Runner_Queue.run (). For now, return the state unchanged. *)
-                    do window.setTimeout ((fun () ->
-                        dispatch <| Hide
-                    ), int hide_save_load_screen_delay_time) |> ignore
+                            do window.setTimeout ((fun () ->
+                                dispatch <| Hide
+                            ), int hide_save_load_screen_delay_time) |> ignore
 
-                | Error (message, error_data_2) ->
-                    do warn "overwrite_existing_game_in_storage_1" true message (error_data_1 @ error_data_2)
+                        | Error (message, error_data_2) ->
+                            do warn "overwrite_existing_game_in_storage_1" true message (error_data_1 @ error_data_2)
 
             with e ->
                 do warn "overwrite_existing_game_in_storage_1" true "Unknown error." (error_data_1 @ ["error", e])
