@@ -16,6 +16,7 @@ open Character_Types
 open Command_Types
 open Log
 open Units_Of_Measure
+open Utilities
 
 (* Consts *)
 
@@ -112,9 +113,21 @@ let private character_decoder : Decoder<Character_Input> =
 
 let private characters_decoder = Decode.list character_decoder
 
+let private validate_background_inputs (backgrounds : {| name : string; url : string |} list) : unit =
+    backgrounds |> List.iter (fun entry ->
+        if not <| is_valid_name entry.name then
+            error "validate_background_inputs" "Background name contains non-alphanumeric character." ["background_name", entry.name] |> invalidOp
+    )
+
+let private validate_music_inputs (music : {| name : string; url : string |} list) : unit =
+    music |> List.iter (fun entry ->
+        if not <| is_valid_name entry.name then
+            error "validate_music_inputs" "Music name contains non-alphanumeric character." ["music_name", entry.name] |> invalidOp
+    )
+
 let private validate_character_inputs (characters : Character_Input list) : unit =
     characters |> List.iter (fun character ->
-        if Regex.IsMatch (character.short_name, "\W") then
+        if not <| is_valid_name character.short_name then
             error "validate_character_inputs" "Character short name contains non-alphanumeric character." ["character", character] |> invalidOp
         elif List.contains character.short_name keywords then
             error "validate_character_inputs" "Character short name collides with a keyword." ["character", character; "keywords", keywords] |> invalidOp
@@ -125,6 +138,7 @@ let private validate_character_inputs (characters : Character_Input list) : unit
 let get_backgrounds () : Map<string, string> =
     match Decode.Auto.fromString<{| name : string; url : string |} list> backgrounds_1 with
     | Ok backgrounds_2 ->
+        do validate_background_inputs backgrounds_2
         backgrounds_2 |> List.map (fun entry -> entry.name, entry.url) |> Map.ofList
     | Error message -> error "get_backgrounds" "Failed to deserialize backgrounds." ["backgrounds", backgrounds_1; "error_message", message] |> invalidOp
 
@@ -138,6 +152,7 @@ let get_character_inputs () : Character_Input_Map =
 let get_music () : Map<string, string> =
     match Decode.Auto.fromString<{| name : string; url : string |} list> music_1 with
     | Ok music_2 ->
+        do validate_music_inputs music_2
         music_2 |> List.map (fun entry -> entry.name, entry.url) |> Map.ofList
     | Error message -> error "get_music" "Failed to deserialize music." ["music", music_1; "error_message", message] |> invalidOp
 
