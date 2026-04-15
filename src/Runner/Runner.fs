@@ -162,6 +162,7 @@ TODO2 We could use option with .Value.
     }
 
     let runner_state = {
+        history = history
         queue = queue
         scenes = scenes
         runner_component_interfaces = runner_component_interfaces
@@ -245,7 +246,7 @@ When you need to trigger events from [an embedded] Elmish component, use React p
     let save_load_1 =
         Save_Load (
             {| expose = save_load_2 |},
-            get_load_game runner_state history,
+            get_load_game runner_state,
 (* We must delay these calls because the Notifications and Command_Menu components are not ready yet. *)
             (fun () -> notifications_2.current.show_game_paused_notification ()),
             (fun () -> command_menu_2.current.redraw ())

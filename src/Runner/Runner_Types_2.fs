@@ -132,6 +132,7 @@ type Run_Reason =
     | Notify_Image_Map_Selection
 
 type Runner_State = {
+    history : IRefValue<Runner_History>
     queue : IRefValue<Runner_Queue>
     scenes : IRefValue<Scene_Map>
     runner_component_interfaces : IRefValue<Runner_Component_Interfaces>

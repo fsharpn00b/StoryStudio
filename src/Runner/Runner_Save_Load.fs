@@ -29,13 +29,12 @@ let private error : error_function = error debug_module_name
 
 let private load_game
     (runner_state : Runner_State)
-    (history : IRefValue<Runner_History>)
     (runner_saveable_state : Runner_Saveable_State)
     : unit =
 
     do
 (* Clear the history. *)
-        clear_history history
+        clear_history runner_state.history
 (* We do not need to call force_complete_transitions () because we did so before showing the saved game screen.
 Each UI component's set_state () method dispatches Show or Hide messages with notify_transition_complete = false to prevent commands from auto-continuing unexpectedly.
 *)
@@ -47,14 +46,12 @@ Each UI component's set_state () method dispatches Show or Hide messages with no
         | Runner_Saveable_State_Running data when data.add_to_history ->
 (* Include a delay to make sure set_state finishes updating runner_component_interfaces and command_state. *)
             window.setTimeout((fun () ->
-                add_to_history runner_state history
+                add_to_history runner_state runner_state.history
             ), int wait_for_set_state_to_complete_time) |> ignore
         | _ -> ()
 
 let get_load_game
     (runner_state : Runner_State)
-// TODO1 #runner Why is history not part of runner state?
-    (history : IRefValue<Runner_History>)
     : Runner_Saveable_State -> unit =
 (* Close load_game () over all these parameters so it becomes a string -> unit that we can pass to UI components.
 We also need to delay the evaluation of this function until runner_component_interfaces_1 is not None. The delayed result of this function is passed to the constructors of these components.
@@ -62,7 +59,7 @@ We can close over command_state because it is a reference.
 *)
 (* TODO2 #pause For now, we do not show the pause notification when we actually load a game. That is because we already do it when we hide the save/load screen (which we do after we load a game) and when the player presses f to import a saved game from a file (whether they proceed to load the game or not).
 *)
-    fun (runner_saveable_state : Runner_Saveable_State) -> do load_game runner_state history runner_saveable_state
+    fun (runner_saveable_state : Runner_Saveable_State) -> do load_game runner_state runner_saveable_state
 
 let autosave_or_quicksave
     (runner_state : Runner_State)
