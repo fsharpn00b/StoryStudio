@@ -88,7 +88,7 @@ let get_script_name_and_line_number
     (scenes : Scene_Map)
     (calling_function : string)
     (error_data : Command_Error_Data_2)
-    (known_error_data : (string * obj) list)
+    (known_error_data : Error_Data)
     : string * int =
 
     let scene =

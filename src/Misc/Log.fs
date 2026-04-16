@@ -19,22 +19,27 @@ When we catch a .NET exception, we extract the message.
 
 (* Types *)
 
-(* TODO1 #logging Replace (string * obj) list with Error_Data everywhere.
+(* TODO2 #logging Consider types:
 
-- Also consider types:
+type Error_Data_1 = (string * obj) list
+
+type Log_Data = {
+    function_name : string
+    message : string
+    data : Error_Data_1
+}
+
 type Warning_Data = {
-    module_name : string
     function_name : string
     alert : bool
     message : string
-    data : Error_Data
+    data : Error_Data_1
 }
 
-type Error_Data = {
-    module_name : string
+type Error_Data_2 = {
     function_name : string
     message : string
-    data : (string * obj) list
+    data : Error_Data_1
 }
 *)
 type Error_Data = (string * obj) list

@@ -93,7 +93,7 @@ let update_typing_state
     (state_1 : Typing_State)
     : Typing_State * Cmd<Typing_Message> =
 
-    let debug_data : (string * obj) list = ["state_1", state_1; "message", message :> obj; "reveal_next_timeout_function_handle", reveal_next_timeout_function_handle]
+    let debug_data : Error_Data = ["state_1", state_1; "message", message :> obj; "reveal_next_timeout_function_handle", reveal_next_timeout_function_handle]
 
     #if debug
     do
@@ -164,7 +164,7 @@ let type_dialogue
     (command_queue_item_id : int<command_queue_item_id>)
     : unit =
 
-    let debug_data : (string * obj) list = ["state", state; "character", character; "text", text; "reveal_next_timeout_function_handle", reveal_next_timeout_function_handle]
+    let debug_data : Error_Data = ["state", state; "character", character; "text", text; "reveal_next_timeout_function_handle", reveal_next_timeout_function_handle]
 
     #if debug
     do debug "type_dialogue" String.Empty debug_data

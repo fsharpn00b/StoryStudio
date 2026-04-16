@@ -29,7 +29,7 @@ let private warn
     (function_name : string)
     (alert : bool)
     (message : string)
-    (data : (string * obj) list)
+    (data : Error_Data)
     : unit =
     warn debug_module_name function_name alert $"{message} {warn_recommendation}" data
 let private error : error_function = error debug_module_name

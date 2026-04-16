@@ -34,7 +34,7 @@ let is_running_transition
 let cancel_reveal_next_timeout_function
     (configuration : IRefValue<Dialogue_Box_Configuration>)
     (transition_timeout_function_handle : IRefValue<float option>)
-    (debug_data : (string * obj) list)
+    (debug_data : Error_Data)
     : unit =
 
     match transition_timeout_function_handle.current with

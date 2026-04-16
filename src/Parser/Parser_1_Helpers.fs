@@ -29,7 +29,7 @@ let private error : error_function = error debug_module_name
 type Parsing_Semantics_Error_Data = {
     message : string
     script_text_index : int
-    data : (string * obj) list
+    data : Error_Data
 }
 exception Parsing_Semantics_Error of Parsing_Semantics_Error_Data
 
