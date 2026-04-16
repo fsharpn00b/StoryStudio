@@ -20,6 +20,16 @@ type Notification_Type =
     | Temporary
     | Permanent
 
+// TODO2 #notifications Exporting saved game with save/load screen open stops temporary notifications from being shown. We currently cannot reproduce this.
+
+type Pause_Notification_Type =
+    | Game_Paused
+    | Save_Complete
+    | Quicksave_Complete
+    | Load_Complete
+    | Import_Complete
+    | Export_Complete
+
 type Notification_Transition_Type = Fade
 
 type Notifications_Configuration = {
@@ -71,12 +81,19 @@ type I_Notifications =
     abstract member hide : unit -> unit
     abstract member is_visible : unit -> bool
 (* When we pause the game by calling Runner_Transition.force_complete_transitions (), we want to show a temporary notification to tell the player the game is paused and they must click to continue.
-x After we show the save/load screen.
-x After we show the configuration screen.
-x After the player imports/exports current/multiple saved games to/from file.
-x Exceptions: Runner_Queue.run (), Runner_History.undo_redo ().
+x After the player closes the save/load screen without loading or saving a game.
+x After the player closes the configuration screen.
+x After the player quicksaves.
+x After the player saves a game, which closes the save/load screen.
+x After the player loads a game, which closes the save/load screen.
+x After the player imports the current game from a file, which closes the save/load screen if it is open.
+x After the player exports the current game to a file, which closes the save/load screen if it is open. Okay, it looks like it does not close it and does not notify?
+x Exceptions:
+Runner_Save_Load.autosave_or_quicksave () for autosave. We autosave when we show a menu or image map, and after a jump.
+Runner_Queue.run ()
+Runner_History.undo_redo ()
 *)
-    abstract member show_game_paused_notification : unit -> unit
+    abstract member show_pause_notification : Pause_Notification_Type -> unit
 
 (* Consts *)
 
@@ -87,3 +104,20 @@ let min_notification_transition_time = 0<seconds>
 
 let notify_fade_in_complete = 0<command_queue_item_id>
 let notify_fade_out_complete = 1<command_queue_item_id>
+
+let game_paused_notification = "Game paused. Click to continue."
+let save_complete_notification = "Save complete. Game paused. Click to continue."
+let quicksave_complete_notification = "Quicksave complete. Game paused. Click to continue."
+let load_complete_notification = "Load complete. Game paused. Click to continue."
+let import_complete_notification = "Saved game import complete. Game paused. Click to continue."
+let export_complete_notification = "Saved game export complete. Game paused. Click to continue."
+
+(* Helper functions *)
+
+let pause_notification_type_to_string = function
+    | Game_Paused -> game_paused_notification
+    | Save_Complete -> save_complete_notification
+    | Quicksave_Complete -> quicksave_complete_notification
+    | Load_Complete -> load_complete_notification
+    | Import_Complete -> import_complete_notification
+    | Export_Complete -> export_complete_notification

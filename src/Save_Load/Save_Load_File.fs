@@ -9,6 +9,7 @@ open Browser.Dom
 open Thoth.Json
 
 open Log
+open Notification_Types
 open Runner_Types_1
 open Save_Load_Helpers
 open Save_Load_Storage_Add
@@ -56,7 +57,10 @@ let export_saved_games_from_storage_to_file
             warn "export_saved_games_from_storage_to_file" true "Unknown error." ["file_name", file_name; "error", e]
     } |> Promise.iter ignore
 
-let export_current_game_to_file (runner_saveable_state : string) : unit =
+let export_current_game_to_file
+    (runner_saveable_state : string)
+    (notify_success : unit -> unit)
+    : unit =
     match window.prompt ("Enter save name:", get_current_timestamp ()) with
     | null -> ()
     | save_name ->
@@ -86,7 +90,11 @@ let export_current_game_to_file (runner_saveable_state : string) : unit =
 (* import_saved_games_from_file () expects a list of saved games. *)
                         let json = Encode.Auto.toString (0, [ saved_game ])
                         let file_name = $"{get_current_timestamp ()}.json"
-                        download_file file_name "text/json" json
+                        try
+                            download_file file_name "text/json" json
+                            notify_success ()
+                        with e ->
+                            warn "export_current_game_to_file" true "Error downloading file." ["save_name", save_name; "file_name", file_name; "error", e]
 
             with e ->
                 warn "export_current_game_to_file" true "Unknown error." ["save_name", save_name; "error", e]
@@ -94,13 +102,14 @@ let export_current_game_to_file (runner_saveable_state : string) : unit =
 
 (* Functions - import saved games from file *)
 
-let private import_current_game
+let private import_current_game_from_file_2
 (* This is for error reporting. *)
     (file_name : string)
     (saved_games_1 : Existing_Saved_Game list)
 (* load_game is Runner_State.load_game (), closed over runner_component_interfaces, history, and queue. All it needs is the saved game state. *)
     (load_game : Runner_Saveable_State -> unit)
     (dispatch : Save_Load_Message -> unit)
+    (notify_success : unit -> unit)
     : unit =
 
 (* If the player imports a file with multiple saved games, we load the saved game with the latest timestamp. *)
@@ -111,14 +120,32 @@ let private import_current_game
 
     | Ok runner_saveable_state ->
         if window.confirm $"Load save '{saved_game.name}'? Current progress will be lost." then
-            do load_game runner_saveable_state
-(* Delay before we hide the save/load game screen, so the mouse click to select the saved game does not also cause us to call Runner_Queue.run (). For now, return the state unchanged. *)
-            do window.setTimeout ((fun () ->
-                dispatch <| Hide
-            ), int hide_save_load_screen_delay_time) |> ignore
+(* TODO1 #save_load load_game () errors on most failures. See Runner_Save_Load.load_game (). *)
+            try
+                do
+                    load_game runner_saveable_state
+                    notify_success ()
+            with e -> raise e
 
     | Error validation_error ->
         warn "import_current_game" true "Failed to validate saved game data." ["file_name", file_name; "error_message", validation_error]
+
+(* We pass this function, closed over the three function parameters, to Save_Load_Helpers.open_read_file_dialog ().*)
+let import_current_game_from_file_1
+(* load_game is Runner_State.load_game (), closed over runner_component_interfaces, history, and queue. All it needs is the saved game state. *)
+    (load_game : Runner_Saveable_State -> unit)
+    (dispatch : Save_Load_Message -> unit)
+    (notify_success : unit -> unit)
+    (file_name : string)
+    (file_contents : string)
+    : unit =
+
+    match validate_import_file_contents file_contents with
+    | Error (message, data) ->
+        warn "import_saved_game_from_file" true "Failed to validate saved game file." (["file_name", file_name; "error_message", message] @ data)
+
+    | Ok saved_games ->
+        do import_current_game_from_file_2 file_name saved_games load_game dispatch notify_success
 
 let private import_all_games
     (database_configuration : Database_Configuration)
@@ -165,18 +192,3 @@ let import_saved_games_from_file
 
     | Ok saved_games ->
         do import_all_games database_configuration file_name saved_games dispatch
-
-let import_saved_game_from_file
-(* load_game is Runner_State.load_game (), closed over runner_component_interfaces, history, and queue. All it needs is the saved game state. *)
-    (load_game : Runner_Saveable_State -> unit)
-    (dispatch : Save_Load_Message -> unit)
-    (file_name : string)
-    (file_contents : string)
-    : unit =
-
-    match validate_import_file_contents file_contents with
-    | Error (message, data) ->
-        warn "import_saved_game_from_file" true "Failed to validate saved game file." (["file_name", file_name; "error_message", message] @ data)
-
-    | Ok saved_games ->
-        do import_current_game file_name saved_games load_game dispatch

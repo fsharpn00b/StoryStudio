@@ -12,6 +12,7 @@ open Feliz
 open Feliz.UseElmish
 
 open Log
+open Notification_Types
 open Runner_Types_1
 open Save_Load_File
 open Save_Load_Helpers
@@ -67,7 +68,7 @@ let is_visible (state_ref : IRefValue<Save_Load_State>) : bool =
 
 let private update
     (database_configuration : Database_Configuration)
-    (show_game_paused_notification : unit -> unit)
+    (show_pause_notification : Pause_Notification_Type -> unit)
     (message : Save_Load_Message)
     (state_1 : Save_Load_State)
     : Save_Load_State * Cmd<Save_Load_Message> =
@@ -90,10 +91,14 @@ let private update
             usage = data.usage
         }, Cmd.none
 
-    | Hide ->
+    | Hide pause_notification_type ->
 (* If the player loads, saves, imports, or exports a saved game using a hotkey, we might receive a Hide message even when the save/load screen is already hidden. In that case, we do not want to show the game paused notification. *)
         match state_1 with
-        | Visible _ -> do show_game_paused_notification ()
+        | Visible _ ->
+            match pause_notification_type with
+            | Some pause_notification_type ->
+                do show_pause_notification pause_notification_type
+            | None -> ()
         | Hidden -> ()
         Hidden, Cmd.none
 
@@ -111,14 +116,14 @@ let Save_Load
     (props : {| expose : IRefValue<I_Save_Load> |},
     database_configuration : Database_Configuration,
     load_game : Runner_Saveable_State -> unit,
-    show_game_paused_notification : unit -> unit,
+    show_pause_notification : Pause_Notification_Type -> unit,
     redraw_command_menu : unit -> unit
     )
     : ReactElement =
 
 (* State *)
 
-    let state, dispatch = React.useElmish ((initial_state, Cmd.none), update database_configuration show_game_paused_notification, [||])
+    let state, dispatch = React.useElmish ((initial_state, Cmd.none), update database_configuration show_pause_notification, [||])
     let state_ref = React.useRef state
     do state_ref.current <- state
 
@@ -140,12 +145,13 @@ Unlike Configuration_State, Save_Load_State does not have a simple is_visible fl
 The caller must send the current game state, and we must take a screenshot, in case the player switches from the load screen to the save screen without returning to the game.
 *)
                 member _.show (action : Saved_Game_Action) (runner_saveable_state_json : string) = show database_configuration dispatch action runner_saveable_state_json
-                member _.export_current_game_to_file (runner_saveable_state_json : string) = export_current_game_to_file runner_saveable_state_json 
-                member _.import_current_game_from_file () =
-                    open_read_file_dialog (import_saved_game_from_file load_game dispatch)
+                member _.export_current_game_to_file_via_hotkey (runner_saveable_state_json : string) (notify_success : unit -> unit) = export_current_game_to_file runner_saveable_state_json notify_success
+                member _.import_current_game_from_file_via_hotkey (notify_success : unit -> unit) =
+                    open_read_file_dialog (import_current_game_from_file_1 load_game dispatch notify_success)
                 member _.download_screenshot () : unit = download_screenshot_1 ()
-                member _.autosave_or_quicksave (runner_saveable_state_json : string) (autosave_or_quicksave : Autosave_or_Quicksave) = add_autosave_or_quicksave_to_storage_1 database_configuration runner_saveable_state_json autosave_or_quicksave
-                member _.hide () = dispatch <| Hide
+(* Do not show a notification for autosave. *)
+                member _.autosave_or_quicksave (runner_saveable_state_json : string) (autosave_or_quicksave : Autosave_or_Quicksave) (notify_success : unit -> unit) = add_autosave_or_quicksave_to_storage_1 database_configuration runner_saveable_state_json autosave_or_quicksave notify_success
+                member _.hide (pause_notification_type : Pause_Notification_Type option) = dispatch <| Hide pause_notification_type
                 member _.switch (action : Saved_Game_Action) = dispatch <| Switch action
                 member _.is_visible (): bool = is_visible state_ref
         }

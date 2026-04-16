@@ -8,6 +8,7 @@ open Browser.Dom
 // ? operator
 open Fable.Core.JsInterop
 
+open Notification_Types
 open Units_Of_Measure
 
 (* Types - public *)
@@ -81,7 +82,7 @@ type Save_Load_State =
 type Save_Load_Message =
     | Redraw
     | Show of Save_Load_Show_Data
-    | Hide
+    | Hide of Pause_Notification_Type option
     | Switch of Saved_Game_Action
 
 type Autosave_or_Quicksave = Quicksave | Autosave
@@ -90,13 +91,13 @@ type Autosave_or_Quicksave = Quicksave | Autosave
 
 type I_Save_Load =
     abstract member show : Saved_Game_Action -> string -> unit
-    abstract member hide : unit -> unit
+    abstract member hide : Pause_Notification_Type option -> unit
     abstract member switch : Saved_Game_Action -> unit
     abstract member is_visible : unit -> bool
-    abstract member autosave_or_quicksave : string -> Autosave_or_Quicksave -> unit
+    abstract member autosave_or_quicksave : string -> Autosave_or_Quicksave -> (unit -> unit) -> unit
 (* These let players save and load their game even if they do not have indexeddb support. *)
-    abstract member export_current_game_to_file : string -> unit
-    abstract member import_current_game_from_file : unit -> unit
+    abstract member export_current_game_to_file_via_hotkey : string -> (unit -> unit) -> unit
+    abstract member import_current_game_from_file_via_hotkey : (unit -> unit) -> unit
     abstract member download_screenshot : unit -> unit
 
 (* Consts *)

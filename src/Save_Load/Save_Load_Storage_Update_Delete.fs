@@ -11,6 +11,7 @@ open Fable.Core
 open Fable.Core.JsInterop
 
 open Log
+open Notification_Types
 open Save_Load_Helpers
 open Save_Load_Storage_Add
 open Save_Load_Storage_Helpers
@@ -108,7 +109,7 @@ let overwrite_existing_game_in_storage_1
                         | Ok () ->
 (* Delay before we hide the save/load game screen, so the mouse click to select the saved game does not also cause us to call Runner_Queue.run (). For now, return the state unchanged. *)
                             do window.setTimeout ((fun () ->
-                                dispatch <| Hide
+                                Save_Complete |> Some |> Hide |> dispatch
                             ), int hide_save_load_screen_delay_time) |> ignore
 
                         | Error (message, error_data_2) ->

@@ -8,6 +8,7 @@ open Feliz
 open Thoth.Json
 
 open Log
+open Notification_Types
 open Runner_State
 open Runner_History
 open Runner_Transition
@@ -69,18 +70,16 @@ let autosave_or_quicksave
 // TODO2 We should also show a warning in the save/load screen. Even surf supports indexeddb, so this is not high priority.
         if not is_indexeddb_supported then
             match autosave_or_quicksave with
-            | Quicksave -> window.alert $"This browser does not support IndexedDB. {warn_recommendation}"
 (* Do not show an alert for autosave. *)
             | Autosave -> ()
+            | Quicksave -> window.alert $"This browser does not support IndexedDB. {warn_recommendation}"
         else
             force_complete_transitions runner_state true (fun () ->
                 let runner_saveable_state = get_state runner_state
                 let json = Encode.Auto.toString (0, runner_saveable_state)
                 do
-                    runner_state.runner_component_interfaces.current.save_load.current.autosave_or_quicksave json autosave_or_quicksave
-(* TODO1 #save Send a notification that says both quicksave done and game paused (due to forcing transition completion).
-*)
-                    runner_state.runner_component_interfaces.current.notifications.current.show_game_paused_notification ()
+(* Do not show a notification for autosave. *)
+                    runner_state.runner_component_interfaces.current.save_load.current.autosave_or_quicksave json autosave_or_quicksave (fun () -> match autosave_or_quicksave with | Autosave -> () | Quicksave -> runner_state.runner_component_interfaces.current.notifications.current.show_pause_notification Quicksave_Complete)
             )
 
 let export_current_game_to_file
@@ -90,10 +89,8 @@ let export_current_game_to_file
     do force_complete_transitions runner_state true (fun () ->
         let runner_saveable_state = get_state runner_state
         let json = Encode.Auto.toString (0, runner_saveable_state)
-        do 
-            runner_state.runner_component_interfaces.current.save_load.current.export_current_game_to_file json
-(* TODO2 #pause There is no way to detect when the player closes the save file dialogue, and therefore no way to delay this notification. We could have a temporary notification that is dismissed by a click instead of using a timer. That should be separate from timed notifications, so it doesn't hide them. *)
-            runner_state.runner_component_interfaces.current.notifications.current.show_game_paused_notification ()
+        do
+            runner_state.runner_component_interfaces.current.save_load.current.export_current_game_to_file_via_hotkey json (fun () -> runner_state.runner_component_interfaces.current.notifications.current.show_pause_notification Export_Complete)
     )
 
 let import_current_game_from_file
@@ -102,9 +99,7 @@ let import_current_game_from_file
     
     do force_complete_transitions runner_state true (fun () ->
         do
-            runner_state.runner_component_interfaces.current.save_load.current.import_current_game_from_file ()
-(* See comments for export_current_game_to_file (). We have the same issue with the open file dialogue. *)
-            runner_state.runner_component_interfaces.current.notifications.current.show_game_paused_notification ()
+            runner_state.runner_component_interfaces.current.save_load.current.import_current_game_from_file_via_hotkey (fun () -> runner_state.runner_component_interfaces.current.notifications.current.show_pause_notification Import_Complete)
     )
 
 let show_saved_game_screen

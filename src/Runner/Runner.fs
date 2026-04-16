@@ -205,13 +205,14 @@ When you need to trigger events from [an embedded] Elmish component, use React p
             }
         )
 
+(* We also show the Game_Paused notification when the player exits the save/load screen. See Save_Load_Rendering.view ()/Exit button. *)
     let configuration_component_1 =
         Configuration (
             {| expose = configuration_component_2 |},
             configuration_1,
             set_configuration runner_component_interfaces history configuration_1,
 (* We must delay these calls because the Notifications and Command_Menu components are not ready yet. *)
-            (fun () -> notifications_2.current.show_game_paused_notification ()),
+            (fun () -> notifications_2.current.show_pause_notification Game_Paused),
             (fun () -> command_menu_2.current.redraw ())
         )
 
@@ -250,7 +251,7 @@ When you need to trigger events from [an embedded] Elmish component, use React p
             database_configuration,
             get_load_game runner_state,
 (* We must delay these calls because the Notifications and Command_Menu components are not ready yet. *)
-            (fun () -> notifications_2.current.show_game_paused_notification ()),
+            (fun (pause_notification_type : Pause_Notification_Type) -> notifications_2.current.show_pause_notification pause_notification_type),
             (fun () -> command_menu_2.current.redraw ())
         )
 

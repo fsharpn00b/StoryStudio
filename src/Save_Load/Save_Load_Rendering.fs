@@ -11,6 +11,7 @@ open Browser.Types
 open Feliz
 
 open Log
+open Notification_Types
 open Runner_Types_1
 open Save_Load_File
 open Save_Load_Helpers
@@ -170,7 +171,8 @@ window.prompt () seems to intercept key down events before window receives them,
                                 prop.onClick (fun event ->
                                     do
                                         event.stopPropagation ()
-                                        export_current_game_to_file state_2.runner_saveable_state_json
+(* We do not hide the save/load screen after exporting the current game, so we do not show a notification. *)
+                                        export_current_game_to_file state_2.runner_saveable_state_json (fun () -> ())
                                 )
                             ]
                             Html.button [
@@ -186,9 +188,14 @@ window.prompt () seems to intercept key down events before window receives them,
                             Html.button [
                                 prop.text "Import Current Game"
                                 prop.onClick (fun event ->
+                                    let notify_success = fun () ->
+(* Delay before we hide the save/load game screen, so the mouse click to select the saved game does not also cause us to call Runner_Queue.run (). *)
+                                        do window.setTimeout ((fun () ->
+                                            Import_Complete |> Some |> Hide |> dispatch 
+                                        ), int hide_save_load_screen_delay_time) |> ignore
                                     do
                                         event.stopPropagation ()
-                                        open_read_file_dialog (import_saved_game_from_file load_game dispatch)
+                                        open_read_file_dialog (import_current_game_from_file_1 load_game dispatch notify_success)
                                 )
                             ]
                             Html.button [
@@ -214,7 +221,7 @@ window.prompt () seems to intercept key down events before window receives them,
                             prop.onClick (fun event ->
                                 do
                                     event.stopPropagation ()
-                                    dispatch Hide
+                                    Game_Paused |> Some |> Hide |> dispatch
                             )
                         ]
                     ]

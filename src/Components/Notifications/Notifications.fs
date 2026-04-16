@@ -31,10 +31,6 @@ type private Temporary_Notifications_Queue = Notification_Data_2 list
 
 let mutable private temporary_notification_queue_lock = 0
 
-(* Consts *)
-
-let private game_paused_notification = "Game paused. Click to continue."
-
 (* Main functions - state *)
 
 let private notify_remove_temporary_notification_from_queue
@@ -225,7 +221,7 @@ let Notifications (
 // TODO2 For permanent_notification_data_after_eval_js, Hidden just means "empty", so it does not correspond to is_visible = false.
                 member _.show () : unit = set_is_visible true
                 member _.hide () : unit = set_is_visible false
-                member _.show_game_paused_notification () : unit = add_temporary_notification queue temporary_notification_interface.current.show { text = game_paused_notification }
+                member _.show_pause_notification (pause_notification_type : Pause_Notification_Type) : unit = add_temporary_notification queue temporary_notification_interface.current.show { text = pause_notification_type_to_string pause_notification_type }
         }
     )
 (* This component does not implement I_Transitionable. *)

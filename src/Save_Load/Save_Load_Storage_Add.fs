@@ -10,6 +10,7 @@ open Fable.Core
 open Fable.Core.JsInterop
 
 open Log
+open Notification_Types
 open Save_Load_Helpers
 open Save_Load_Storage_Helpers
 open Save_Load_Types
@@ -100,7 +101,7 @@ let add_saved_game_to_storage_1
                     | Ok () ->
 (* Delay before we hide the save/load game screen, so the mouse click to select the saved game does not also cause us to call Runner_Queue.run (). For now, return the state unchanged. *)
                         do window.setTimeout ((fun () ->
-                            dispatch <| Hide
+                            Save_Complete |> Some |> Hide |> dispatch
                         ), int hide_save_load_screen_delay_time) |> ignore
 
                     | Error (message, error_data) ->
@@ -206,6 +207,7 @@ let add_autosave_or_quicksave_to_storage_1
     (database_configuration : Database_Configuration)
     (runner_saveable_state_json : string)
     (autosave_or_quicksave : Autosave_or_Quicksave)
+    (notify_success : unit -> unit)
     : unit =
 
     promise {
@@ -226,7 +228,8 @@ let add_autosave_or_quicksave_to_storage_1
                     let! result_2 = add_autosave_or_quicksave_to_storage_2 database_configuration screenshot runner_saveable_state_json autosave_or_quicksave
                     match result_2 with
 
-                    | Ok () -> ()
+(* The closure we pass for notify_success () does not notify for autosave.*)
+                    | Ok () -> do notify_success ()
 
                     | Error (message, error_data) ->
 (* Do not show an alert for an autosave error. *)

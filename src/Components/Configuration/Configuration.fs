@@ -304,7 +304,7 @@ let private view
 (* Main functions - state *)
 
 let private update
-    (show_game_paused_notification : unit -> unit)
+    (show_pause_notification : unit -> unit)
     (message : Configuration_Message)
     (state : Configuration_State)
     : Configuration_State * Cmd<Configuration_Message> =
@@ -318,7 +318,7 @@ let private update
         }, Cmd.none
 
     | Hide ->
-        do show_game_paused_notification ()
+        do show_pause_notification ()
         { state with is_visible = false }, Cmd.none
 
 (* Component *)
@@ -330,14 +330,14 @@ let Configuration
 (* We cannot simply change the configuration here. We must propagate the changes to the individual components, which is what set_configuration () does. The configuration cannot contain references to individual components because we must serialize and deserialize it, and we would have to serialize and deserialize the individual component configurations.
 *)
     set_configuration : Runner_Configuration -> unit,
-    show_game_paused_notification : unit -> unit,
+    show_pause_notification : unit -> unit,
     redraw_command_menu : unit -> unit
     )
     : ReactElement =
 
 (* State *)
 
-    let state, dispatch = React.useElmish ((initial_state, Cmd.none), update show_game_paused_notification, [||])
+    let state, dispatch = React.useElmish ((initial_state, Cmd.none), update show_pause_notification, [||])
     let state_ref = React.useRef state
     do state_ref.current <- state
 

@@ -8,6 +8,7 @@ open Fable.Core
 open Fable.Core.JsInterop
 
 open Log
+open Notification_Types
 open Runner_Types_1
 open Save_Load_Storage_Helpers
 open Save_Load_Types
@@ -135,7 +136,7 @@ let get_saved_game_from_storage_1
                             load_game runner_saveable_state
 (* Delay before we hide the save/load game screen, so the mouse click to select the saved game does not also cause us to call Runner_Queue.run (). For now, return the state unchanged. *)
                             window.setTimeout ((fun () ->
-                                dispatch <| Hide
+                                Load_Complete |> Some |> Hide |> dispatch
                             ), int hide_save_load_screen_delay_time) |> ignore
 
                 | Error (message, error_data_2) ->

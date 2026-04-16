@@ -20,7 +20,8 @@ open Utilities
 
 (* Types - public *)
 
-// TODO1 #background This could be used to set the background resolution, if we offer multiple resolutions.
+(* TODO2 #background This could be used to set the background image resolution, if we offer multiple resolutions. For now, if the background image resolution exceeds the viewport resolution, the excess is hidden, with no scroll bars. See background.css.
+*)
 type Background_Configuration = {
     placeholder : unit
 }

@@ -13,6 +13,7 @@ open JavaScript_Interop_2
 open JavaScript_Parser
 open Key_Bindings
 open Log
+open Notification_Types
 open Runner_History
 open Runner_Save_Load
 open Runner_Transition
@@ -141,7 +142,8 @@ let show_or_hide_configuration_screen
         else
 (* The save/load and configuration screens cannot be open at the same time. *)
             if runner_state.runner_component_interfaces.current.save_load.current.is_visible () then
-                do runner_state.runner_component_interfaces.current.save_load.current.hide ()
+(* Do not show a notification if we close the save/load screen only to open the configuration screen. *)
+                do runner_state.runner_component_interfaces.current.save_load.current.hide None
             force_complete_transitions runner_state true (fun () ->
                 do runner_state.runner_component_interfaces.current.configuration.current.show ()
             )
@@ -152,9 +154,10 @@ let handle_escape_key
 
     do
         if runner_state.runner_component_interfaces.current.configuration.current.is_visible () then
+(* I_Configuration.hide () shows a Game_Paused notification. See Configuration.update (). *)
             runner_state.runner_component_interfaces.current.configuration.current.hide ()
         elif runner_state.runner_component_interfaces.current.save_load.current.is_visible () then
-            runner_state.runner_component_interfaces.current.save_load.current.hide ()
+            runner_state.runner_component_interfaces.current.save_load.current.hide (Some Game_Paused)
         else
             force_complete_transitions runner_state true (fun () ->
                 do runner_state.runner_component_interfaces.current.configuration.current.show ()
