@@ -120,7 +120,7 @@ let private import_current_game_from_file_2
 
     | Ok runner_saveable_state ->
         if window.confirm $"Load save '{saved_game.name}'? Current progress will be lost." then
-(* TODO1 #save_load load_game () errors on most failures. See Runner_Save_Load.load_game (). *)
+(* load_game () errors on failure because we do not want to end up in an inconsistent state. See Runner_Save_Load.load_game () and Runner_State.set_state (). *)
             try
                 do
                     load_game runner_saveable_state
