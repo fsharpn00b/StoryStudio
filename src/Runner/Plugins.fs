@@ -39,16 +39,18 @@ type private Plugin_Manifest_Entry = {
 (* Consts *)
 
 [<Literal>]
-let plugins_path = "../0_data/plugins.txt?raw"
+let plugins_path = "../0_data/plugins/"
+[<Literal>]
+let plugins_configuration_path = "../0_data/plugins.txt?raw"
 
-[<ImportDefault(plugins_path)>]
+[<ImportDefault(plugins_configuration_path)>]
 let private plugins_1 : string = jsNative
 
 (* Functions - helper *)
 
 let private is_valid_plugin_path (path : string) : bool =
     not (String.IsNullOrWhiteSpace path) &&
-        path.StartsWith("../0_data/plugins/") &&
+        path.StartsWith(plugins_path) &&
         path.EndsWith(".js") &&
         not (path.Contains("/../")) &&
         not (path.Contains("..\\")) &&

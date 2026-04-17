@@ -2,8 +2,8 @@ module Runner_State
 
 // console, window
 open Browser.Dom
-// IRefValue
-open Feliz
+// ? operator
+open Fable.Core.JsInterop
 
 open JavaScript_Interop_2
 open Log
@@ -17,6 +17,35 @@ let debug_module_name = "Runner_State"
 let private debug : log_function = debug debug_module_name
 let private warn : warn_function = warn debug_module_name
 let private error : error_function = error debug_module_name
+
+(* Functions - helper *)
+
+(* We should define these functions in Plugins, but we haven't defined it yet. We could move Plugins just after Runner_Types_2. Anyway, these functions do not need to know any types. *)
+let private try_get_plugin_state (o: obj) : string option =
+    if isNull o || isNull (o?get_state) then None
+    else
+        let f = o?get_state |> unbox<unit -> string>
+        Some (f ())
+
+let private get_plugin_states (runner_state : Runner_State) : Map<string, string option> =
+    runner_state.runner_component_interfaces.current.plugins |> Seq.map (fun kv -> kv.Key, try_get_plugin_state kv.Value.interface_ref.current) |> Map.ofSeq
+
+let private try_set_plugin_state (o: obj) (json: string) : unit =
+    if not (isNull o) && not (isNull (o?set_state)) then
+        let f = o?set_state |> unbox<string -> unit>
+        f json
+
+let private set_plugin_states
+    (runner_state : Runner_State)
+    (plugin_states : Map<string, string option>) : unit =
+    for kv in plugin_states do
+        match runner_state.runner_component_interfaces.current.plugins.TryFind kv.Key with
+        | Some plugin ->
+            match kv.Value with
+            | Some plugin_state_json -> try_set_plugin_state plugin.interface_ref.current plugin_state_json
+            | None -> ()
+(* TODO1 #plugins Should also complain if runner_state.runner_component_interfaces.current.plugins has a plugin that is not found in plugin_states. *)
+        | None -> warn "set_plugin_states" true "Tried to set state for an unknown plugin." ["plugin_name", kv.Key; "known_plugins", runner_state.runner_component_interfaces.current.plugins |> Seq.map (fun kv -> kv.Key) |> String.concat ", " :> obj]
 
 (* Main functions - state *)
 
@@ -46,6 +75,7 @@ If add_to_history is false, which means that when we halted running commands, we
                 music = runner_state.runner_component_interfaces.current.music.current.get_state ()
                 notifications = runner_state.runner_component_interfaces.current.notifications.current.get_state ()
                 javascript_state_json = get_javascript_state_json ()
+                plugin_states = get_plugin_states runner_state
             }
             menu_variables = data.menu_variables
         }
@@ -61,6 +91,7 @@ If add_to_history is false, which means that when we halted running commands, we
             music = runner_state.runner_component_interfaces.current.music.current.get_state ()
             notifications = runner_state.runner_component_interfaces.current.notifications.current.get_state ()
             javascript_state_json = get_javascript_state_json ()
+            plugin_states = get_plugin_states runner_state
         }
 
 (* At this point, we should have forced transitions to complete, or already have been in state Queue_Idle. *)
@@ -95,6 +126,7 @@ We might want to get the state at the most recent pausable point (which might be
         runner_state.runner_component_interfaces.current.music.current.set_state component_data.music
         runner_state.runner_component_interfaces.current.notifications.current.set_state component_data.notifications
         set_javascript_state_with_exception component_data.javascript_state_json
+        set_plugin_states runner_state component_data.plugin_states
 
 (* We set the command state afterward to prevent having it overwritten due to a component completing an existing transition (on its own, not because we called its set_state () method) after we set the command state but before we call the components' set_state () methods.
 *)

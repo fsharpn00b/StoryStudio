@@ -1,5 +1,8 @@
 module Plugin_Template
 
+// Environment
+open System
+
 // console, window
 open Browser.Dom
 // Cmd
@@ -10,6 +13,8 @@ open Fable.Core.JsInterop
 open Feliz
 // useElmish
 open Feliz.UseElmish
+// Decode, Encode
+open Thoth.Json
 
 (* Note This file is in the project only so Fable will compile it to .js, which we can then import to dynamically load the component. *)
 
@@ -27,11 +32,6 @@ type private Plugin_Template_Message =
     | Hide
 
 (* Interfaces *)
-
-type I_Plugin_Template =
-    abstract member show : unit -> unit
-    abstract member hide : unit -> unit
-    abstract member is_visible : unit -> bool
 
 (* Main functions - state *)
 
@@ -70,7 +70,7 @@ let private view
 
 [<ReactComponent>]
 let private Plugin_Template
-    (props : {| expose : IRefValue<I_Plugin_Template> |})
+    (props : {| expose : IRefValue<obj> |})
     : ReactElement =
 
     let initial_state = { is_visible = false }
@@ -80,12 +80,22 @@ let private Plugin_Template
     do state_ref.current <- state
 
     React.useImperativeHandle(props.expose, fun () ->
-        {
-            new I_Plugin_Template with
-                member _.show () = dispatch <| Show
-                member _.hide () = dispatch <| Hide
-                member _.is_visible () : bool = state_ref.current.is_visible
-        }
+        createObj [
+(* JS-facing API. *)
+            "show" ==> fun () -> dispatch <| Show
+            "hide" ==> fun () -> dispatch <| Hide
+            "is_visible" ==> fun () -> state_ref.current.is_visible
+(* Framework-facing API. *)
+            "get_state" ==> fun () -> Encode.Auto.toString (0, state_ref.current)
+            "set_state" ==> fun (state_json : string) ->
+                match Decode.Auto.fromString<Plugin_Template_State> state_json with
+                | Ok state ->
+                    match state.is_visible with
+                    | true -> dispatch <| Show
+                    | false -> dispatch <| Hide
+                | Error message ->
+                    $"Plugin_Template: Failed to deserialize state. Message: {message}{Environment.NewLine}State JSON:{Environment.NewLine}{state_json}" |> invalidOp
+        ]
     )
 
 (* Render *)

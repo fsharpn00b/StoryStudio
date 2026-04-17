@@ -60,6 +60,7 @@ let set_javascript_state_with_exception
     (javascript_state_json : string)
     : unit =
 
+(* See previous comment for why we validate here as well as when we load a saved game.*)
     match validate_javascript_state javascript_state_json with
     | Error (message, data) ->
         error "set_javascript_state_with_exception" "Failed to validate JavaScript state." (["javascript_state_json", javascript_state_json; "error_message", message] @ data) |> invalidOp

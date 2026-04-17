@@ -20,7 +20,10 @@ type Runner_Saveable_State_Component_Data = {
     image_map : Image_Map_State
     music : Music_State
     notifications : Notifications_Saveable_State
+(* We deserialize the JavaScript state in JavaScript_Interop_2.set_javascript_state (). We deserialize it in emitted JavaScript code so we can assign the result to window.state, so there is no point to deserializing it earlier. *)
     javascript_state_json : string
+(* The value is optional because some plugins might not serialize their states. Each plugin is responsible for serializing/deserializing its state, because we do not know what types it uses internally. *)
+    plugin_states : Map<string, string option>
 }
 
 (* A field that uses this type should always be optional. None means there is no next command. *)

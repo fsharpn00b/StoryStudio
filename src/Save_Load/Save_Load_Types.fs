@@ -38,7 +38,6 @@ type Saved_Game_Display_Data = {
 // TODO2 #save Not sure why this is a map instead of just a list.
 type Saved_Games_Display_Data = Map<int<saved_game_id>, Saved_Game_Display_Data>
 
-(* This represents a saved game in indexeddb for display in the save/load screen. We do not export or import this to or from a file. *)
 type Existing_Saved_Game = {
     id : int<saved_game_id>
     name : string
@@ -55,7 +54,7 @@ Runner_Save_Load.autosave_or_quicksave ()
     runner_saveable_state_json : string
 }
 
-(* This represents a saved game outside of indexeddb, such as the current game, or a game exported to a file. That is why we keep it separate from Existing_Saved_Game. *)
+(* At this point this type is just a container for parameters to functions in Save_Load_Storage_Add, which do not need an ID field. *)
 type New_Saved_Game = {
     name : string
     screenshot : string

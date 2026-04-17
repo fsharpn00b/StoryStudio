@@ -39,7 +39,7 @@ let temporary_scene_id_for_eval_command = -1<scene_id>
 let scene_initial_command_id = 0<command_id>
 
 let javascript_state_name = "state"
-(* This is used by JavaScript_Interop_2.set_state_in_js (). We define it close to javascript_state_name so that if we change javascript_state_name, we won't forget to change set_javascript_state_emit accordingly. We can't insert a variable into a constant expression, and we need a constant expression to define an attribute. *)
+(* This is used by JavaScript_Interop_2.set_javascript_state (). We define it close to javascript_state_name so that if we change javascript_state_name, we won't forget to change set_javascript_state_emit accordingly. We cannot insert a variable into a constant expression, and we need a constant expression to define an attribute. *)
 [<Literal>]
 let set_javascript_state_emit = "window.state = JSON.parse($0);"
 
