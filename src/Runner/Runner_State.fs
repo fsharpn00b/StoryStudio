@@ -38,14 +38,29 @@ let private try_set_plugin_state (o: obj) (json: string) : unit =
 let private set_plugin_states
     (runner_state : Runner_State)
     (plugin_states : Map<string, string option>) : unit =
+
+    let plugin_component_names = runner_state.runner_component_interfaces.current.plugins |> Seq.map (fun kv -> kv.Key) |> Set.ofSeq
+    let plugin_state_names = plugin_states |> Seq.map (fun kv -> kv.Key) |> Set.ofSeq
+    let extra_plugin_component_names = plugin_component_names - plugin_state_names
+    let extra_plugin_state_names = plugin_state_names - plugin_component_names
+
+(* We do not show an alert for this case, as it is less severe. It could happen if the player simply installs a new plugin and then loads a saved game from before the plugin was installed. *)
+    if not (Set.isEmpty extra_plugin_component_names) then
+        warn "set_plugin_states" false "Mismatch between plugin components and plugin states. This suggests you are loading a saved game and have a plugin component installed that was not used in the saved game. This might prevent the saved game from working correctly." ["plugin_component_names", plugin_component_names; "plugin_state_names", plugin_state_names; "extra_plugin_component_names", extra_plugin_component_names]
+
+(* Even if a plugin component does not set a state, it should still appear in runner_state.runner_component_interfaces.current.plugins. *)
+    if not (Set.isEmpty extra_plugin_state_names) then
+        warn "set_plugin_states" true "Mismatch between plugin components and plugin states. This suggests you are loading a saved game that used a plugin component that is not currently installed. This might prevent the saved game from working correctly." ["plugin_component_names", plugin_component_names; "plugin_state_names", plugin_state_names; "extra_plugin_state_names", extra_plugin_state_names]
+
     for kv in plugin_states do
         match runner_state.runner_component_interfaces.current.plugins.TryFind kv.Key with
         | Some plugin ->
             match kv.Value with
             | Some plugin_state_json -> try_set_plugin_state plugin.interface_ref.current plugin_state_json
+(* A plugin might not support saving its state. We do not need to warn about this. *)
             | None -> ()
-(* TODO1 #plugins Should also complain if runner_state.runner_component_interfaces.current.plugins has a plugin that is not found in plugin_states. *)
-        | None -> warn "set_plugin_states" true "Tried to set state for an unknown plugin." ["plugin_name", kv.Key; "known_plugins", runner_state.runner_component_interfaces.current.plugins |> Seq.map (fun kv -> kv.Key) |> String.concat ", " :> obj]
+(* We have already warned about this case. *)
+        | None -> ()
 
 (* Main functions - state *)
 
