@@ -141,9 +141,15 @@ let private fade_out_all
     #endif
 
     do characters.current |> Seq.iter (fun kv ->
-        do
-            add_to_characters_in_transition characters_in_transition <| kv.Value.current.get_id ()
-            kv.Value.current.transition { character_short_name = kv.Key; transition = Fade (Fade_Out { transition_time = transition_time }) } command_queue_item_id
+(* Do not fade out hidden characters. *)
+(* TODO1 #transitions Trying to fade out a hidden character caused a command queue error. Not sure why. Transition.begin_transition () checks if old_data and new_data are the same, and if so, it does not start a transition.
+*)
+        match kv.Value.current.get_state () with
+        | Hidden -> ()
+        | _ ->
+            do
+                add_to_characters_in_transition characters_in_transition <| kv.Value.current.get_id ()
+                kv.Value.current.transition { character_short_name = kv.Key; transition = Fade (Fade_Out { transition_time = transition_time }) } command_queue_item_id
     )
 
 (* Component *)

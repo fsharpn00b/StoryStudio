@@ -3,7 +3,7 @@ module Character_Rendering
 // String.Compare, String.Empty
 open System
 
-// console, window
+// console, document, window
 open Browser.Dom
 // Html, IRefValue, IStyleAttribue, React, ReactComponent, ReactElement
 open Feliz
@@ -34,6 +34,23 @@ let private get_character_move_style (height : int<percent>) : (string * string)
     [
         "height", $"{height}vh"
     ]
+
+(* 20260418 Code added by AI. *)
+let private try_get_character_width_pixels (url : string) : float option =
+    let selector = $"img.character[src=\"{url}\"]"
+    match document.querySelector selector with
+    | null -> None
+    | image ->
+        let width = image.getBoundingClientRect().width
+        if width > 0.0 then Some width else None
+
+let private get_characters_container_width_pixels () : float =
+    match document.getElementById "characters_container" with
+    | null -> window.innerWidth
+    | element ->
+        let width = element.getBoundingClientRect().width
+        if width > 0.0 then width else window.innerWidth
+(* 20260418 End code added by AI. *)
 
 (* Main functions - rendering *)
 
@@ -74,9 +91,13 @@ Unlike with Fade, we do not use the old and new data (which can be either Visibl
 
     let complete_transition_2 = complete_transition (Some transition_data.command_queue_item_id) true
 
-// TODO1 #transitions This assumes the character width is no more than 20%.
-    let from_left = "-20%"
-    let from_right = "100%"
+(* 20260418 Code added by AI. *)
+    let container_width = get_characters_container_width_pixels ()
+(* If we cannot get the character width, use a default of 20% of the container width. *)
+    let character_width = try_get_character_width_pixels url |> Option.defaultValue (container_width * 0.2)
+    let from_left = $"{-character_width}px"
+    let from_right = $"{container_width}px"
+(* 20260418 End code added by AI. *)
     let position = $"{float position}%%"
 
     let transition_property_name, transition_property_initial_value, transition_property_final_value =
