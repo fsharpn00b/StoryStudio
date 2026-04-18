@@ -13,11 +13,12 @@
   grid-area: 1 / 1;
   width: 100vw;
   height: 100vh;
-  object-fit: cover;
+  object-fit: contain;
 }
 
 .image_map_hotspot {
-  position: fixed;
+/* Use container-relative positioning (absolute), not viewport-fixed positioning (fixed). */
+  position: absolute;
   cursor: pointer;
 /* Prevent layout shift when we show the border. */
 /*  border: 1px solid transparent; */

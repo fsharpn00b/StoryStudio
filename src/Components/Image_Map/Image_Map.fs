@@ -47,6 +47,12 @@ type Image_Map_State =
     | Visible of Image_Map_Data
     | Hidden
 
+type private Image_Transform = {
+    scale : float
+    offset_x : float
+    offset_y : float
+}
+
 (* Interfaces *)
 
 type I_Image_Map =
@@ -70,14 +76,87 @@ let private debug : log_function = debug debug_module_name
 let private warn : warn_function = warn debug_module_name
 let private error : error_function = error debug_module_name
 
-(* Main functions - rendering *)
-
 (* TODO2 We can't cross fade between image map and background image because they use different z-indices. Plus we'd have to know whether we were cross fading between background image and image map, or between two image maps. The type info for each would be different (backround image is just a url, image map is Image_Map_Data).
 We could use fade_out_all for the background, characters, and dialogue box, the continue immediately (rather than wait for callback) to the fade in for the image map. But then we would need to save the states for the background, characters, and dialogue box, and add a fade_in_all command.
 *)
 
+(* Helper functions - rendering *)
+
+(* 20260418 Code added by AI. *)
+
+let private get_image_transform
+    (image_element : HTMLImageElement)
+    : Image_Transform option =
+
+    let natural_width = float image_element.naturalWidth
+    let natural_height = float image_element.naturalHeight
+    let rendered_width = float image_element.clientWidth
+    let rendered_height = float image_element.clientHeight
+
+(* If the image is not loaded, the natural width and height are 0. *)
+    if natural_width <= 0.0 || natural_height <= 0.0 || rendered_width <= 0.0 || rendered_height <= 0.0 then
+        None
+    else
+(* Determine the object fit. *)
+        let object_fit =
+            (window?getComputedStyle(image_element)?objectFit |> string)
+                .Trim()
+                .ToLowerInvariant()
+
+(* Calculate the scale at which the image is being displayed so we can scale the hotspots to match. *)
+        let scale =
+            match object_fit with
+            | "contain" -> min (rendered_width / natural_width) (rendered_height / natural_height)
+            | "cover" -> max (rendered_width / natural_width) (rendered_height / natural_height)
+            | _ -> error "get_image_transform" "Unexpected object fit." ["object_fit", object_fit] |> invalidOp
+
+        let fitted_width = natural_width * scale
+        let fitted_height = natural_height * scale
+        Some {
+            scale = scale
+            offset_x = (rendered_width - fitted_width) / 2.0
+            offset_y = (rendered_height - fitted_height) / 2.0
+        }
+
+let private get_hotspot_style
+    (transform : Image_Transform option)
+    (item : Image_Map_Item_Data)
+    : IStyleAttribute list =
+
+(* If we have a transform, apply it to the hotspot. If not, use the original coordinates. *)
+    match transform with
+    | Some transform_data ->
+        let x1 = (float item.x1 * transform_data.scale) + transform_data.offset_x
+        let y1 = (float item.y1 * transform_data.scale) + transform_data.offset_y
+        let width = float (item.x2 - item.x1) * transform_data.scale
+        let height = float (item.y2 - item.y1) * transform_data.scale
+        [
+            style.left (length.px x1)
+            style.top (length.px y1)
+            style.width (length.px width)
+            style.height (length.px height)
+        ]
+    | None ->
+        let x1 = float item.x1
+        let y1 = float item.y1
+        let width = float (item.x2 - item.x1)
+        let height = float (item.y2 - item.y1)
+        [
+            style.left (length.px x1)
+            style.top (length.px y1)
+            style.width (length.px width)
+            style.height (length.px height)
+        ]
+
+(* 20260418 End code added by AI. *)
+
+(* Main functions - rendering *)
+
 let private view_idle_visible
     (data : Image_Map_Data)
+    (image_ref : IRefValue<HTMLImageElement option>)
+    (image_transform : Image_Transform option)
+    (set_image_transform : Image_Transform option -> unit)
     (notify_image_map_selection : string -> int -> unit)
     : ReactElement seq =
 
@@ -86,22 +165,19 @@ let private view_idle_visible
             prop.id "image_map_image"
             prop.key data.url
             prop.src data.url
+(* 20260418 Code added by AI. *)
+(* When the image is loaded, refresh the image transform. *)
+            prop.ref image_ref
+            prop.onLoad (fun _ -> set_image_transform (image_ref.current |> Option.bind get_image_transform))
+(* 20260418 End code added by AI. *)
         ]
 
         for item in data.items do
-            let left   = item.x1
-            let top    = item.y1
-            let width  = item.x2 - item.x1
-            let height = item.y2 - item.y1
-
             Html.div [
                 prop.className "image_map_hotspot"
                 prop.style [
                     style.zIndex image_map_hotspot_z_index
-                    style.left (length.percent left)
-                    style.top (length.percent top)
-                    style.width (length.percent width)
-                    style.height (length.percent height)
+                    yield! get_hotspot_style image_transform item
                 ]
                 prop.onClick (fun event ->
                     do
@@ -138,7 +214,10 @@ let private view_2
 
 let private view
     (element_ref : IRefValue<HTMLElement option>)
+    (image_ref : IRefValue<HTMLImageElement option>)
     (state : IRefValue<Transition_State<Image_Map_State, Image_Map_Transition_Type>>)
+    (image_transform : Image_Transform option)
+    (set_image_transform : Image_Transform option -> unit)
     (notify_image_map_selection : string -> int -> unit)
     (complete_transition : Complete_Transition_Func<Image_Map_State>)
     : ReactElement =
@@ -160,7 +239,7 @@ let private view
             prop.children [
                 match state.current with
                 | Idle Hidden -> Html.none
-                | Idle (Visible data) -> yield! view_idle_visible data notify_image_map_selection
+                | Idle (Visible data) -> yield! view_idle_visible data image_ref image_transform set_image_transform notify_image_map_selection
                 | In_Transition transition_data -> view_2 transition_data complete_transition
             ]
         ]
@@ -202,7 +281,16 @@ let Image_Map
     do state_ref.current <- state
     let complete_transition_2 = complete_transition set_state notify_transition_complete
 
-(* Give focus to this component when it is visible. This is so we can prevent mouse click and key down events leaking to the game. *)
+(* 20260418 Code added by AI. *)
+(* We set image_ref in view_idle_visible (). *)
+    let image_ref = React.useRef<HTMLImageElement option> None
+    let image_transform, set_image_transform = React.useState<Image_Transform option> None
+(* We call this when the image is loaded or the window is resized. *)
+    let refresh_image_transform () =
+        set_image_transform (image_ref.current |> Option.bind get_image_transform)
+(* 20260418 End code added by AI. *)
+
+(* Give focus to this component when it is visible. This is so we can prevent mouse click and key down events leaking to the game. We set element_ref in view (). *)
     let element_ref = React.useRef None
     React.useEffect(
         (fun () ->
@@ -210,6 +298,28 @@ let Image_Map
             | Idle Hidden -> ()
             | _ -> element_ref.current?focus()
         ), [| box state |])
+
+(* 20260418 Code added by AI. *)
+(* When the window is resized, refresh the image transform. *)
+    React.useEffect(
+        (fun () ->
+            let on_resize (_ : Event) = refresh_image_transform ()
+            window.addEventListener ("resize", on_resize)
+            React.createDisposable (fun () -> window.removeEventListener ("resize", on_resize))
+        ),
+        [||]
+    )
+
+(* When the state changes, refresh the image transform if the image is visible, or set it to None if the image is hidden. *)
+    React.useEffect(
+        (fun () ->
+            match state with
+            | Idle (Visible _) -> refresh_image_transform ()
+            | _ -> set_image_transform None
+        ),
+        [| box state |]
+    )
+(* 20260418 End code added by AI. *)
 
 (* Interface *)
 
@@ -254,4 +364,4 @@ The other three components with is_visible () methods (Menu, Save_Load, Configur
 
 (* Render *)
 
-    view element_ref state_ref notify_image_map_selection complete_transition_2
+    view element_ref image_ref state_ref image_transform set_image_transform  notify_image_map_selection complete_transition_2

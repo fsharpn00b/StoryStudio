@@ -1,17 +1,16 @@
 #background_fade_container {
 /* We use a grid so we can put multiple inner containers in the same cell to superimpose them. */
   display: grid;
-/* overflow: hidden and object-fit: cover cause the browser to show as much of the image as it can without resizing it either vertically or horizontally or using letterboxing or pillarboxing.
+/* So far we have tried the following methods to make the background image fit the viewport.
 
-TODO1 #image_map This can cause image map hotspots to become misaligned so they no longer correspond to shaped/labeled sections in the image. Can we fix that by setting hotspot width/height to vw/vh instead? No, maybe because object-fit: cover causes the image to expand/shrink at both top and bottom or both left and right?
+1. #background_fade_container/overflow: hidden and .background_fade_image/object-fit: contain. This resizes the image and uses letterboxing/pillarboxing. Renpy seems to use the same method. This is our current method.
 
-TODO2 Let the player choose between
-1 Current behavior.
-2 Resize background image/image map to fit viewport (remove overflow: hidden and object-fit: cover).
-3 Letterboxing/pillarboxing (change to object-fit: contain).
+2. #background_fade_container/overflow: hidden and .background_fade_image/object-fit: cover. This does not resize the image, but shows as much of it as possible, cropping evenly from all sides. This seems unlikely to work with different display resolutions.
 
-- Letterboxing/pillarboxing an image map exposes the characters and dialogue box behind it. We thought we fixed this by putting them in interface layers, but we were wrong. It could be that letterboxing/pillarboxing detaches the image map from the edges of the viewport whereas the interface layers are still attached to the edges of the viewport.
-(end)
+3. Neither. This resizes the image horizontally and vertically to fit the viewport. This distorts the image.
+
+- Letterboxing/pillarboxing an image map exposes the characters and dialogue box behind it. We think this is because letterboxing/pillarboxing detaches the image map from the edges of the viewport, whereas the interface layers that contain the characters and dialogue box are still attached to the edges of the viewport. We probably need code to transform the interface layers to match the dimensions of the resized background image/image map.
+
 - If we fix this, we could also put notifications and command menu in interface layer containers. That way, they would behave as if attached to the edges of the background image/image map instead of to the edges of the viewport.
 */
   overflow: hidden;
@@ -25,7 +24,7 @@ So we must set the width/height of the image directly, and we must use vw/vh.
 */
   width: 100vw;
   height: 100vh;
-  object-fit: cover;
+  object-fit: contain;
 /* Prevent the player from selecting or dragging the background image. */
   pointer-events: none;
   user-select: none;
