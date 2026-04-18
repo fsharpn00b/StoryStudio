@@ -97,6 +97,12 @@ let private get_image_transform
     if natural_width <= 0.0 || natural_height <= 0.0 || rendered_width <= 0.0 || rendered_height <= 0.0 then
         None
     else
+
+(* Calculate the scale at which the image is being displayed so we can scale the hotspots to match. *)
+        let scale = min (rendered_width / natural_width) (rendered_height / natural_height)
+
+(* This code determines the object fit dynamically and calculates the scale accordingly. For now, we plan to stay with object-fit: contain, so we do not use this. *)
+(*
 (* Determine the object fit. *)
         let object_fit =
             (window?getComputedStyle(image_element)?objectFit |> string)
@@ -109,6 +115,7 @@ let private get_image_transform
             | "contain" -> min (rendered_width / natural_width) (rendered_height / natural_height)
             | "cover" -> max (rendered_width / natural_width) (rendered_height / natural_height)
             | _ -> error "get_image_transform" "Unexpected object fit." ["object_fit", object_fit] |> invalidOp
+*)
 
         let fitted_width = natural_width * scale
         let fitted_height = natural_height * scale
