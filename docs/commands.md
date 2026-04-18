@@ -337,11 +337,11 @@ Example:
 ```
 // Show an image map using the background image named `overhead`. Fade in the background image over 1 second.
 imagemap direction overhead 1.0
-// Hotspot 1 has coordinates x1 0%, y1 0%, x2 25%, x2 25%.
+// Hotspot 1 has coordinates x1 182, y1 416, x2 242, y2 476.
 // Hotspot 1 is only available if `is_lost` is `false`.
-1 0 0 25 25 / false === window.state.player_state.is_lost
-// Hotspot 2 has coordinates x1 25%, y1 25%, x2 50%, y2 50%.
-2 25 25 50 50
+1 182 416 242 476 / false === window.state.player_state.is_lost
+// Hotspot 2 has coordinates x1 1195, y1 0, x2 1470, y2 150.
+2 1195 0 1470 150
 endimagemap
 // After the player chooses, fade out the background image over 1 second.
 hideimagemap 1.0
@@ -350,12 +350,12 @@ hideimagemap 1.0
 Notes:
 - An image map must contain at least one item that does not depend on a conditional.
 - As with [Menu](#menu), after the player chooses an image map item, the image map item index of the player's choice is assigned to a variable named after the image map. In the example, if the player chooses the first item, a variable named `direction` is created with the value `1`.
-- Background names and URLs are specified in [/src/0_data/bgs.txt](https://github.com/fsharpn00b/StoryStudio/blob/main/src/0_data/bgs.txt). For example:
+- An image map uses a background name. Background names and URLs are specified in [/src/0_data/bgs.txt](https://github.com/fsharpn00b/StoryStudio/blob/main/src/0_data/bgs.txt). For example:
 
   ```
   {
-    "name": "day",
-    "url": "/0_assets/bg/forest/day.jpg"
+    "name": "overhead",
+    "url": "/0_assets/bg/forest/overhead.jpg"
   }
   ```
 - If you use the same image map name more than once, the player's choice for the second image map overwrites the first, and [JavaScript validation](#validating-javascript) fails.
