@@ -110,68 +110,24 @@ let private set_configuration
 
 (* Main functions - rendering *)
 
-let private fade_in
+let private transition
     (characters : IRefValue<Character_Map>)
     (characters_in_transition : IRefValue<int<character_id> Set>)
     (configuration : Characters_Configuration)
-    (character_short_name : string)
-    (url : string)
-    (position : int<percent>)
-    (transition_time : Transition_Time)
+    (transition_data : Character_Transition_Data)
     (command_queue_item_id : int<command_queue_item_id>)
     : unit =
 
     #if debug
-    do debug "fade_in" String.Empty ["characters", characters; "character_short_name", character_short_name; "url", url; "position", position; "transition_time", transition_time]
+    do debug "transition" String.Empty ["character_short_name", transition_data.character_short_name; "transition_data", transition_data]
     #endif
 
-    match characters.current.TryGetValue character_short_name with
+    match characters.current.TryGetValue transition_data.character_short_name with
     | true, character ->
         do
             add_to_characters_in_transition characters_in_transition <| character.current.get_id ()
-            character.current.fade_in url position transition_time command_queue_item_id
-    | _ -> do warn "fade_in" false "Unknown character." ["character_short_name", character_short_name; "characters", characters]
-
-let private fade_out
-    (characters : IRefValue<Character_Map>)
-    (characters_in_transition : IRefValue<int<character_id> Set>)
-    (configuration : Characters_Configuration)
-    (character_short_name : string)
-    (transition_time : Transition_Time)
-    (command_queue_item_id : int<command_queue_item_id>)
-    : unit =
-
-    #if debug
-    do debug "fade_out" String.Empty ["characters", characters; "character_short_name", character_short_name; "transition_time", transition_time]
-    #endif
-
-    match characters.current.TryGetValue character_short_name with
-    | true, character ->
-        do
-            add_to_characters_in_transition characters_in_transition <| character.current.get_id ()
-            character.current.fade_out transition_time command_queue_item_id
-    | _ -> do warn "fade_out" false "Unknown character." ["character_short_name", character_short_name; "characters", characters]
-
-let private cross_fade
-    (characters : IRefValue<Character_Map>)
-    (characters_in_transition : IRefValue<int<character_id> Set>)
-    (configuration : Characters_Configuration)
-    (character_short_name : string)
-    (url : string)
-    (transition_time : Transition_Time)
-    (command_queue_item_id : int<command_queue_item_id>)
-    : unit =
-
-    #if debug
-    do debug "cross_fade" String.Empty ["characters", characters; "character_short_name", character_short_name; "url", url; "transition_time", transition_time]
-    #endif
-
-    match characters.current.TryGetValue character_short_name with
-    | true, character ->
-        do
-            add_to_characters_in_transition characters_in_transition <| character.current.get_id ()
-            character.current.cross_fade url transition_time command_queue_item_id
-    | _ -> do warn "cross_fade" false "Unknown character." ["character_short_name", character_short_name; "characters", characters]
+            character.current.transition transition_data command_queue_item_id
+    | _ -> do warn "transition" false "Unknown character." ["character_short_name", transition_data.character_short_name; "characters", characters]
 
 let private fade_out_all
     (characters : IRefValue<Character_Map>)
@@ -181,59 +137,14 @@ let private fade_out_all
     : unit =
 
     #if debug
-    do debug "fade_out_all" String.Empty ["characters", characters; "transition_time", transition_time]
+    do debug "fade_out_all" String.Empty ["transition_time", transition_time]
     #endif
 
     do characters.current |> Seq.iter (fun kv ->
         do
             add_to_characters_in_transition characters_in_transition <| kv.Value.current.get_id ()
-            kv.Value.current.fade_out transition_time command_queue_item_id
+            kv.Value.current.transition { character_short_name = kv.Key; transition = Fade (Fade_Out { transition_time = transition_time }) } command_queue_item_id
     )
-
-// TODO1 #transitions Reduce this proliferation of types, functions, parameters, and call layers.
-let private move_in
-    (characters : IRefValue<Character_Map>)
-    (characters_in_transition : IRefValue<int<character_id> Set>)
-    (configuration : Characters_Configuration)
-    (character_short_name : string)
-    (url : string)
-    (direction : Character_Move_Direction)
-    (position : int<percent>)
-    (transition_time : Transition_Time)
-    (command_queue_item_id : int<command_queue_item_id>)
-    : unit =
-
-    #if debug
-    do debug "move_in" String.Empty ["characters", characters; "character_short_name", character_short_name; "url", url; "direction", direction; "position", position; "transition_time", transition_time]
-    #endif
-
-    match characters.current.TryGetValue character_short_name with
-    | true, character ->
-        do
-            add_to_characters_in_transition characters_in_transition <| character.current.get_id ()
-            character.current.move_in url direction position transition_time command_queue_item_id
-    | _ -> do warn "move_in" false "Unknown character." ["character_short_name", character_short_name; "characters", characters]
-
-let private move_out
-    (characters : IRefValue<Character_Map>)
-    (characters_in_transition : IRefValue<int<character_id> Set>)
-    (configuration : Characters_Configuration)
-    (character_short_name : string)
-    (direction : Character_Move_Direction)
-    (transition_time : Transition_Time)
-    (command_queue_item_id : int<command_queue_item_id>)
-    : unit =
-
-    #if debug
-    do debug "move_out" String.Empty ["characters", characters; "character_short_name", character_short_name; "url", url; "direction", direction; "position", position; "transition_time", transition_time]
-    #endif
-
-    match characters.current.TryGetValue character_short_name with
-    | true, character ->
-        do
-            add_to_characters_in_transition characters_in_transition <| character.current.get_id ()
-            character.current.move_out direction transition_time command_queue_item_id
-    | _ -> do warn "move_out" false "Unknown character." ["character_short_name", character_short_name; "characters", characters]
 
 (* Component *)
 
@@ -250,7 +161,6 @@ let Characters
 (* State *)
 
     let configuration = React.useRef characters_configuration
-    let transition_configuration : Transition_Configuration = ()
 
     let characters_in_transition = React.useRef Set.empty
 
@@ -278,48 +188,20 @@ let Characters
     do React.useImperativeHandle(props.expose, fun () ->
         {
             new I_Characters with
-                member _.fade_in
-                    (character_short_name : string)
-                    (url : string)
-                    (position : int<percent>)
-                    (transition_time : Transition_Time)
+
+                member _.transition
+                    (transition_data : Character_Transition_Data)
                     (command_queue_item_id : int<command_queue_item_id>)
                     : unit =
-                    fade_in characters_2 characters_in_transition configuration.current character_short_name url position transition_time command_queue_item_id
-                member _.fade_out
-                    (character_short_name : string)
-                    (transition_time : Transition_Time)
-                    (command_queue_item_id : int<command_queue_item_id>)
-                    : unit =
-                    fade_out characters_2 characters_in_transition configuration.current character_short_name transition_time command_queue_item_id
-                member _.cross_fade
-                    (character_short_name : string)
-                    (url : string)
-                    (transition_time : Transition_Time)
-                    (command_queue_item_id : int<command_queue_item_id>)
-                    : unit =
-                    cross_fade characters_2 characters_in_transition configuration.current character_short_name url transition_time command_queue_item_id                  
+
+                    transition characters_2 characters_in_transition configuration.current transition_data command_queue_item_id
+              
                 member _.fade_out_all
                     (transition_time : Transition_Time)
                     (command_queue_item_id : int<command_queue_item_id>)
                     : unit =
                     fade_out_all characters_2 characters_in_transition transition_time command_queue_item_id
-                member _.move_in
-                    (character_short_name : string)
-                    (url : string)
-                    (direction : Character_Move_Direction)
-                    (position : int<percent>)
-                    (transition_time : Transition_Time)
-                    (command_queue_item_id : int<command_queue_item_id>)
-                    : unit =
-                    move_in characters_2 characters_in_transition configuration.current character_short_name url direction position transition_time command_queue_item_id
-                member _.move_out
-                    (character_short_name : string)
-                    (direction : Character_Move_Direction)
-                    (transition_time : Transition_Time)
-                    (command_queue_item_id : int<command_queue_item_id>)
-                    : unit =
-                    move_out characters_2 characters_in_transition configuration.current character_short_name direction transition_time command_queue_item_id
+
                 member _.get_state () : Characters_Saveable_State = get_state characters_2
                 member _.set_state (state : Characters_Saveable_State) : unit = set_state characters_2 state
                 member _.set_configuration (new_configuration : Characters_Configuration) = set_configuration configuration new_configuration

@@ -35,8 +35,8 @@ menu direction Which way?
 2 right
 endmenu
 
-// Fade in the character Tom, with a happy expression, at horizontal position 75%, over 1 second.
-fadein t happy 75 1.0
+// Move in the character Tom, with a happy expression, from the right, at horizontal position 75%, over 1 second.
+movein t happy right 75 1.0
 
 t Great idea!
 
@@ -65,7 +65,7 @@ else
     fadein l angry 25 1.0
     l Did you get us lost again?
 
-    fadein t happy 75 1.0
+    movein t happy right 75 1.0
     t Nope!
     t The end!
 

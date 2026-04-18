@@ -56,8 +56,8 @@ Keys tell React which array item each component corresponds to, so that it can m
 // TODO2 #transitions Add move in/out at bottom.
 let view_2_move
     (transition_data : Transition_Data<Character_State, Character_Transition_Type>)
+    (move_data : Character_Move_Data)
     (complete_transition : Complete_Transition_Func<Character_State>)
-    (move_data : Character_Move_Data_1)
     : ReactElement seq =
 
 (* Get the character URL, position, and height.
@@ -81,11 +81,10 @@ Unlike with Fade, we do not use the old and new data (which can be either Visibl
 
     let transition_property_name, transition_property_initial_value, transition_property_final_value =
         match move_data.in_or_out, move_data.direction with
-        | Character_Move_In_Or_Out.In, Left -> "left", from_left, position
-        | Character_Move_In_Or_Out.In, Right -> "left", from_right, position
-        | Character_Move_In_Or_Out.Out, Left -> "left", position, from_left
-        | Character_Move_In_Or_Out.Out, Right -> "left", position, from_right
-        | _ -> error "view_2_move" "Unrecognized move command." ["transition_data", transition_data; "move_data", move_data] |> invalidOp
+        | Move_In _, Left -> "left", from_left, position
+        | Move_In _, Right -> "left", from_right, position
+        | Move_Out _, Left -> "left", position, from_left
+        | Move_Out _, Right -> "left", position, from_right
 
     get_transitionable_image
         (Some "character")
@@ -153,6 +152,6 @@ let view
         | In_Transition transition_data ->
             yield!
                 match transition_data.transition_type with
-                | Fade -> view_2_fade transition_data complete_transition
-                | Move move_data -> view_2_move transition_data complete_transition move_data
+                | Fade _ -> view_2_fade transition_data complete_transition
+                | Move move_data -> view_2_move transition_data move_data complete_transition
     ]

@@ -39,6 +39,60 @@ let private restore_saved_state
 
     do complete_transition None false saved_state
 
+(* Main functions - rendering *)
+
+let private transition
+    (set_state : Set_State_Func<Character_State, Character_Transition_Type>)
+    (notify_transition_complete : int<command_queue_item_id> -> unit)
+    (state_ref : IRefValue<Transition_State<Character_State, Character_Transition_Type>>)
+(* This is for debugging.*)
+    (character : Character_Input)
+    (height : IRefValue<int<percent>>)
+    (transition_data : Character_Transition_Data)
+    (command_queue_item_id : int<command_queue_item_id>)
+    : unit =
+
+    let new_data, transition_time =
+        match transition_data.transition with
+        | Fade (Fade_In fade_data) ->
+            Visible {
+                position = fade_data.position
+                height = height.current
+                url = fade_data.url
+            }, fade_data.transition_time
+        | Fade (Fade_Out fade_data) ->
+            Hidden, fade_data.transition_time
+        | Fade (Cross_Fade fade_data) ->
+(* Character position is stored in the fade state (if the state is visible) so we need to extract it. *)
+            let position =
+                match state_ref.current with
+                | Idle (Visible data) -> data.position
+                | _ -> error "cross_fade" "Tried to cross-fade a character that is not visible." ["character", character] |> invalidOp
+            Visible {
+                position = position
+                height = height.current
+                url = fade_data.url
+            }, fade_data.transition_time
+        | Move move_data ->
+            match move_data.in_or_out with
+            | Move_In move_data ->
+                Visible {
+                    position = move_data.position
+                    height = height.current
+                    url = move_data.url
+                }, move_data.transition_time
+            | Move_Out move_data ->
+                Hidden, move_data.transition_time
+
+    do begin_transition
+        set_state
+        notify_transition_complete
+        state_ref
+        new_data
+        transition_time
+        transition_data.transition
+        command_queue_item_id
+
 (* Component *)
 
 [<ReactComponent>]
@@ -55,7 +109,6 @@ let Character
 Height is set in the character definition file and not changed afterward. It is copied to Visible_Characer_Data because we use that to render the character.
 *)
     let height : IRefValue<int<percent>> = React.useRef character.height
-    let transition_configuration : Transition_Configuration = ()
     let transition_timeout_function_handle = React.useRef None
     let state, set_state = React.useState (Idle Hidden)
     let state_ref = React.useRef state
@@ -67,106 +120,12 @@ Height is set in the character definition file and not changed afterward. It is 
     do React.useImperativeHandle(props.expose, fun () ->
         {
             new I_Character with
-                member _.fade_in
-                    (new_url : string)
-                    (position : int<percent>)
-                    (transition_time : Transition_Time)
+                member _.transition
+                    (transition_data : Character_Transition_Data)
                     (command_queue_item_id : int<command_queue_item_id>)
                     : unit =
                     
-                    begin_transition
-                        set_state
-                        notify_transition_complete
-                        state_ref
-                        (Visible {
-                            position = position
-                            height = height.current
-                            url = new_url
-                        })
-                        transition_time
-                        Fade
-                        command_queue_item_id
-
-                member _.fade_out
-                    (transition_time : Transition_Time)
-                    (command_queue_item_id : int<command_queue_item_id>)
-                    : unit =
-
-                    begin_transition
-                        set_state
-                        notify_transition_complete
-                        state_ref
-                        Hidden
-                        transition_time
-                        Fade
-                        command_queue_item_id
-
-                member _.cross_fade
-                    (new_url : string)
-                    (transition_time : Transition_Time)
-                    (command_queue_item_id : int<command_queue_item_id>)
-                    : unit =
-
-(* Character position is stored in the fade state (if the state is visible) so we need to extract it. *)
-                    let position =
-                        match state_ref.current with
-                        | Idle (Visible data) -> data.position
-                        | _ -> error "cross_fade" "Tried to cross-fade a character that is not visible." ["character", character] |> invalidOp
-                    begin_transition
-                        set_state
-                        notify_transition_complete
-                        state_ref
-                        (Visible {
-                            position = position
-                            height = height.current
-                            url = new_url
-                        })
-                        transition_time
-                        Fade
-                        command_queue_item_id
-
-
-                member _.move_in
-                    (new_url : string)
-                    (direction : Character_Move_Direction)
-                    (position : int<percent>)
-                    (transition_time : Transition_Time)
-                    (command_queue_item_id : int<command_queue_item_id>)
-                    : unit =
-
-                    begin_transition
-                        set_state
-                        notify_transition_complete
-                        state_ref
-                        (Visible {
-                            position = position
-                            height = height.current
-                            url = new_url
-                        })
-                        transition_time
-                        (Move {
-                            in_or_out = Character_Move_In_Or_Out.In
-                            direction = direction
-                        })
-                        command_queue_item_id
-
-                member _.move_out
-                    (direction : Character_Move_Direction)
-                    (transition_time : Transition_Time)
-                    (command_queue_item_id : int<command_queue_item_id>)
-                    : unit =
-
-                    begin_transition
-                        set_state
-                        notify_transition_complete
-                        state_ref
-                        Hidden
-                        transition_time
-                        (Move {
-                            in_or_out = Character_Move_In_Or_Out.Out
-                            direction = direction
-                        })
-                        command_queue_item_id
+                    transition set_state notify_transition_complete state_ref character height transition_data command_queue_item_id
 
                 member _.get_state () : Character_State = get_state state_ref
                 member _.set_state (state : Character_State) : unit = restore_saved_state state complete_transition_2

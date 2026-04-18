@@ -142,23 +142,25 @@ let get_move_in_semantics
     : Command_Pre_Parse_Type =
 
     {
-        Character_Move_In_Data.character_short_name = character_short_name
-        url = get_character_sprite_url characters character_short_name character_sprite_name script_text_index
-        direction =
-            match direction with
-            | "left" -> Character_Move_Direction.Left
-            | "right" -> Character_Move_Direction.Right
-// TODO2 #transitions Add this.
-//            | "bottom" -> Character_Move_Direction.Bottom
-            | _ ->
-                {
-                    message = "Unknown character move in direction."
-                    script_text_index = script_text_index
-                    data = ["direction", direction]
-                } |> Parsing_Semantics_Error |> raise
-        position = position
-        transition_time = transition_time
-    } |> Character_Move_Data_2.In |> Character_Move |> Command_Pre_Parse_Type.Command
+        Character_Transition_Data.character_short_name = character_short_name
+        transition = Move {
+            in_or_out = Move_In {
+                url = get_character_sprite_url characters character_short_name character_sprite_name script_text_index
+                position = position
+                transition_time = transition_time
+            }
+            direction =
+                match direction with
+                | "left" -> Left
+                | "right" -> Right
+                | _ ->
+                    {
+                        message = "Unknown character move in direction."
+                        script_text_index = script_text_index
+                        data = ["direction", direction]
+                    } |> Parsing_Semantics_Error |> raise
+        }
+    } |> Character_Transition |> Command_Pre_Parse_Type.Command
 
 let get_move_out_semantics
     (character_short_name : string) 
@@ -168,21 +170,23 @@ let get_move_out_semantics
     : Command_Pre_Parse_Type =
 
     {
-        Character_Move_Out_Data.character_short_name = character_short_name
-        direction =
-            match direction with
-            | "left" -> Character_Move_Direction.Left
-            | "right" -> Character_Move_Direction.Right
-// TODO2 #transitions Add this.
-//            | "bottom" -> Character_Move_Direction.Bottom
-            | _ ->
-                {
-                    message = "Unknown character move out direction."
-                    script_text_index = script_text_index
-                    data = ["direction", direction]
-                } |> Parsing_Semantics_Error |> raise
-        transition_time = transition_time
-    } |> Character_Move_Data_2.Out |> Character_Move |> Command_Pre_Parse_Type.Command
+        Character_Transition_Data.character_short_name = character_short_name
+        transition = Move {
+            in_or_out = Move_Out {
+                transition_time = transition_time
+            }
+            direction =
+                match direction with
+                | "left" -> Left
+                | "right" -> Right
+                | _ ->
+                    {
+                        message = "Unknown character move out direction."
+                        script_text_index = script_text_index
+                        data = ["direction", direction]
+                    } |> Parsing_Semantics_Error |> raise
+        }
+    } |> Character_Transition |> Command_Pre_Parse_Type.Command
 
 (* These checks either would be too complex to do with the grammar (for example, a menu could contain only comments, yet appear non-empty) or detect errors for which we prefer more descriptive error messages. *)
 let check_menu_items

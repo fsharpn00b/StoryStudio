@@ -33,10 +33,7 @@ let command_to_behavior (command : Command_Type) : Command_Behavior =
     | Background_Fade_In _
     | Background_Fade_Out _
     | Background_Cross_Fade _
-    | Character_Fade_In _
-    | Character_Fade_Out _
-    | Character_Cross_Fade _
-    | Character_Move _
+    | Character_Transition _
     | Fade_Out_All _
     | Dialogue_Box_Show
     | Dialogue_Box_Hide -> Wait_For_Callback { continue_afterward = true; add_to_history = false; autosave = false }
@@ -64,10 +61,7 @@ let command_to_component_ids (command : Command_Type) : Runner_Component_Names S
     | Background_Fade_In _
     | Background_Fade_Out _
     | Background_Cross_Fade _ -> Set.singleton Background
-    | Character_Fade_In _
-    | Character_Fade_Out _
-    | Character_Cross_Fade _
-    | Character_Move _ -> Set.singleton Characters
+    | Character_Transition _ -> Set.singleton Characters
     | Fade_Out_All _ -> Set.ofList [Background; Characters; Dialogue_Box]
     | Dialogue_Box_Show
     | Dialogue_Box_Hide

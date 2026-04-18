@@ -39,11 +39,8 @@ type Command_Type =
     | Background_Fade_In of Background_Fade_In_Data
     | Background_Fade_Out of Background_Fade_Out_Data
     | Background_Cross_Fade of Background_Cross_Fade_Data
-    | Character_Fade_In of Character_Fade_In_Data
-    | Character_Fade_Out of Character_Fade_Out_Data
-    | Character_Cross_Fade of Character_Cross_Fade_Data
     | Fade_Out_All of Transition_Time
-    | Character_Move of Character_Move_Data_2
+    | Character_Transition of Character_Transition_Data
     | Dialogue_Box_Show
     | Dialogue_Box_Hide
     | Dialogue of Dialogue_Data

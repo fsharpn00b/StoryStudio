@@ -121,22 +121,28 @@ We do not currently use this. *)
         } |> Background_Cross_Fade |> Command_Pre_Parse_Type.Command |> Some
     semantics?fade_in_character <- fun _ _ character_short_name _ character_sprite_name _ position _ transition_time ->
         {
-            Character_Fade_In_Data.character_short_name = character_short_name?sourceString
-            url = get_character_sprite_url characters character_short_name?sourceString character_sprite_name?sourceString character_short_name?source?startIdx
-            position = position?ast()
-            transition_time = transition_time?ast()
-        } |> Character_Fade_In |> Command_Pre_Parse_Type.Command |> Some
+            Character_Transition_Data.character_short_name = character_short_name?sourceString
+            transition = Character_Transition_Type.Fade <| Fade_In {
+                url = get_character_sprite_url characters character_short_name?sourceString character_sprite_name?sourceString character_short_name?source?startIdx
+                position = position?ast()
+                transition_time = transition_time?ast()
+            }
+        } |> Character_Transition |> Command_Pre_Parse_Type.Command |> Some
     semantics?fade_out_character <- fun _ _ character_short_name _ transition_time->
         {
-            Character_Fade_Out_Data.character_short_name = character_short_name?sourceString
-            transition_time = transition_time?ast()
-        } |> Character_Fade_Out |> Command_Pre_Parse_Type.Command |> Some
+            Character_Transition_Data.character_short_name = character_short_name?sourceString
+            transition = Character_Transition_Type.Fade <| Fade_Out {
+                transition_time = transition_time?ast()
+            }
+        } |> Character_Transition |> Command_Pre_Parse_Type.Command |> Some
     semantics?cross_fade_character <- fun _ _ character_short_name _ character_sprite_name _ transition_time ->
         {
-            Character_Cross_Fade_Data.character_short_name = character_short_name?sourceString
-            url = get_character_sprite_url characters character_short_name?sourceString character_sprite_name?sourceString character_short_name?source?startIdx
-            transition_time = transition_time?ast()
-        } |> Character_Cross_Fade  |> Command_Pre_Parse_Type.Command |> Some
+            Character_Transition_Data.character_short_name = character_short_name?sourceString
+            transition = Character_Transition_Type.Fade <| Cross_Fade {
+                url = get_character_sprite_url characters character_short_name?sourceString character_sprite_name?sourceString character_short_name?source?startIdx
+                transition_time = transition_time?ast()
+            }
+        } |> Character_Transition |> Command_Pre_Parse_Type.Command |> Some
     semantics?fade_out_all <- fun _ _ transition_time ->
         transition_time?ast() |> Fade_Out_All |> Command_Pre_Parse_Type.Command |> Some
     semantics?move_in_character <- fun _ _ character_short_name _ character_sprite_name _ direction _ position _ transition_time ->

@@ -50,62 +50,59 @@ type Character_State =
     | Visible of Visible_Character_Data
     | Hidden
 
-type Character_Move_In_Or_Out =
-    | In
-    | Out
-
-type Character_Move_Direction =
-    | Left
-    | Right
-    | Bottom
-
-type Character_Move_Data_1 = {
-    in_or_out : Character_Move_In_Or_Out
-    direction : Character_Move_Direction
-}
-
-type Character_Transition_Type =
-    | Fade
-    | Move of Character_Move_Data_1
-
-(* These types are used by the parser to create commands. *)
-
 type Character_Fade_In_Data = {
-(* This is for debugging. *)
-    character_short_name : string
     url : string
     position : int<percent>
     transition_time : Transition_Time
 }
 
 type Character_Fade_Out_Data = {
-    character_short_name : string
     transition_time : Transition_Time
 }
 
 type Character_Cross_Fade_Data = {
-    character_short_name : string
     url : string
     transition_time : Transition_Time
 }
 
+type Character_Move_Direction =
+    | Left
+    | Right
+(* We do not support this yet. *)
+//    | Bottom
+
 type Character_Move_In_Data = {
-    character_short_name : string
     url : string
-    direction : Character_Move_Direction
     position : int<percent>
     transition_time : Transition_Time
 }
 
 type Character_Move_Out_Data = {
-    character_short_name : string
-    direction : Character_Move_Direction
     transition_time : Transition_Time
 }
 
-type Character_Move_Data_2 =
-    | In of Character_Move_In_Data
-    | Out of Character_Move_Out_Data
+type Character_In_Or_Out_Data =
+    | Move_In of Character_Move_In_Data
+    | Move_Out of Character_Move_Out_Data
+
+type Character_Move_Data = {
+    in_or_out : Character_In_Or_Out_Data
+    direction : Character_Move_Direction
+}
+
+type Character_Fade_Data =
+    | Fade_In of Character_Fade_In_Data
+    | Fade_Out of Character_Fade_Out_Data
+    | Cross_Fade of Character_Cross_Fade_Data
+
+type Character_Transition_Type =
+    | Fade of Character_Fade_Data
+    | Move of Character_Move_Data
+
+type Character_Transition_Data = {
+    character_short_name : string
+    transition : Character_Transition_Type
+}
 
 type Characters_Saveable_State = Map<string, Character_State>
 
@@ -114,16 +111,8 @@ type Characters_Saveable_State = Map<string, Character_State>
 type I_Character =
     abstract member get_id : unit -> int<character_id>
     abstract member get_full_name : unit -> string
-(* url, position, transition_time, command_queue_item_id *)
-    abstract member fade_in : string -> int<percent> -> Transition_Time -> int<command_queue_item_id> -> unit
-(* transition_time, command_queue_item_id *)
-    abstract member fade_out : Transition_Time -> int<command_queue_item_id> -> unit
-(* url, transition_time, command_queue_item_id *)
-    abstract member cross_fade : string -> Transition_Time -> int<command_queue_item_id> -> unit
-(* url, direction, position, transition_time, command_queue_item_id *)
-    abstract member move_in : string -> Character_Move_Direction -> int<percent> -> Transition_Time -> int<command_queue_item_id> -> unit
-(* direction, transition_time, command_queue_item_id *)
-    abstract member move_out : Character_Move_Direction -> Transition_Time -> int<command_queue_item_id> -> unit
+(* transition_data, command_queue_item_id *)
+    abstract member transition : Character_Transition_Data -> int<command_queue_item_id> -> unit
     abstract member get_state : unit -> Character_State
     abstract member set_state : Character_State -> unit
 (* This is for debugging. *)
@@ -136,18 +125,10 @@ type I_Character =
     |}
 
 type I_Characters =
-(* character_short_name, url, position, transition_time, command_queue_item_id *)
-    abstract member fade_in : string -> string -> int<percent> -> Transition_Time -> int<command_queue_item_id> -> unit
-(* character_short_name, transition_time, command_queue_item_id *)
-    abstract member fade_out : string -> Transition_Time -> int<command_queue_item_id> -> unit
+(* transition_data, command_queue_item_id *)
+    abstract member transition : Character_Transition_Data -> int<command_queue_item_id> -> unit
 (* transition_time, command_queue_item_id *)
     abstract member fade_out_all : Transition_Time -> int<command_queue_item_id> -> unit
-(* character_short_name, url, transition_time, command_queue_item_id *)
-    abstract member cross_fade : string -> string -> Transition_Time -> int<command_queue_item_id> -> unit
-(* character_short_name, url, direction, position, transition_time, command_queue_item_id *)
-    abstract member move_in : string -> string -> Character_Move_Direction -> int<percent> -> Transition_Time -> int<command_queue_item_id> -> unit
-(* character_short_name, direction, transition_time, command_queue_item_id *)
-    abstract member move_out : string -> Character_Move_Direction -> Transition_Time -> int<command_queue_item_id> -> unit
     abstract member get_state : unit -> Characters_Saveable_State
     abstract member set_state : Characters_Saveable_State -> unit
     abstract member set_configuration : Characters_Configuration -> unit

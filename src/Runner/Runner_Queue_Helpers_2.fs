@@ -146,25 +146,9 @@ let private handle_command
             Some <| fun (command_queue_item_id : int<command_queue_item_id>) ->
                 do runner_state.runner_component_interfaces.current.background.current.cross_fade command_2.new_url command_2.transition_time command_queue_item_id
 
-        | Character_Fade_In command_2 ->
+        | Character_Transition command_2 ->
             Some <| fun (command_queue_item_id : int<command_queue_item_id>) ->
-                do runner_state.runner_component_interfaces.current.characters.current.fade_in command_2.character_short_name command_2.url command_2.position command_2.transition_time command_queue_item_id
-
-        | Character_Fade_Out command_2 ->
-            Some <| fun (command_queue_item_id : int<command_queue_item_id>) ->
-                do runner_state.runner_component_interfaces.current.characters.current.fade_out command_2.character_short_name command_2.transition_time command_queue_item_id
-
-        | Character_Cross_Fade command_2 ->
-            Some <| fun (command_queue_item_id : int<command_queue_item_id>) ->
-                do runner_state.runner_component_interfaces.current.characters.current.cross_fade command_2.character_short_name command_2.url command_2.transition_time command_queue_item_id
-
-        | Character_Move command_2 ->
-            Some <| fun (command_queue_item_id : int<command_queue_item_id>) ->
-                match command_2 with
-                | In data ->
-                    do runner_state.runner_component_interfaces.current.characters.current.move_in data.character_short_name data.url data.direction data.position data.transition_time command_queue_item_id
-                | Out data ->
-                    do runner_state.runner_component_interfaces.current.characters.current.move_out data.character_short_name data.direction data.transition_time command_queue_item_id
+                do runner_state.runner_component_interfaces.current.characters.current.transition command_2 command_queue_item_id
 
         | Fade_Out_All transition_time ->
             Some <| fun (command_queue_item_id : int<command_queue_item_id>) ->
