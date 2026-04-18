@@ -26,18 +26,33 @@ let mutable debug_render_counter = 1
 
 (* Globa values *)
 
-let mutable remove_character_transition_lock = 0
+let mutable characters_in_transition_lock = 0
 
 (* Helper functions - interface *)
 
+(* TODO2 Per AI:
+characters_in_transition is keyed only by character_id, not by command_queue_item_id. If overlapping Characters commands ever happen, bookkeeping can collide.
+...
+Short term: make add/remove symmetry cleaner (same critical section style).
+Long term robust fix: track transitions per command id (e.g., Map<command_queue_item_id, Set<character_id>>), then completion checks are isolated per queue item.
+(end)
+
+We did the short term fix by adding characters_in_transition_lock to add_to_characters_in_transition ().
+
+We are not sure about the long term fix. We do not expect to allow multiple simultaneous transitions for the same character. Accordingly, we do not allow a character to be added to characters_in_transition if it is already there.
+
+Simultaneous transition () calls for different characters will cause them to be added to characters_in_transition at the same time but for different command_queue_item_ids. So we could change characters_in_transition to use a record type that contains both character_id and command_queue_item_id. 
+*)
 let private add_to_characters_in_transition
     (characters_in_transition : IRefValue<int<character_id> Set>)
     (character_id : int<character_id>)
     : unit =
 
-    if characters_in_transition.current.Contains character_id then
-        do warn "add_to_characters_in_transition" false "Character already in transition." ["character_id", int character_id]
-    else do characters_in_transition.current <- characters_in_transition.current.Add character_id
+    lock (characters_in_transition_lock :> obj) (fun () ->
+        if characters_in_transition.current.Contains character_id then
+            do warn "add_to_characters_in_transition" false "Character already in transition." ["character_id", int character_id]
+        else do characters_in_transition.current <- characters_in_transition.current.Add character_id
+    )
 
 let private is_running_transition
     (characters : IRefValue<Character_Map>)
@@ -72,7 +87,7 @@ let private get_notify_character_transition_complete
     (notify_transition_complete : int<command_queue_item_id> -> unit)
     : int<command_queue_item_id> -> unit =
 
-    lock (remove_character_transition_lock :> obj) (fun () ->
+    lock (characters_in_transition_lock :> obj) (fun () ->
         fun (command_queue_item_id : int<command_queue_item_id>) ->
             if characters_in_transition.current.Contains character_id then
                 characters_in_transition.current <- characters_in_transition.current.Remove character_id
@@ -140,16 +155,22 @@ let private fade_out_all
     do debug "fade_out_all" String.Empty ["transition_time", transition_time]
     #endif
 
-    do characters.current |> Seq.iter (fun kv ->
 (* Do not fade out hidden characters. *)
-(* TODO1 #transitions Trying to fade out a hidden character caused a command queue error. Not sure why. Transition.begin_transition () checks if old_data and new_data are the same, and if so, it does not start a transition.
-*)
-        match kv.Value.current.get_state () with
-        | Hidden -> ()
-        | _ ->
-            do
-                add_to_characters_in_transition characters_in_transition <| kv.Value.current.get_id ()
-                kv.Value.current.transition { character_short_name = kv.Key; transition = Fade (Fade_Out { transition_time = transition_time }) } command_queue_item_id
+    let visible_characters =
+        characters.current
+            |> Seq.filter (fun kv ->
+                match kv.Value.current.get_state () with
+                | Hidden -> false
+                | _ -> true
+            )
+(* Convert the sequence to a list so we do not traverse it twice. *)
+            |> Seq.toList
+(* Finish adding characters to the characters in transition list before we actually start the transitions. get_notify_character_transition_complete () removes characters from the list. If a transition has transition time 0, we could end up removing a character from list before we have finished adding characters to it. *)
+    do visible_characters |> List.iter (fun kv ->
+        do add_to_characters_in_transition characters_in_transition <| kv.Value.current.get_id ()
+    )
+    do visible_characters |> List.iter (fun kv ->
+        do kv.Value.current.transition { character_short_name = kv.Key; transition = Fade (Fade_Out { transition_time = transition_time }) } command_queue_item_id
     )
 
 (* Component *)
