@@ -174,7 +174,6 @@ let rec private try_javascript_path
         | Command command_2 ->
             match command_2 with
 
-// TODO1 #parsing If we allow jumping to labels, we'll need to deal with that here also.
             | Jump jump_data ->
                 let destination_scene_id = jump_data.scene_id
                 if acc.scenes_encountered.Contains destination_scene_id then acc

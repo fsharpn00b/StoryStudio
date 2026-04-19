@@ -21,7 +21,21 @@ type JavaScript_Data = {
 
 (* TODO1 #parsing Allow jumping to labels.
 Scene_Data could contain a map of label -> command ID that we build as we parse.
-Otherwise, since we assign command IDs in Parser_2.parse_commands (), we don't know how we can transform Jump <label> to Jump <command_ID> in 
+Otherwise, since we assign command IDs in Parser_2.parse_commands (), we don't know how we can transform Jump <label> to Jump <command_ID> earlier, say in Parser_1_Semantics.
+
+Are command IDs relative to a scene? Yes, they start with initial_command_id.
+
+It seems we treat Jump as an ordinary command and assign it a next command ID. We actually do the jump in Runner_Queue_Helpers_2.handle_next_command ().
+
+In Parser_2.handle_command (), we could change the jump command ID.
+Probably cleanest to have a pre and post-parse jump command, the latter of which can only exist once we have the label command id.
+
+As we assign command IDs, keep a map of label -> command ID. Could add that to the scene data. Then, during run, look up the label destination.
+Also, keep track of all jump commands, and at the end of parsing a scene, make sure jump commands in it have valid destinations.
+
+Or, in Parser_2.parse_commands (), maintain a pool of jump commands there. Assign each jump command a command ID as expected, but don't dump it into the general pool.
+
+- We'll also need to deal with Jump in JavaScript_Parser.try_javascript_path ().
 *)
 type Jump_Data = {
     scene_id : int<scene_id>
@@ -83,6 +97,7 @@ type Command_Behavior =
 
 (* This is after we have matched a command but before we have parsed it. Parsing mostly means to assign command IDs and deal with If/Else_If/Else/End_If statements. *)
 type Command_Pre_Parse_Type =
+// TODO1 #parsing Might need to add Jump_Scene/Jump_Label here and to Command_Post_Parse_Type.
     | Command of Command_Type
     | If of string
     | Else_If of string

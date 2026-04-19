@@ -116,6 +116,7 @@ let get_character_sprite_url
             data = ["sprite", character_sprite_name; "character data", character]
         } |> Parsing_Semantics_Error |> raise
 
+// TODO1 #parsing Instead of failing, return a special case of jump command that awaits a label.
 let get_script_id
     (scripts : Script list)
     (destination : string)

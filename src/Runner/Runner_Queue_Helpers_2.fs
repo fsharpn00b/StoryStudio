@@ -190,7 +190,7 @@ let private handle_command
         match command_1 with
 
         | Jump jump_data ->
-(* We verify the jump destination in Parser_1_Match_Patterns.match_jump (). *)
+(* We verify the jump destination in Parser_1_Semantics.get_semantics () and Parser_1_Helpers.get_script_id (). *)
             Some {
                 next_command_scene_id = jump_data.scene_id;
                 next_command_id = jump_data.command_id
