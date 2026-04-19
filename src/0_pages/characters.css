@@ -1,7 +1,7 @@
-/*
+/* If we do not do this, when we move characters in from or out to the right, scrollbars appear because container overflows the viewport. */
 #characters_container {
+  overflow: hidden;
 }
-*/
 
 /* We must use position: absolute because we use the left attribute to position the character.
 
