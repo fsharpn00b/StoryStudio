@@ -77,46 +77,53 @@ let view_2_move
     (complete_transition : Complete_Transition_Func<Character_State>)
     : ReactElement seq =
 
-(* Get the character URL, position, and height.
-The URL and height do not change during a move operation.
-If the move direction is In, the character data is in new_data. We use the position as the transition property final value.
-If the move direction is Out, the character data is in old_data. We use the position as the transition property initial value.
-Unlike with Fade, we do not use the old and new data (which can be either Visible or Hidden) to determine the transition operation (for example, fade in/fade out/cross fade, or move in/move out). That is specified in Character_Move_Data_1.
-*)
-    let url, position, height =
+(* The URL and height do not change during a move transition. *)
+    let url, height = 
         match transition_data.old_data, transition_data.new_data with
-        | Hidden, Visible data
-        | Visible data, Hidden -> data.url, data.position, data.height
+        | Visible data, _
+        | _, Visible data -> data.url, data.height
+(* If both old and new data are Hidden, Transition.begin_transition () does not trigger a state change. *)
         | _ -> error "view_2_move" "Called with unexpected transition data." ["transition_data", transition_data] |> invalidOp
-
-    let complete_transition_2 = complete_transition (Some transition_data.command_queue_item_id) true
 
 (* 20260418 Code added by AI. *)
     let container_width = get_characters_container_width_pixels ()
 (* If we cannot get the character width, use a default of 20% of the container width. *)
     let character_width = try_get_character_width_pixels url |> Option.defaultValue (container_width * 0.2)
-    let from_left = $"{-character_width}px"
-    let from_right = $"{container_width}px"
+    let offscreen_left = $"{-character_width}px"
+    let offscreen_right = $"{container_width}px"
 (* 20260418 End code added by AI. *)
-    let position = $"{float position}%%"
 
-    let transition_property_name, transition_property_initial_value, transition_property_final_value =
-        match move_data.in_or_out, move_data.direction with
-        | Move_In _, Left -> "left", from_left, position
-        | Move_In _, Right -> "left", from_right, position
-        | Move_Out _, Left -> "left", position, from_left
-        | Move_Out _, Right -> "left", position, from_right
+(* As with the fade transition, we use old and new data to infer the transition (for example, Hidden -> Visible means Move_In). If the author applies Move_In to an already visible character, we just move the character to the new position. If they apply Move_Out to an already hidden character, both the old and new data are Hidden, and Transition.begin_transition () does not trigger a state change. *)
+    let transition_property_initial_value, transition_property_final_value =
+        match transition_data.old_data, transition_data.new_data with
+(* If old and new data are the same, Transition.begin_transition () does not trigger a state change. *)
+        | Visible old_data, Visible new_data ->
+            $"{float old_data.position}%%", $"{float new_data.position}%%"
+        | Hidden, Visible data ->
+            let final_value = $"{float data.position}%%"
+            match move_data.direction with
+            | Left -> offscreen_left, final_value
+            | Right -> offscreen_right, final_value
+        | Visible data, Hidden ->
+            let initial_value = $"{float data.position}%%"
+            match move_data.direction with
+            | Left -> initial_value, offscreen_left
+            | Right -> initial_value, offscreen_right
+        | _ -> error "view_2_move" "Called with unexpected transition data." ["transition_data", transition_data] |> invalidOp
+
+    let complete_transition_2 = complete_transition (Some transition_data.command_queue_item_id) true
 
     get_transitionable_image
         (Some "character")
         None
         []
         (get_character_move_style height)
-        transition_property_name
+        "left"
         transition_data.transition_time
         (fun () -> complete_transition_2 transition_data.new_data) url transition_property_initial_value transition_property_final_value
         |> Seq.singleton
 
+// TODO2 #transitions If the author applies Fade_In to an already visible character but with a different position, we cross-fade the character at the old position, then the character jumps to the new position when we reach state Idle (Visible). This is okay for now, since the author should use Cross_Fade for an already visible character, and Move_In to change a character's position.
 let view_2_fade
     (transition_data : Transition_Data<Character_State, Character_Transition_Type>)
     (complete_transition : Complete_Transition_Func<Character_State>)

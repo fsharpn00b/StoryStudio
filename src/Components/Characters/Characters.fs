@@ -251,7 +251,8 @@ let Characters
 (* For now there is no such class, but this does not cause an error. *)
         prop.id "characters_container"
         prop.className "interface_layer"
-(* TODO1 #characters If two characters occupy the same position, we will need to add individual character z-indices, which the author must set when they display each character. z-index would be a parameter to fadein, movein, etc. *)
+(* TODO1 #characters If two characters occupy the same position, we will need to add individual character z-indices, which the author must set when they display each character. z-index would be an optional parameter to fadein, movein, etc. It would start from 1 and we would add it to the base characters_container_z_index. We would also need to increment the next z-index (dialogue_box_z_index) to 10 or so to make room for the character z-indices. Unless z-indices within the character container are already relative (i.e. if the character container has z-index 1 and the next sibling UI element has z-index 2, maybe a character can have a z-index of 3 and still be below the dialogue box).
+*)
         prop.style [style.zIndex characters_container_z_index]
         prop.children characters_3
     ]
