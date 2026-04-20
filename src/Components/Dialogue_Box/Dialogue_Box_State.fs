@@ -27,7 +27,7 @@ let is_visible
     match fade_state.current with
     | Idle Hidden -> false
     | Idle Visible -> true
-    | _ -> error "is_visible" "Unexpected Fade_State. Ignoring." ["fade_state", fade_state] |> invalidOp
+    | _ -> error "is_visible" "Unexpected Fade_State." ["fade_state", fade_state] |> invalidOp
 
 let get_state
     (typing_state : IRefValue<Typing_State>)
@@ -51,7 +51,7 @@ let get_state
             match fade_state.current with
             | Idle Hidden -> Hidden
             | Idle Visible -> Visible
-            | _ -> error "get_state" "Unexpected Fade_State. Ignoring." ["fade_state", fade_state] |> invalidOp
+            | _ -> error "get_state" "Unexpected Fade_State." ["fade_state", fade_state] |> invalidOp
     }
 
 let restore_saved_state

@@ -68,7 +68,9 @@ let view
 See also get_state ().
 *)
     match fade_state.current with
+
     | Idle Hidden -> Html.none
+
     | Idle Visible ->
         match typing_state.current with
         | Empty -> Html.none
@@ -82,6 +84,8 @@ See also get_state ().
                 if visible_length = 0 then String.Empty
                 else dialogue.text.Substring(0, visible_length)
             get_dialogue_box dialogue.character visible_text
-    | _ ->
+
+(* This should never happen. We never fade the dialogue box in or out, we simply show or hide it. We call Transition.complete_transition (), not Transition.begin_transition (). *)
+    | In_Transition _ ->
         do warn "view" false "Unexpected Fade_State. Ignoring." ["fade_state", fade_state]
         Html.none

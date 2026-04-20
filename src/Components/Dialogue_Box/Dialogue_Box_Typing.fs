@@ -69,7 +69,7 @@ We do not need to cancel the transition timeout function because it just dispatc
                 ), int data.typing_speed)
             )
 
-(* Otherwise, ignore the call. *)
+(* Otherwise, ignore the call and complete the transition. *)
     | _ ->
         do warn "reveal_next" false "Called with unexpected state. Ignoring." ["state", state_1]
         state_1, command_queue_item_id |> Dialogue_Box_Types.Notify_Transition_Complete |> Cmd.ofMsg
@@ -188,9 +188,11 @@ Our initial typing state is Empty. Dialogue_Box_Rendering.view () renders the Em
         }
 
     | Typing_State.Idle dialogue ->
-(* If the state is already Idle and the caller sends us a character and text that are the same as the old, do nothing. *)
+(* If the state is already Idle and the caller sends us a character and text that are the same as the old, ignore the call and complete the transition. *)
         if 0 = String.Compare(character, dialogue.character_full_name) && 0 = String.Compare(text, dialogue.text) then
             do warn "type_dialogue" false "Called with state Idle and same character and text as already displayed. Ignoring." debug_data
+            command_queue_item_id |> Dialogue_Box_Types.Notify_Transition_Complete |> typing_dispatch
+
 
 (* Otherwise, start typing the new text. *)
         else
@@ -201,6 +203,7 @@ Our initial typing state is Empty. Dialogue_Box_Rendering.view () renders the Em
                 command_queue_item_id = command_queue_item_id
             }
 
-(* Previously, we would cancel the transition timeout function and dispatch Force_Complete_Typing (if the new text was the same as the existing text, meaning the player wanted to skip the transition) or Begin_Typing (if the new text was different than the existing text, meaning the author wanted to abandon typing the existing text and start typing new text). Now we require Runner to call the force_complete_transition () function. That way, we explicitly complete the existing transition and start a new one. *)
+(* This should never happen. When the player skips a transition, Runner calls force_complete_transition (), which dispatches Force_Complete_Typing, before starting a new transition. Ignore the call and complete the transition. *)
     | Typing dialogue ->
         do warn "type_dialogue" false "Called with state Typing. Ignoring." <| debug_data @ ["dialogue", dialogue]
+        command_queue_item_id |> Dialogue_Box_Types.Notify_Transition_Complete |> typing_dispatch
