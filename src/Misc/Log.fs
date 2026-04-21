@@ -8,6 +8,8 @@ open Browser.Dom
 
 open Utilities
 
+// TODO1 #logging Why does every error display multiple times?
+
 (* We use these custom exception handling functions instead of .NET exceptions because:
 1 In Fable, .NET exceptions do not support the Data field.
 2 .NET exceptions appear in the browser console log, but do not alert the user.

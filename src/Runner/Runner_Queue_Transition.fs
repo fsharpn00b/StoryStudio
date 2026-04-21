@@ -45,7 +45,7 @@ let private remove_transition_2
     if Map.isEmpty commands then
         runner_state.queue.current <-
             Queue_Idle {
-                next_command = queue_data.next_command_data
+                next_command_data = queue_data.next_command_data
                 add_to_history = queue_data.add_to_history
                 autosave = queue_data.autosave
                 menu_variables = queue_data.menu_variables

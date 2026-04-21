@@ -12,7 +12,7 @@ open Command_Types
 open JavaScript_Interop_1
 open Log
 open Runner_Queue_Helpers_1
-open Runner_Queue_Helpers_2
+open Runner_Queue_Helpers_3
 open Runner_Transition
 open Runner_Types_1
 open Runner_Types_2
@@ -48,13 +48,15 @@ let private run_command
         let script_name, script_line_number = get_script_name_and_line_number scenes.current "run_command" error_data known_error_data_2
         error "run_command" "Error running command." (known_error_data_2 @ ["script_name", script_name; "script_line_number", script_line_number]) |> invalidOp
 
+(* This function transforms queue_data based on runner_command_data. *)
 let private add_command_to_queue
     (queue_data : Runner_Queue_State_Loading_Data)
-    (command_data : Runner_Command_Data)
+    (queue_next_command_data : Runner_Queue_Next_Command_Data)
+    (runner_command_data : Runner_Command_Data)
     : Runner_Queue_State_Loading_Data =
 
     #if debug
-    do debug "add_command_to_queue" String.Empty ["current_command", command_data.debug_data]
+    do debug "add_command_to_queue" String.Empty ["current_command", runner_command_data.debug_data]
     #endif
 
 (* This function is called only by add_commands_to_queue ().
@@ -63,24 +65,32 @@ We set continue_after_finished and add_to_history in add_commands_to_queue () af
 We set autosave here because it can be set by commands with either type of behavior, and once it is set to true, we need to retain that value until we have added all commands.
 *)
     {
-        commands = queue_data.commands.Add (queue_data.next_command_data.next_command_queue_item_id, {
-            command_data = command_data
+        commands = queue_data.commands.Add (queue_next_command_data.next_command_queue_item_id, {
+            command_data = runner_command_data
             order_in_queue = queue_data.commands.Count |> LanguagePrimitives.Int32WithMeasure
-            components_used_by_command = command_data.components_used
+            components_used_by_command = runner_command_data.components_used
         })
-        next_command_data = {
-            next_command_queue_item_id = queue_data.next_command_data.next_command_queue_item_id + 1<command_queue_item_id>
-            next_command = command_data.next_command
-        }
+
+        next_command_data =
+            match runner_command_data.next_command_data with
+            | Some next_command_data_2 ->
+                Some {
+                    next_command_queue_item_id = queue_next_command_data.next_command_queue_item_id + 1<command_queue_item_id>
+                    next_command_data = next_command_data_2
+                }
+            | None -> None
+
         components_used_by_commands =
-            if Set.empty <> Set.intersect queue_data.components_used_by_commands command_data.components_used then
-                do warn "add_command_to_queue" false "Overlap between components used by command and components used by commands already in queue." ["Components used by commands already in queue", queue_data.components_used_by_commands; "command", command_data.error_data.source; "Components used by command", command_data.components_used]
-            Set.union queue_data.components_used_by_commands command_data.components_used
+            if Set.empty <> Set.intersect queue_data.components_used_by_commands runner_command_data.components_used then
+                do warn "add_command_to_queue" false "Overlap between components used by command and components used by commands already in queue." ["Components used by commands already in queue", queue_data.components_used_by_commands; "command", runner_command_data.error_data.source; "Components used by command", runner_command_data.components_used]
+            Set.union queue_data.components_used_by_commands runner_command_data.components_used
+
         autosave =
             queue_data.autosave ||
-                match command_data.behavior with
+                match runner_command_data.behavior with
                 | Continue_Immediately data -> data.autosave
                 | Wait_For_Callback data -> data.autosave
+
         menu_variables = queue_data.menu_variables
     }
 
@@ -107,39 +117,40 @@ let private handle_no_more_commands
 let rec private handle_next_command
     (runner_state : Runner_State)
     (queue_data : Runner_Queue_State_Loading_Data)
-    (next_command : Next_Command_Data)
+    (next_command_data : Runner_Queue_Next_Command_Data)
     : unit =
 
 (* Get the scene for the next command. *)
-    match runner_state.scenes.current.TryFind next_command.next_command_scene_id with
+    match runner_state.scenes.current.TryFind next_command_data.next_command_data.next_command_scene_id with
 
-    | None -> error "add_commands_to_queue" "Next command scene ID not found." ["next_command_scene_id", next_command.next_command_scene_id; "scenes", runner_state.scenes] |> invalidOp
+    | None -> error "add_commands_to_queue" "Next command scene ID not found." ["next_command_scene_id", next_command_data.next_command_data.next_command_scene_id; "scenes", runner_state.scenes] |> invalidOp
 
     | Some scene ->
 
 (* Get the next command from its scene using the command ID. *)
-        match scene.commands.TryFind next_command.next_command_id with
+        match scene.commands.TryFind next_command_data.next_command_data.next_command_id with
 
-        | None -> error "add_commands_to_queue" "Next command ID not found in current scene." ["scene", next_command.next_command_scene_id; "next_command_id", next_command.next_command_id] |> invalidOp
+        | None -> error "add_commands_to_queue" "Next command ID not found in current scene." ["scene", next_command_data.next_command_data.next_command_scene_id; "next_command_id", next_command_data.next_command_data.next_command_id] |> invalidOp
 
-        | Some command ->
-            let command_data =
-(* Runner_Queue_Helpers_2.get_command_data () can try to evaluate JavaScript for If or Eval commands, rather than return a command that we run with Runner_Queue.run_command (), so we must handle JavaScript errors here. *)
-                try get_command_data runner_state next_command.next_command_scene_id command queue_data.menu_variables with
+        | Some next_command_in_scene ->
+            let runner_command_data =
+(* Runner_Queue_Helpers_2.get_runner_command_data () can try to evaluate JavaScript for If or Eval commands, rather than return a command that we run with Runner_Queue.run_command (), so we must handle JavaScript errors here. *)
+                try get_runner_command_data runner_state next_command_in_scene queue_data.menu_variables with
+
                 | Run_Time_JavaScript_Error e ->
 (* command.error_data.source is the source we obtained from the parser (see Parser_1_Semantics.get_semantics ()) and transformed into a command. e.code is what we actually tried to evaluate (see JavaScript_Interop_1.eval_js_with_menu_variables () and eval_js_with_exception ().) *)
-                    let known_error_data = ["source", command.error_data.source :> obj; "code", e.code; "message", e.inner.Message]
-                    let script_name, script_line_number = get_script_name_and_line_number runner_state.scenes.current "handle_next_command" command.error_data known_error_data
+                    let known_error_data = ["source", next_command_in_scene.error_data.source :> obj; "code", e.code; "message", e.inner.Message]
+                    let script_name, script_line_number = get_script_name_and_line_number runner_state.scenes.current "handle_next_command" next_command_in_scene.error_data known_error_data
                     error "handle_next_command" "JavaScript error." (known_error_data @ ["script_name", script_name; "script_line_number", script_line_number]) |> invalidOp
 
 (* Unlike with run_command (), we might see a generic exception here. Runner_Queue_Helpers_2.handle_eval_command () can raise one. *)
                 | e ->
                     let known_error_data = ["message", e.Message :> obj]
-                    let script_name, script_line_number = get_script_name_and_line_number runner_state.scenes.current "handle_next_command" command.error_data known_error_data
+                    let script_name, script_line_number = get_script_name_and_line_number runner_state.scenes.current "handle_next_command" next_command_in_scene.error_data known_error_data
                     error "handle_next_command" "Error running command." (known_error_data @ ["script_name", script_name; "script_line_number", script_line_number]) |> invalidOp
 
-            let queue_data_2 = add_command_to_queue queue_data command_data
-            match command_data.behavior with
+            let queue_data_2 = add_command_to_queue queue_data next_command_data runner_command_data
+            match runner_command_data.behavior with
 
 (* We keep adding commands to the queue until we reach a command with behavior Continue_Immediately/run_queue_now = true or Wait_For_Callback. *)
             | Continue_Immediately behavior ->
@@ -182,7 +193,7 @@ and private add_commands_to_queue
         | Queue_Idle data ->
             {
                 commands = Map.empty
-                next_command_data = data.next_command
+                next_command_data = data.next_command_data
                 components_used_by_commands = Set.empty
 (* A queue state of Queue_Idle means this is the first call to add_commands_to_queue (), not a recursive one, so we need to clear the autosave flag. *)
                 autosave = false
@@ -202,7 +213,7 @@ and private add_commands_to_queue
     #endif
 
 (* Get the next command ID. *)
-    match queue_data.next_command_data.next_command with
+    match queue_data.next_command_data with
 (* If there are no more commands to add to the queue... *)
     | None -> handle_no_more_commands runner_state.queue queue_data
     | Some next_command_2 -> handle_next_command runner_state queue_data next_command_2
@@ -271,7 +282,7 @@ We also transition from Queue_Running to Queue_Idle in Runner_Queue_Transition.r
             if Map.isEmpty commands then
                 do
                     runner_state.queue.current <- Queue_Idle {
-                        next_command = data.next_command_data
+                        next_command_data = data.next_command_data
                         add_to_history = data.add_to_history
                         autosave = data.autosave
                         menu_variables = data.menu_variables

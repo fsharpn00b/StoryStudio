@@ -82,6 +82,9 @@ Script {
         | else_if
         | else
         | end_if
+        | label
+/* See below for why jump_internal must be first. */
+        | jump_internal
         | jump
 /* TODO2 We had to separate end_image_map (which terminates the image_map_item list) and hide_image_map (which contains the transition time). The latter requires a separate command. We could not find a way to make the image_map rule work without having the image_map semantic also consume end_image_map. We tried a lookahead but that did not work. This means the image_map semantic would have to return two commands, image_map and end_image_map (with a transition time). One workaround would be to have each semantic return a list of commands, so that its ast() function would return an obj array array, then call Array.concat () on the result.
 */
@@ -116,6 +119,9 @@ Script {
     else_if = ("elseif" | "elif") sp+ (~nl any)+
     else = "else"
     end_if = "endif"
+    label = "label" sp+ string_param
+/* jump_internal must be first. Otherwise the parser matches a jump_internal command to jump, because a number (jump_internal's first parameter) can be interpreted as a string. The parser then tries and fails to find a newline. The issue is that the newline is part of the non_empty_line pattern, not the jump pattern, so the parser wrongly thinks the jump pattern match has already succeeded. */
+    jump_internal = "jump" sp+ int_param sp+ int_param
     jump = "jump" sp+ string_param
     hide_image_map = "hideimagemap" sp+ float_param
     hide_permanent_notification = "hidestatus"

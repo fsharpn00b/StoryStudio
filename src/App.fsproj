@@ -50,7 +50,8 @@
     <Compile Include="Parser/Parser_1_Grammar.fs" />
     <Compile Include="Parser/Parser_1_Semantics.fs" />
     <Compile Include="Parser/Parser_2_Helpers.fs" />
-    <Compile Include="Parser/Parser_2.fs" />
+    <Compile Include="Parser/Parser_2_1.fs" />
+    <Compile Include="Parser/Parser_2_2.fs" />
     <Compile Include="JavaScript/JavaScript_Parser.fs" />
     <Compile Include="JavaScript/JavaScript_Interop_2.fs" />
     <Compile Include="Runner/Runner_Types_2.fs" />
@@ -61,6 +62,7 @@
     <Compile Include="Runner/Runner_Save_Load.fs" />
     <Compile Include="Runner/Runner_Queue_Helpers_1.fs" />
     <Compile Include="Runner/Runner_Queue_Helpers_2.fs" />
+    <Compile Include="Runner/Runner_Queue_Helpers_3.fs" />
     <Compile Include="Runner/Runner_Queue.fs" />
     <Compile Include="Runner/Runner_Queue_Transition.fs" />
     <Compile Include="Runner/Runner_Notify.fs" />

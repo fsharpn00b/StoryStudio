@@ -19,25 +19,7 @@ type JavaScript_Data = {
     script_text_index : int
 }
 
-(* TODO1 #parsing Allow jumping to labels.
-Scene_Data could contain a map of label -> command ID that we build as we parse.
-Otherwise, since we assign command IDs in Parser_2.parse_commands (), we don't know how we can transform Jump <label> to Jump <command_ID> earlier, say in Parser_1_Semantics.
-
-Are command IDs relative to a scene? Yes, they start with initial_command_id.
-
-It seems we treat Jump as an ordinary command and assign it a next command ID. We actually do the jump in Runner_Queue_Helpers_2.handle_next_command ().
-
-In Parser_2.handle_command (), we could change the jump command ID.
-Probably cleanest to have a pre and post-parse jump command, the latter of which can only exist once we have the label command id.
-
-As we assign command IDs, keep a map of label -> command ID. Could add that to the scene data. Then, during run, look up the label destination.
-Also, keep track of all jump commands, and at the end of parsing a scene, make sure jump commands in it have valid destinations.
-
-Or, in Parser_2.parse_commands (), maintain a pool of jump commands there. Assign each jump command a command ID as expected, but don't dump it into the general pool.
-
-- We'll also need to deal with Jump in JavaScript_Parser.try_javascript_path ().
-*)
-type Jump_Data = {
+type Jump_Scene_Data = {
     scene_id : int<scene_id>
     command_id : int<command_id>
 }
@@ -63,7 +45,6 @@ type Command_Type =
     | Hide_Permanent_Notification
     | JavaScript_Inline of JavaScript_Data
     | JavaScript_Block of JavaScript_Data
-    | Jump of Jump_Data
     | Eval of Eval_Data
 
 type Wait_For_Callback_Behavior = {
@@ -97,7 +78,6 @@ type Command_Behavior =
 
 (* This is after we have matched a command but before we have parsed it. Parsing mostly means to assign command IDs and deal with If/Else_If/Else/End_If statements. *)
 type Command_Pre_Parse_Type =
-// TODO1 #parsing Might need to add Jump_Scene/Jump_Label here and to Command_Post_Parse_Type.
     | Command of Command_Type
     | If of string
     | Else_If of string
@@ -106,6 +86,12 @@ type Command_Pre_Parse_Type =
     | Menu of Menu_Data_1
     | Image_Map of Image_Map_Data
     | End_Image_Map of Transition_Time
+(* Jump_Label, Jump_Internal, and Label contain different data before and after parsing, or else we would put them in Command_Type. This does not apply to Jump_Scene, but we put it in the same place as the others to avoid confusion. In any case, all require special handling by the parser.
+For Jump_Scene, we can determine Jump_Scene_Data in Parser_1_Semantics.get_semantics () because we already know the scene names and IDs. *)
+    | Jump_Scene of Jump_Scene_Data
+    | Jump_Label of string
+    | Jump_Internal of Jump_Scene_Data
+    | Label of string
 
 type Command_Error_Data_1 = {
     source : string
@@ -149,11 +135,23 @@ type Command_Post_Parse_Type =
     | Menu of Menu_Data_1
     | Image_Map of Image_Map_Data
     | End_Image_Map of Transition_Time
+(* Post-parse Label does nothing except act as a target for Jump_Label. For Jump_Scene and Jump_Label, we move their data into Command_Post_Parse.next_command_data. *)
+    | Jump_Scene
+    | Jump_Label
+    | Jump_Internal
+    | Label
 
+(* A field that uses this type should always be optional. None means there is no next command. *)
+type Next_Command_Data = {
+    next_command_scene_id : int<scene_id>
+    next_command_id : int<command_id>
+}
+
+(* Command_Post_Parse becomes Runner_Command_Data, which then becomes Runner_Queue_Item. Part of the data also goes into Runner_Queue_State_Idle_Data/Runner_Queue_State_Loading_Data/Runner_Queue_State_Running_Data. *)
 type Command_Post_Parse =
     {
         id : int<command_id>
-        next_command_id : int<command_id> option
+        next_command_data : Next_Command_Data option
         parent_command_id : int<command_id> option
         command : Command_Post_Parse_Type
         error_data : Command_Error_Data_2

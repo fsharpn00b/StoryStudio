@@ -96,11 +96,10 @@ let begin_transition
                 command_queue_item_id = command_queue_item_id
             }
 
-(* Otherwise, ignore the call.
-Previously, if this method was called during a transition, we would skip the transition. Now we require Runner to call the force_complete_transition () function. That way, we explicitly complete the existing transition and start a new one.*)
-    | _ ->
-        warn "update_transition" false "Called with unexpected state. Ignoring." ["state", state]
-        notify_transition_complete command_queue_item_id
+(* This should never happen. When the player skips a transition, Runner calls force_complete_transition () before starting a new transition. Having two transitions in progress for the same component could lead to an inconsistent state. In the case of characters, transitions take place at the individual character level. *)
+    | In_Transition _ ->
+        error "update_transition" "Called with unexpected state." ["state", state.current; "new_data", new_data :> obj]
+        |> invalidOp
 
 let complete_transition
     (set_state : Set_State_Func<'data_type, 'transition_type>)

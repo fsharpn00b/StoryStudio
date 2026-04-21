@@ -41,7 +41,6 @@ let private update_continue
 let private reveal_next
     (state_1 : Typing_State)
     (reveal_next_timeout_function_handle : IRefValue<float option>)
-    (configuration : IRefValue<Dialogue_Box_Configuration>)
     (command_queue_item_id : int<command_queue_item_id>)
     : Typing_State * Cmd<Typing_Message> =
 
@@ -69,10 +68,14 @@ We do not need to cancel the transition timeout function because it just dispatc
                 ), int data.typing_speed)
             )
 
-(* Otherwise, ignore the call and complete the transition. *)
+(* This should never happen. reveal_next () is called by:
+1 update_typing_state ()/Begin_Typing, which, rather than update the component-level typing_state value, actually passes a typing_state of Typing to this function. 
+2 update_typing_state ()/Reveal_Next, at which point the component-level typing_state value is already set to Typing.
+We error here because this likely indicates an inconsistent state.
+*)
     | _ ->
-        do warn "reveal_next" false "Called with unexpected state. Ignoring." ["state", state_1]
-        state_1, command_queue_item_id |> Dialogue_Box_Types.Notify_Transition_Complete |> Cmd.ofMsg
+        error "reveal_next" "Called with unexpected state." ["state", state_1]
+        |> invalidOp
 
 (* The update function we pass to React.useElmish, and the functions it calls, must return a new state and command.
 
@@ -111,10 +114,10 @@ let update_typing_state
             index = 0
             command_queue_item_id = data.command_queue_item_id
         }
-        reveal_next state_2 reveal_next_timeout_function_handle configuration data.command_queue_item_id
+        reveal_next state_2 reveal_next_timeout_function_handle data.command_queue_item_id
 
     | Reveal_Next (command_queue_item_id : int<command_queue_item_id>) ->
-        reveal_next state_1 reveal_next_timeout_function_handle configuration command_queue_item_id
+        reveal_next state_1 reveal_next_timeout_function_handle command_queue_item_id
 
     | Force_Complete_Typing ->
 (* If we were typing something, we need to cancel the timeout function that calls reveal_next (). *)
@@ -124,7 +127,7 @@ let update_typing_state
         | Typing state_2 ->
             Typing_State.Idle { character_full_name = state_2.character; text = state_2.text }, state_2.command_queue_item_id |> Dialogue_Box_Types.Notify_Transition_Complete |> Cmd.ofMsg
 
-(* Ignore the Empty and Idle states. This should already have been done by Dialogue_Box_Transition.force_complete_transition (), so we issue a warning. *)
+(* Ignore the Empty and Idle states. This should already have been done by Dialogue_Box_Transition.force_complete_transition (), so we issue a warning. Since the Force_Complete_Typing message only stops a transition, rather than starting one, we do not error. *)
         | _ ->
             do warn "update_typing_state" false "Received Force_Complete_Typing message with unexpected state. Ignoring." ["state", state_1]
             state_1, Cmd.none
@@ -164,7 +167,7 @@ let type_dialogue
     (command_queue_item_id : int<command_queue_item_id>)
     : unit =
 
-    let debug_data : Error_Data = ["state", state; "character", character; "text", text; "reveal_next_timeout_function_handle", reveal_next_timeout_function_handle]
+    let debug_data : Error_Data = ["state", state.current; "character", character; "text", text; "reveal_next_timeout_function_handle", reveal_next_timeout_function_handle]
 
     #if debug
     do debug "type_dialogue" String.Empty debug_data
@@ -188,7 +191,7 @@ Our initial typing state is Empty. Dialogue_Box_Rendering.view () renders the Em
         }
 
     | Typing_State.Idle dialogue ->
-(* If the state is already Idle and the caller sends us a character and text that are the same as the old, ignore the call and complete the transition. *)
+(* If the state is already Idle and the caller sends us a character and text that are the same as the old, ignore the call and complete the transition. This can happen if the author types the same dialogue twice in a row. Since this probably does not indicate an inconsistent state, we do not error. *)
         if 0 = String.Compare(character, dialogue.character_full_name) && 0 = String.Compare(text, dialogue.text) then
             do warn "type_dialogue" false "Called with state Idle and same character and text as already displayed. Ignoring." debug_data
             command_queue_item_id |> Dialogue_Box_Types.Notify_Transition_Complete |> typing_dispatch
@@ -203,7 +206,6 @@ Our initial typing state is Empty. Dialogue_Box_Rendering.view () renders the Em
                 command_queue_item_id = command_queue_item_id
             }
 
-(* This should never happen. When the player skips a transition, Runner calls force_complete_transition (), which dispatches Force_Complete_Typing, before starting a new transition. Ignore the call and complete the transition. *)
-    | Typing dialogue ->
-        do warn "type_dialogue" false "Called with state Typing. Ignoring." <| debug_data @ ["dialogue", dialogue]
-        command_queue_item_id |> Dialogue_Box_Types.Notify_Transition_Complete |> typing_dispatch
+(* This should never happen. When the player skips a transition, Runner calls force_complete_transition (), which dispatches Force_Complete_Typing, before starting a new transition. Having two transitions in progress for the same component could lead to an inconsistent state. *)
+    | Typing _ ->
+        error "type_dialogue" "Called with state Typing." debug_data |> invalidOp

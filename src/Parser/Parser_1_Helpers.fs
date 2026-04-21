@@ -116,21 +116,14 @@ let get_character_sprite_url
             data = ["sprite", character_sprite_name; "character data", character]
         } |> Parsing_Semantics_Error |> raise
 
-// TODO1 #parsing Instead of failing, return a special case of jump command that awaits a label.
-let get_script_id
+let get_jump_scene_destination
     (scripts : Script list)
     (destination : string)
-    (script_text_index : int)
-    : int<scene_id> =
+    : int<scene_id> option =
 
     match scripts |> List.tryFind (fun script -> script.name = destination) with
-    | Some script -> script.id
-    | None ->
-        {
-            message = "Jump destination name not found."
-            script_text_index = script_text_index
-            data = ["destination_name", destination; "Known destinations", scripts |> List.map (fun script -> script.name) :> obj]
-        } |> Parsing_Semantics_Error |> raise
+    | Some script -> Some script.id
+    | None -> None
 
 let get_move_in_semantics
     (characters : Character_Input_Map)

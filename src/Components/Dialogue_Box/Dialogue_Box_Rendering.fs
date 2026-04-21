@@ -85,7 +85,7 @@ See also get_state ().
                 else dialogue.text.Substring(0, visible_length)
             get_dialogue_box dialogue.character visible_text
 
-(* This should never happen. We never fade the dialogue box in or out, we simply show or hide it. We call Transition.complete_transition (), not Transition.begin_transition (). *)
+(* This should never happen. We never fade the dialogue box in or out, we simply show or hide it. We call Transition.complete_transition (), not Transition.begin_transition (). Since this is only a view () function, we can ignore this. *)
     | In_Transition _ ->
         do warn "view" false "Unexpected Fade_State. Ignoring." ["fade_state", fade_state]
         Html.none

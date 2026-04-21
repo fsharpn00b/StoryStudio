@@ -32,12 +32,13 @@ let private error : error_function = error debug_module_name
 type private Parser_JavaScript_Path_Accumulator = {
     javascript : string list
     scenes_encountered : Set<int<scene_id>>
+    commands_encountered : Set<int<scene_id> * int<command_id>>
     paths_to_try : Parser_JavaScript_Path list
     encountered_if : bool
 }
 and private Parser_JavaScript_Path = {
     scene_id : int<scene_id>
-    command_id : int<command_id> option
+    command_id : int<command_id>
     accumulator : Parser_JavaScript_Path_Accumulator
 }
 
@@ -124,15 +125,15 @@ let private handle_if_javascript
     }
     let paths_to_try =
         [
-            [{ scene_id = scene_id; command_id = Some if_block.child_command_id; accumulator = new_accumulator }]
+            [{ scene_id = scene_id; command_id = if_block.child_command_id; accumulator = new_accumulator }]
 
             if_block.else_if_blocks |> List.map (fun else_if_block ->
-                { scene_id = scene_id; command_id = Some else_if_block.child_command_id; accumulator = new_accumulator }
+                { scene_id = scene_id; command_id = else_if_block.child_command_id; accumulator = new_accumulator }
             )
 
             match if_block.else_block with
             | Some child_command_id ->
-                [{ scene_id = scene_id; command_id = Some child_command_id; accumulator = new_accumulator }]
+                [{ scene_id = scene_id; command_id = child_command_id; accumulator = new_accumulator }]
             | None -> []
         ] |> List.concat
 
@@ -150,66 +151,88 @@ let private handle_if_javascript
 let rec private try_javascript_path
     (acc : Parser_JavaScript_Path_Accumulator)
     (scenes : Scene_Map)
-    (scene_id : int<scene_id>)
-    (scene : Scene_Data)
-    (command_id_1 : int<command_id> option)
+    (next_command_data_1 : Next_Command_Data option)
     : Parser_JavaScript_Path_Accumulator =
 
-    match command_id_1 with
+    match next_command_data_1 with
 
     | None -> acc
 
-    | Some command_id_2 ->
+    | Some next_command_data_2 ->
+        let next_command_key = next_command_data_2.next_command_scene_id, next_command_data_2.next_command_id
+
+        if acc.commands_encountered.Contains next_command_key then
+            do warn "try_javascript_path" false "Stopping JavaScript path traversal because command was already visited." [
+                "scene_id", next_command_data_2.next_command_scene_id
+                "command_id", next_command_data_2.next_command_id
+            ]
+            acc
+        else
+        let scene_id = next_command_data_2.next_command_scene_id
+        let scene =
+            match scenes.TryFind scene_id with
+            | Some scene -> scene
+            | None ->
+                error "try_javascript_path" "Command scene not found." ["scene_id", scene_id; "command", next_command_data_2; "known_scenes", scenes |> Seq.map (fun kv -> kv.Key, kv.Value.name) :> obj] |> invalidOp
+        let acc_2 = { acc with commands_encountered = acc.commands_encountered.Add next_command_key }
 
         let command_1 =
-            match scene.commands.TryFind command_id_2 with
+            match scene.commands.TryFind next_command_data_2.next_command_id with
             | Some command -> command
-            | None -> error "try_javascript_path" "Command not found." ["current_scene", scene.name; "command_id", command_id_2; "commands", scene.commands] |> invalidOp
+            | None -> error "try_javascript_path" "Command not found." ["current_scene", scene.name; "command_id", next_command_data_2; "commands", scene.commands] |> invalidOp
 
         let line_number_1 = get_script_line_number scene.content command_1.error_data.script_text_index
         let line_number_2 = $"// Line {line_number_1}{Environment.NewLine}"
 
         match command_1.command with
 
+        | Label -> try_javascript_path acc_2 scenes command_1.next_command_data
+
+        | Jump_Label -> try_javascript_path acc_2 scenes command_1.next_command_data
+
+(* This should never happen. Jump_Internal is only used for Eval commands. *)
+        | Jump_Internal -> try_javascript_path acc_2 scenes command_1.next_command_data
+
+        | Jump_Scene ->
+            let destination_scene_id =
+                match command_1.next_command_data with
+                | Some next_command_data_3 -> next_command_data_3.next_command_scene_id
+                | None -> error "try_javascript_path" "Jump_Scene command missing destination scene ID." ["current_scene", scene.name; "line_number", line_number_2] |> invalidOp
+            if acc_2.scenes_encountered.Contains destination_scene_id then acc_2
+            else
+// TODO2 #parsing It might be easier to just record the previous and current scene names, and output the new scene name when they differ.
+                let destination_scene_name =
+                    match scenes.TryFind destination_scene_id with
+                    | Some scene -> scene.name
+                    | None -> error "try_javascript_path" "Jump_Scene destination scene ID not found." ["current_scene", scene.name; "line_number", line_number_2; "destination_scene_id", destination_scene_id; "Known scene IDs and names", scenes |> Seq.toList :> obj] |> invalidOp
+                try_javascript_path {
+                    acc_2 with
+                        javascript = $"{Environment.NewLine}// Scene: {destination_scene_name}{Environment.NewLine}{Environment.NewLine}" :: acc_2.javascript
+                        scenes_encountered = acc_2.scenes_encountered.Add destination_scene_id
+                } scenes command_1.next_command_data
+
         | Command command_2 ->
-            match command_2 with
-
-            | Jump jump_data ->
-                let destination_scene_id = jump_data.scene_id
-                if acc.scenes_encountered.Contains destination_scene_id then acc
-                else
-                    let destination_scene_name =
-                        match scenes.TryFind destination_scene_id with
-                        | Some scene -> scene.name
-                        | None -> error "try_javascript_path" "Jump destination scene ID not found." ["current_scene", scene.name; "destination_scene_id", destination_scene_id; "Known scene IDs and names", scenes |> Seq.map (fun kv -> kv.Key, kv.Value.name) :> obj] |> invalidOp
-                    try_javascript_path {
-                        acc with
-                            javascript = $"{Environment.NewLine}// Scene: {destination_scene_name}{Environment.NewLine}{Environment.NewLine}" :: acc.javascript
-                            scenes_encountered = acc.scenes_encountered.Add destination_scene_id
-                    } scenes destination_scene_id scenes.[destination_scene_id] <| Some scene_initial_command_id
-
-            | _ ->
-                let javascript_1 =
-                    match handle_command_javascript command_2 line_number_2 with
-                    | Some javascript_2 -> javascript_2 :: acc.javascript
-                    | None -> acc.javascript
-                try_javascript_path { acc with javascript = javascript_1 } scenes scene_id scene command_1.next_command_id
+            let javascript_1 =
+                match handle_command_javascript command_2 line_number_2 with
+                | Some javascript_2 -> javascript_2 :: acc_2.javascript
+                | None -> acc_2.javascript
+            try_javascript_path { acc_2 with javascript = javascript_1 } scenes command_1.next_command_data
 
         | Menu menu ->
             try_javascript_path {
-                acc with javascript = (handle_menu_javascript menu line_number_1) :: acc.javascript
-            } scenes scene_id scene command_1.next_command_id
+                acc_2 with javascript = (handle_menu_javascript menu line_number_1) :: acc_2.javascript
+            } scenes command_1.next_command_data
 
         | Image_Map image_map ->
             try_javascript_path {
-                acc with javascript = (handle_image_map_javascript image_map line_number_1) :: acc.javascript
-            } scenes scene_id scene command_1.next_command_id
+                acc_2 with javascript = (handle_image_map_javascript image_map line_number_1) :: acc_2.javascript
+            } scenes command_1.next_command_data
 
-        | End_Image_Map _ -> try_javascript_path acc scenes scene_id scene command_1.next_command_id
+        | End_Image_Map _ -> try_javascript_path acc_2 scenes command_1.next_command_data
 
-        | If if_block -> handle_if_javascript acc scene_id if_block line_number_2
+        | If if_block -> handle_if_javascript acc_2 scene_id if_block line_number_2
 
-        | End_If -> try_javascript_path acc scenes scene_id scene command_1.next_command_id
+        | End_If -> try_javascript_path acc_2 scenes command_1.next_command_data
 
 let rec private try_javascript_paths
     (acc : Parser_JavaScript_Accumulator)
@@ -218,7 +241,7 @@ let rec private try_javascript_paths
     match acc.paths_to_try with
     | [] -> acc
     | head :: tail ->
-        let path_accumulator = try_javascript_path head.accumulator scenes head.scene_id scenes.[head.scene_id] head.command_id
+        let path_accumulator = try_javascript_path head.accumulator scenes (Some { next_command_scene_id = head.scene_id; next_command_id = head.command_id })
         try_javascript_paths {
             acc with
                 paths_tried =
@@ -235,10 +258,11 @@ let private get_javascript_paths (scenes : Scene_Map) : string list =
         paths_tried = []
         paths_to_try = [{
             scene_id = entry_scene_id
-            command_id = Some scene_initial_command_id
+            command_id = scene_initial_command_id
             accumulator = { 
                 javascript = []
                 scenes_encountered = Set.singleton entry_scene_id
+                commands_encountered = Set.empty
                 paths_to_try = []
                 encountered_if = false
             }

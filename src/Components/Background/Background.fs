@@ -142,7 +142,7 @@ let private view
 
     #if debug
     do
-        debug "view" String.Empty ["debug_render_counter", debug_render_counter; "state", state]
+        debug "view" String.Empty ["debug_render_counter", debug_render_counter; "state", state.current]
         debug_render_counter <- debug_render_counter + 1
     #endif
 

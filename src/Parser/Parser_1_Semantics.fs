@@ -164,9 +164,14 @@ We do not currently use this. *)
     semantics?else_if <- fun _ _ conditional -> conditional?sourceString |> Command_Pre_Parse_Type.Else_If |> Some
     semantics?``else`` <- fun _ -> Command_Pre_Parse_Type.Else |> Some
     semantics?end_if <- fun _ -> Command_Pre_Parse_Type.End_If |> Some
+    semantics?label <- fun _ _ label -> label?sourceString |> Command_Pre_Parse_Type.Label |> Some
     semantics?jump <- fun _ _ destination ->
-        let script_id = get_script_id scripts destination?sourceString destination?source?startIdx
-        { scene_id = script_id; command_id = scene_initial_command_id } |> Command_Type.Jump |> Command_Pre_Parse_Type.Command |> Some
+        match get_jump_scene_destination scripts destination?sourceString with
+        | Some scene_id ->
+            { scene_id = scene_id; command_id = scene_initial_command_id } |> Command_Pre_Parse_Type.Jump_Scene |> Some
+        | None -> destination?sourceString |> Command_Pre_Parse_Type.Jump_Label |> Some
+    semantics?jump_internal <- fun _ _ scene_id _ command_id ->
+        { scene_id = scene_id?ast(); command_id = command_id?ast() } |> Command_Pre_Parse_Type.Jump_Internal |> Some
     semantics?hide_image_map <- fun _ _ transition_time ->
         transition_time?ast() |> Command_Pre_Parse_Type.End_Image_Map |> Some
     semantics?hide_permanent_notification <- fun _ ->

@@ -22,6 +22,9 @@ let end_if_behavior = Continue_Immediately { run_queue_now = false; autosave = f
 let menu_behavior = Wait_For_Callback { continue_afterward = false; add_to_history = true; autosave = true }
 let image_map_behavior = Wait_For_Callback { continue_afterward = false; add_to_history = true; autosave = true }
 let end_image_map_behavior = Wait_For_Callback { continue_afterward = true; add_to_history = false; autosave = false }
+(* For Jump_Scene, do not pause, but do autosave. *)
+let jump_scene_behavior = Continue_Immediately { run_queue_now = false; autosave = true }
+let label_and_jump_label_behavior = Continue_Immediately { run_queue_now = false; autosave = false }
 
 let private initial_command_queue_item_id = 0<command_queue_item_id>
 
@@ -52,9 +55,6 @@ We set continue_after_running to false because, even if the dialogue box has its
     | JavaScript_Inline _
     | JavaScript_Block _ -> Continue_Immediately { run_queue_now = true; autosave = false }
     | Eval _ -> Continue_Immediately { run_queue_now = false; autosave = false }
-(* Do not pause, but do autosave. *)
-
-    | Jump _ -> Continue_Immediately { run_queue_now = false; autosave = true }
 
 let command_to_component_ids (command : Command_Type) : Runner_Component_Names Set =
     match command with
@@ -75,7 +75,6 @@ let command_to_component_ids (command : Command_Type) : Runner_Component_Names S
     | Hide_Permanent_Notification
     | JavaScript_Inline _
     | JavaScript_Block _
-    | Jump _
     | Eval _ -> Set.empty
 
 let get_script_name_and_line_number
@@ -103,9 +102,9 @@ let get_script_name_and_line_number
 let get_initial_queue () : Runner_Queue =
     
     Queue_Idle {
-        next_command = {
+        next_command_data = Some {
             next_command_queue_item_id = initial_command_queue_item_id
-            next_command = Some {
+            next_command_data = {
                 next_command_scene_id = entry_scene_id
                 next_command_id = scene_initial_command_id
             }

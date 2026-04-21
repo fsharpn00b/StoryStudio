@@ -72,7 +72,7 @@ type Runner_Command_Data = {
     error_data : Command_Error_Data_2
     behavior : Command_Behavior
     components_used : Runner_Component_Names Set
-    next_command : Next_Command_Data option
+    next_command_data : Next_Command_Data option
 }
 
 type Runner_Queue_Item = {
@@ -82,7 +82,7 @@ type Runner_Queue_Item = {
 }
 
 type Runner_Queue_State_Idle_Data = {
-    next_command : Runner_Queue_Next_Command_Data
+    next_command_data : Runner_Queue_Next_Command_Data option
 (* See notes in Command_Queue_State_Running_Data. *)
     add_to_history : bool
     autosave : bool
@@ -97,7 +97,7 @@ type Runner_Queue_Command_Map = Map<int<command_queue_item_id>, Runner_Queue_Ite
 
 type Runner_Queue_State_Loading_Data = {
     commands : Runner_Queue_Command_Map
-    next_command_data : Runner_Queue_Next_Command_Data
+    next_command_data : Runner_Queue_Next_Command_Data option
     components_used_by_commands : Runner_Component_Names Set
 (* See notes in Command_Queue_State_Running_Data. *)
     autosave : bool
@@ -106,7 +106,7 @@ type Runner_Queue_State_Loading_Data = {
 
 type Runner_Queue_State_Running_Data = {
     commands : Runner_Queue_Command_Map
-    next_command_data : Runner_Queue_Next_Command_Data
+    next_command_data : Runner_Queue_Next_Command_Data option
     components_used_by_commands : Runner_Component_Names Set
     continue_after_finished : bool
 (* This determines whether, after we run the last command in the queue, we add the current state to the history. We initially set it to the inverse of continue_after_finished. We do not simply use continue_after_finished because we might need to set that to false to halt running commands if the player opens the save/load game screen or rolls back/forward. *)

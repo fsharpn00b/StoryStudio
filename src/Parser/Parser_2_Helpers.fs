@@ -19,8 +19,11 @@ let private error : error_function = error debug_module_name
 
 type Parser_2_Accumulator = {
     scene : Scene_Data
-    current_command_id : int<command_id>
+(* We discard everything except Scene_Data after parsing, so we keep these other fields separate. *)
+    next_command_id_to_assign : int<command_id>
     parent_command_ids : int<command_id> list
+    labels : Map<string, int<command_id>>
+    jump_label_commands : Map<int<command_id>, string>
 }
 
 (* Helper functions - parsing *)
@@ -58,14 +61,14 @@ let check_current_token_and_next_token
 
     | _ -> ()
 
-(* The first return parameter is the next_command_id for the current command. The second is the ID to be used for the next command. These are not always the same. See the Else_If/Else/End_If case.
+(* The return parameter next_id_for_command is the next_command_id for the current command. next_available_id is the ID to be used for the next command. These are not always the same. See the Else_If/Else/End_If case.
 *)
 let get_next_command_id
     (next_token : Command_Pre_Parse_2)
     (parent_command_ids : int<command_id> list)
-    (id : int<command_id>)
+    (current_command_id : int<command_id>)
     : {|
-        next_id_for_command : int<command_id> option
+        next_id_for_command : int<command_id>
         next_available_id : int<command_id>
     |} =
 
@@ -75,10 +78,14 @@ let get_next_command_id
     | Command_Pre_Parse_Type.If _
     | Command_Pre_Parse_Type.Menu _
     | Command_Pre_Parse_Type.Image_Map _
-    | Command_Pre_Parse_Type.End_Image_Map _ ->
+    | Command_Pre_Parse_Type.End_Image_Map _
+    | Command_Pre_Parse_Type.Jump_Scene _
+    | Command_Pre_Parse_Type.Jump_Label _
+    | Command_Pre_Parse_Type.Jump_Internal _
+    | Command_Pre_Parse_Type.Label _ ->
         {|
-            next_id_for_command = Some <| id + 1<command_id>
-            next_available_id = id + 1<command_id>
+            next_id_for_command = current_command_id + 1<command_id>
+            next_available_id = current_command_id + 1<command_id>
         |}
     | Command_Pre_Parse_Type.Else_If _
     | Command_Pre_Parse_Type.Else
@@ -102,9 +109,10 @@ When we encounter Else_If, Else, or End_If as the next token, we return parent I
 When we encounter End_If as the current token, we set its ID to the previously reserved ID, 2, and do not increment the current ID, 4.
 *)
         {|
-            next_id_for_command = Some <| parent_command_id + 1<command_id>
-            next_available_id = id
+            next_id_for_command = parent_command_id + 1<command_id>
+            next_available_id = current_command_id
         |}
+
 
 (* Get the parent If block for an Else_If or Else token. *)
 let get_parent_if
