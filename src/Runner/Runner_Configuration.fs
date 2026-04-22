@@ -1,23 +1,13 @@
 module Runner_Configuration
 
-// String.Empty
-open System
-
 // console, window
 open Browser.Dom
 // IRefValue
 open Feliz
 
-open Background
-open Character_Types
-open Configuration
-open Dialogue_Box_Types
-open Key_Bindings
+open Configuration_Types
 open Log
-open Runner_History
 open Runner_Types_2
-open Notification_Types
-open Units_Of_Measure
 
 (* Debug *)
 
@@ -26,36 +16,6 @@ let debug_module_name = "Runner_Configuration"
 let private debug : log_function = debug debug_module_name
 let private warn : warn_function = warn debug_module_name
 let private error : error_function = error debug_module_name
-
-(* Consts *)
-
-let private default_background_configuration : Background_Configuration = {
-    placeholder = ()
-}
-let private default_characters_configuration : Characters_Configuration = {
-    placeholder = ()
-}
-let private default_dialogue_box_configuration : Dialogue_Box_Configuration = {
-    typing_speed = 0<milliseconds>
-}
-let private default_temporary_notifications_configuration : Notifications_Configuration = {
-    display_time = 5.0<seconds>
-    transition_time = 1.0<seconds>
-}
-
-let private default_history_configuration : Runner_History_Configuration = {
-(* Note 0 = unlimited. *)
-    max_history_length = 20
-}
-
-let default_configuration = {
-    background_configuration = default_background_configuration
-    characters_configuration = default_characters_configuration
-    dialogue_box_configuration = default_dialogue_box_configuration
-    temporary_notifications_configuration = default_temporary_notifications_configuration
-    history_configuration = default_history_configuration
-    key_bindings_configuration = get_default_key_bindings_configuration ()
-}
 
 (* Main functions *)
 
@@ -101,6 +61,7 @@ let private set_history_configuration
     history.current.notify_history_changed ()
 *)
 
+(* This cannot go in Components/Configuration_Helpers.fs because it needs Runner_Component_Interfaces. *)
 let set_configuration
     (runner_component_interfaces : IRefValue<Runner_Component_Interfaces>)
     (history : IRefValue<Runner_History>)
@@ -116,3 +77,5 @@ let set_configuration
 //        set_history_configuration history new_configuration.history_configuration
         history.current <- { history.current with configuration = new_configuration.history_configuration }
         old_configuration.current <- new_configuration
+(* TODO1 #configuration What about keyboard?
+*)

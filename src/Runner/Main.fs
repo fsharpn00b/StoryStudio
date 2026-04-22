@@ -15,6 +15,8 @@ open Feliz
 //open Fable.Core.JsInterop
 //importSideEffects "./0_pages/menu.css"
 
+open Configuration_Helpers
+open Configuration_Types
 open Log
 open Parser_1_Semantics
 open Parser_2_2
@@ -52,8 +54,12 @@ let Main () : ReactElement =
     let scenes = React.useRef <| get_scene_map parser scripts
     let runner_2 = React.useRef<I_Runner> Unchecked.defaultof<_>
 
-// TODO1 #configuration This needs to be a configuration option.
-    let wheel_action_elapsed_time_threshold = 100L<milliseconds>
+    let configuration_1 = React.useRef (
+        match get_configuration_from_local_storage () with
+        | Some configuration_2 -> configuration_2
+        | None -> default_configuration
+    )
+
     let last_wheel_action_time = ref 0L<milliseconds>
 
     do React.useEffectOnce(fun () ->
@@ -81,7 +87,7 @@ let Main () : ReactElement =
             #endif
 
             let current_time = DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond |> LanguagePrimitives.Int64WithMeasure
-            if (current_time - last_wheel_action_time.Value) >= wheel_action_elapsed_time_threshold then
+            if (current_time - last_wheel_action_time.Value) >= (configuration_1.current.mouse_configuration.wheel_action_elapsed_time_threshold |> int64 |> LanguagePrimitives.Int64WithMeasure) then
                 do last_wheel_action_time.Value <- current_time
                 if event_2.deltaY < 0 then do with_runner (fun runner -> runner.undo ())
                 elif event_2.deltaY > 0 then do with_runner (fun runner -> runner.redo ())
@@ -104,7 +110,7 @@ let Main () : ReactElement =
     )
 
     let runner_1 =
-        Runner {| expose = runner_2 |} database_configuration character_inputs scenes parser
+        Runner {| expose = runner_2 |} configuration_1 database_configuration character_inputs scenes parser
 
     runner_1
 

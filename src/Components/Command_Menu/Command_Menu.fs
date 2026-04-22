@@ -4,7 +4,7 @@ module Command_Menu
 open Browser.Dom
 // Cmd
 open Elmish
-// Html, IRefValue, React, React, React, ReactComponent, ReactElement
+// Html, IRefValue, React, ReactComponent, ReactElement
 open Feliz
 // useElmish
 open Feliz.UseElmish

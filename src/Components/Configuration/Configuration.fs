@@ -3,28 +3,22 @@ module Configuration
 // DateTime
 open System
 
-// navigator, Types (also provides console, window)
-open Browser
-// a, Element, HTMLCanvasElement, HTMLElement, HTMLTextAreaElement
+// HTMLElement
 open Browser.Types
 // Cmd
 open Elmish
 // ? operator
 open Fable.Core.JsInterop
-// Html, IRefValue, React, React, ReactComponent, ReactElement
+// Html, IRefValue, React, ReactComponent, ReactElement
 open Feliz
 // useElmish
 open Feliz.UseElmish
-// Decode, Encode
-open Thoth.Json
 
-open Background
-open Character_Types
-open Dialogue_Box_Types
+open Configuration_Helpers
+open Configuration_Types
 open Key_Bindings
 open Log
 open Notification_Types
-open Units_Of_Measure
 open Utilities
 
 (* Debug *)
@@ -35,140 +29,11 @@ let private debug : log_function = debug debug_module_name
 let private warn : warn_function = warn debug_module_name
 let private error : error_function = error debug_module_name
 
-(* Types *)
-
-// TODO2 #configuration Runner_History_Configuration and Runner_Configuration should be in Runner_Types, but it hasn't been declared yet.
-type Runner_History_Configuration = {
-    max_history_length : int
-}
-
-type Runner_Configuration = {
-(* These fields cannot be IRefValue because we need to serialize this type. *)
-    background_configuration : Background_Configuration
-    characters_configuration : Characters_Configuration
-    dialogue_box_configuration : Dialogue_Box_Configuration
-    temporary_notifications_configuration : Notifications_Configuration
-    history_configuration : Runner_History_Configuration
-    key_bindings_configuration : Key_Bindings_Configuration
-}
-
-type private Configuration_State = {
-    is_visible : bool
-}
-
-type private Configuration_Message =
-    | Show
-    | Hide
-
-(* Interfaces *)
-
-type I_Configuration =
-    abstract member show : unit -> unit
-    abstract member hide : unit -> unit
-    abstract member is_visible : unit -> bool
-
 (* Consts *)
-
-let private local_storage_name = "vnf_configuration"
-
-(* Note 0 = unlimited. *)
-let min_max_history_length = 0
-let max_max_history_length = 99
 
 let private initial_state = {
     is_visible = false
 }
-
-(* Helper functions *)
-
-let private characters_per_second_to_delay_between_characters
-    (characters_per_second : int)
-    : int<milliseconds>
-    =
-    int (1000 / characters_per_second) |> LanguagePrimitives.Int32WithMeasure
-
-let private delay_between_characters_to_characters_per_second
-    (delay_between_characters : int)
-    : int =
-    int (1000 / delay_between_characters)
-
-let get_configuration_from_local_storage () : Runner_Configuration option =
-    match localStorage.getItem local_storage_name with
-    | null -> None
-    | json ->
-        match Decode.Auto.fromString<Runner_Configuration> json with
-        | Ok configuration -> Some configuration
-        | Error message -> error "get_configuration_from_local_storage" "Failed to deserialize configuration." ["json", json; "error_message", message] |> invalidOp
-
-let private set_configuration_in_local_storage
-    (configuration : IRefValue<Runner_Configuration>) : unit =
-    let json = Encode.Auto.toString (0, configuration.current)
-    do localStorage.setItem (local_storage_name, json)
-
-let private update_configuration
-    (configuration : IRefValue<Runner_Configuration>)
-    (set_configuration : Runner_Configuration -> unit)
-    (new_typing_speed_value_1 : HTMLTextAreaElement)
-    (new_notification_display_time_value_1 : HTMLTextAreaElement)
-    (new_notification_transition_time_value_1 : HTMLTextAreaElement)
-    (new_max_history_length_value_1 : HTMLTextAreaElement)
-    (new_key_bindings_configuration : Key_Bindings_Configuration)
-    : unit =
-
-    match Int32.TryParse new_typing_speed_value_1.value with
-    | true, new_value_2 ->
-        let new_value_3 =
-            if new_value_2 > 0 then characters_per_second_to_delay_between_characters new_value_2
-            else 0<milliseconds>
-        do
-            configuration.current <- { configuration.current with dialogue_box_configuration = { typing_speed = new_value_3 }}
-    | _ -> ()
-
-    match Int32.TryParse new_notification_display_time_value_1.value with
-    | true, new_value_2 ->
-        let new_value_3 =
-            if new_value_2 < int min_temporary_notification_display_time then int min_temporary_notification_display_time
-            elif new_value_2 > int max_temporary_notification_display_time then int max_temporary_notification_display_time
-            else new_value_2
-
-        do configuration.current <- { configuration.current with temporary_notifications_configuration = { configuration.current.temporary_notifications_configuration with display_time = new_value_3 |> float |> LanguagePrimitives.FloatWithMeasure } }
-    | _ -> ()
-
-    match Int32.TryParse new_notification_transition_time_value_1.value with
-    | true, new_value_2 ->
-        let new_value_3 =
-            if new_value_2 < int min_notification_transition_time then int min_notification_transition_time
-            elif new_value_2 > int max_notification_transition_time then int max_notification_transition_time
-            else new_value_2
-
-        do configuration.current <- { configuration.current with temporary_notifications_configuration = { configuration.current.temporary_notifications_configuration with transition_time = new_value_3 |> float |> LanguagePrimitives.FloatWithMeasure } }
-    | _ -> ()
-
-    match Int32.TryParse new_max_history_length_value_1.value with
-    | true, new_value_2 ->
-        let new_value_3 =
-            if new_value_2 < min_max_history_length then min_max_history_length
-            elif new_value_2 > max_max_history_length then max_max_history_length
-            else new_value_2
-        do configuration.current <- { configuration.current with history_configuration = { max_history_length = new_value_3 } }
-    | _ -> ()
-
-    do configuration.current <- { configuration.current with key_bindings_configuration = new_key_bindings_configuration }
-
-    set_configuration configuration.current
-    set_configuration_in_local_storage configuration
-
-let private handle_save_button_click
-    (configuration : IRefValue<Runner_Configuration>)
-    (set_configuration : Runner_Configuration -> unit)
-    (dispatch : Configuration_Message -> unit)
-    : unit =
-
-    match get_key_bindings_configuration () with
-    | None -> ()
-    | Some key_bindings_configuration ->
-        update_configuration configuration set_configuration (document.getElementById "txt_typing_speed" :?> HTMLTextAreaElement) (document.getElementById "txt_notification_display_time" :?> HTMLTextAreaElement) (document.getElementById "txt_notification_transition_time" :?> HTMLTextAreaElement) (document.getElementById "txt_max_history_length" :?> HTMLTextAreaElement) key_bindings_configuration
-        dispatch Hide
 
 (* Main functions - rendering *)
 
@@ -223,6 +88,17 @@ let private view
                             prop.maxLength 3
                             prop.style [style.width (length.em 4)]
                             prop.defaultValue (configuration.current.dialogue_box_configuration.typing_speed |> int |> delay_between_characters_to_characters_per_second)
+                        ]
+                        Html.h4 "Mouse"
+                        Html.label [
+                            prop.text $"Mouse wheel action elapsed time threshold (milliseconds, minimum {min_mouse_wheel_action_elapsed_time_threshold}, maximum {max_mouse_wheel_action_elapsed_time_threshold}, default {default_mouse_wheel_action_elapsed_time_threshold}): "
+                        ]
+                        Html.input [
+                            prop.id "txt_mouse_wheel_action_elapsed_time_threshold"
+                            prop.type' "text"
+                            prop.maxLength 4
+                            prop.style [style.width (length.em 5)]
+                            prop.defaultValue (configuration.current.mouse_configuration.wheel_action_elapsed_time_threshold |> int)
                         ]
                         Html.h4 "Notifications"
                         Html.div [
@@ -312,10 +188,7 @@ let private update
     match message with
 
     | Show ->
-        {
-            state with
-                is_visible = true
-        }, Cmd.none
+        { state with is_visible = true }, Cmd.none
 
     | Hide ->
         do show_pause_notification ()

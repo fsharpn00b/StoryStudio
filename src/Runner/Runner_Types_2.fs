@@ -9,7 +9,7 @@ open Background
 open Character_Types
 open Command_Menu
 open Command_Types
-open Configuration
+open Configuration_Types
 open Dialogue_Box_Types
 open Image_Map
 open JavaScript_Interop_1

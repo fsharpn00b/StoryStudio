@@ -10,6 +10,8 @@ open Feliz
 open Log
 open Utilities
 
+(* Note The functions in this file deal with key binding settings in the configuration screen, and some expect the configuration screen to be open. *)
+
 (* Debug *)
 
 let debug_module_name = "Key_Bindings"
@@ -18,7 +20,7 @@ let private debug : log_function = debug debug_module_name
 let private warn : warn_function = warn debug_module_name
 let private error : error_function = error debug_module_name
 
-(* Types *)
+(* Types - private *)
 
 type private Key_Binding = {
     name : string
@@ -32,6 +34,8 @@ type private User_Configured_Key_Binding = {
     name : string
     display_name : string
 }
+
+(* Types - public *)
 
 type Key_To_Key_Binding_Name = Map<string, string>
 type Key_Binding_Name_To_Key = Map<string, string>

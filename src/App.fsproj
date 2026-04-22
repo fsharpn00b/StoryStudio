@@ -30,7 +30,9 @@
     <Compile Include="Components/Notifications/Notification_Component.fs" />
     <Compile Include="Components/Notifications/Temporary_Notification.fs" />
     <Compile Include="Components/Notifications/Notifications.fs" />
-    <Compile Include="Components/Configuration/Key_Bindings.fs" />
+    <Compile Include="Components/Configuration/Key_Bindings.fs" /><Compile Include="Components/Configuration/Configuration_Types.fs" />
+    <Compile Include="Components/Configuration/Configuration_Helpers.fs" />
+    
     <Compile Include="Components/Configuration/Configuration.fs" />
     <Compile Include="0_data/plugins/Plugin_Template.fs" />
     <Compile Include="Runner/Command_Types.fs" />

@@ -13,6 +13,7 @@ open Character_Types
 open Command_Menu
 open Command_Types
 open Configuration
+open Configuration_Types
 open Dialogue_Box_Types
 open Image_Map
 open Key_Bindings
@@ -96,6 +97,7 @@ let private error : error_function = error debug_module_name
 [<ReactComponent>]
 let Runner
     (props : {| expose : IRefValue<I_Runner> |})
+    (configuration : IRefValue<Runner_Configuration>)
     (database_configuration : Database_Configuration)
     (characters : Character_Input_Map)
     (scenes : IRefValue<Scene_Map>)
@@ -105,15 +107,6 @@ let Runner
 (* State *)
 
     let queue = React.useRef <| get_initial_queue ()
-
-(* We let the save/load state live in the Save_Load component, but we keep the configuration state here instead of in the Configuration component. We need the configuration to construct other components, so we must have it available immediately, rather than waiting for the Configuration component to be ready.
-TODO2 Would simply constructing the Configuration component first fix this? Still, we could argue the configuration belongs to the Runner rather than to a component whose job is only to show a UI to manage the configuration. This might be a better separation of concerns.
-*)
-    let configuration_1 = React.useRef (
-        match get_configuration_from_local_storage () with
-        | Some configuration_2 -> configuration_2
-        | None -> default_configuration
-    )
 
 (* UI components *)
 
@@ -156,7 +149,7 @@ TODO2 We could use option with .Value.
 
 (* History is part of state, but must be declared after runner_component_interfaces. *)
     let history = React.useRef<Runner_History> {
-        configuration = configuration_1.current.history_configuration
+        configuration = configuration.current.history_configuration
         current_index = None
         history = []
         notify_history_changed = fun () -> runner_component_interfaces.current.command_menu.current.redraw ()
@@ -179,14 +172,14 @@ When you need to trigger events from [an embedded] Elmish component, use React p
 (* Pass notify_transition_complete to each UI component so it can notify Runner when it completes a transition. *)
         Background.Background (
             {| expose = background_2 |},
-            configuration_1.current.background_configuration,
+            configuration.current.background_configuration,
             (get_notify_transition_complete runner_state history Runner_Component_Names.Background)
         )
 
     let characters_1 = 
         Characters.Characters (
             {| expose = characters_2 |},
-            configuration_1.current.characters_configuration,
+            configuration.current.characters_configuration,
             (get_notify_transition_complete runner_state history Runner_Component_Names.Characters),
             characters
         )
@@ -209,8 +202,8 @@ When you need to trigger events from [an embedded] Elmish component, use React p
     let configuration_component_1 =
         Configuration (
             {| expose = configuration_component_2 |},
-            configuration_1,
-            set_configuration runner_component_interfaces history configuration_1,
+            configuration,
+            set_configuration runner_component_interfaces history configuration,
 (* We must delay these calls because the Notifications and Command_Menu components are not ready yet. *)
             (fun () -> notifications_2.current.show_pause_notification Game_Paused),
             (fun () -> command_menu_2.current.redraw ())
@@ -219,7 +212,7 @@ When you need to trigger events from [an embedded] Elmish component, use React p
     let dialogue_box_1 =
         Dialogue_Box.Dialogue_Box (
             {| expose = dialogue_box_2 |},
-            configuration_1.current.dialogue_box_configuration,
+            configuration.current.dialogue_box_configuration,
             (get_notify_transition_complete runner_state history Runner_Component_Names.Dialogue_Box)
         )
 
@@ -242,7 +235,7 @@ When you need to trigger events from [an embedded] Elmish component, use React p
     let notifications_1 =
         Notifications (
             {| expose = notifications_2 |},
-            configuration_1.current.temporary_notifications_configuration
+            configuration.current.temporary_notifications_configuration
         )
 
     let save_load_1 =
@@ -260,7 +253,7 @@ When you need to trigger events from [an embedded] Elmish component, use React p
     React.useImperativeHandle(props.expose, fun () ->
         { new I_Runner with
             member _.run (reason : Run_Reason) : unit = Runner_UI.run runner_state reason
-            member _.get_key_bindings () : Key_To_Key_Binding_Name = configuration_1.current.key_bindings_configuration.key_to_name
+            member _.get_key_bindings () : Key_To_Key_Binding_Name = configuration.current.key_bindings_configuration.key_to_name
             member _.show_or_hide_configuration_screen () : unit = Runner_UI.show_or_hide_configuration_screen runner_state
 // We do not use this for now.
 //            member _.hide_configuration_screen (): unit = Runner_UI.hide_configuration_screen runner_component_interfaces

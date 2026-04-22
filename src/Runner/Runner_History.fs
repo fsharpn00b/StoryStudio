@@ -5,7 +5,7 @@ open Browser.Dom
 // IRefValue
 open Feliz
 
-open Configuration
+open Configuration_Types
 open Log
 open Runner_State
 open Runner_Transition
