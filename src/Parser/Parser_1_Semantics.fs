@@ -164,12 +164,15 @@ We do not currently use this. *)
     semantics?else_if <- fun _ _ conditional -> conditional?sourceString |> Command_Pre_Parse_Type.Else_If |> Some
     semantics?``else`` <- fun _ -> Command_Pre_Parse_Type.Else |> Some
     semantics?end_if <- fun _ -> Command_Pre_Parse_Type.End_If |> Some
-// TODO1 #parsing Where do we validate? Label should complain if it has the same name as a scene.
-    semantics?label <- fun _ _ label -> label?sourceString |> Command_Pre_Parse_Type.Label |> Some
+    semantics?label <- fun _ _ label_1 ->
+        let label_2 = label_1?sourceString
+        do check_label scripts label_2 label_1?source?startIdx
+        label_2 |> Command_Pre_Parse_Type.Label |> Some
     semantics?jump <- fun _ _ destination ->
         match get_jump_scene_destination scripts destination?sourceString with
         | Some scene_id ->
             { scene_id = scene_id; command_id = scene_initial_command_id } |> Command_Pre_Parse_Type.Jump_Scene |> Some
+(* If the jump command does not point to a known scene, we create a Jump_Label command. We validate the Jump_Label desination in Parser_2_2.parse_jump_label_commands (). *)
         | None -> destination?sourceString |> Command_Pre_Parse_Type.Jump_Label |> Some
     semantics?jump_internal <- fun _ _ scene_id _ command_id ->
         { scene_id = scene_id?ast(); command_id = command_id?ast() } |> Command_Pre_Parse_Type.Jump_Internal |> Some
@@ -275,11 +278,12 @@ We do not currently use this. *)
             javascript_interpolations = extract_javascript_interpolations text?sourceString
         } |> Permanent_Notification |> Command_Pre_Parse_Type.Command |> Some
 
-// TODO1 #parsing eval should complain if nested eval.
     semantics?eval <- fun _ text _ ->
+        let eval_content = text?sourceString
+        do check_eval_content eval_content text?source?startIdx
         {
-            eval_content = text?sourceString |> convert_string_to_use_javascript_interpolation
-            javascript_interpolations = extract_javascript_interpolations text?sourceString
+            eval_content = eval_content |> convert_string_to_use_javascript_interpolation
+            javascript_interpolations = extract_javascript_interpolations eval_content
         } |> Eval |> Command_Pre_Parse_Type.Command |> Some
 
     semantics

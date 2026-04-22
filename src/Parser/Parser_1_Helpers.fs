@@ -125,6 +125,33 @@ let get_jump_scene_destination
     | Some script -> Some script.id
     | None -> None
 
+let check_label
+    (scripts : Script list)
+    (label : string)
+    (script_text_index : int)
+    : unit =
+
+    match scripts |> List.tryFind (fun script -> script.name = label) with
+    | None -> ()
+    | Some script ->
+        {
+            message = "Label name conflicts with scene name."
+            script_text_index = script_text_index
+            data = ["label", label; "known_scenes", scripts |> List.map (fun script -> script.name) :> obj]
+        } |> Parsing_Semantics_Error |> raise
+
+let check_eval_content
+    (eval_content : string)
+    (script_text_index : int)
+    : unit =
+
+    if eval_content.Contains "eval " && eval_content.Contains "endeval" then
+        {
+            message = "Nested eval commands are not allowed."
+            script_text_index = script_text_index
+            data = ["eval_content", eval_content]
+        } |> Parsing_Semantics_Error |> raise
+
 let get_move_in_semantics
     (characters : Character_Input_Map)
     (character_short_name : string) 
