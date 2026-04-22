@@ -7,6 +7,8 @@ open System
 open Browser.Dom
 // Event, KeyboardEvent, WheelEvent
 open Browser.Types
+// ? operator
+open Fable.Core.JsInterop
 open Feliz
 
 // TODO2 Alternate way to apply CSS.
@@ -55,22 +57,22 @@ let Main () : ReactElement =
     let last_wheel_action_time = ref 0L<milliseconds>
 
     do React.useEffectOnce(fun () ->
+(* 20260422 Code added/changed by AI. *)
+(* The runner is temporarily null during fast refresh reloads. Event handlers use this helper to avoid null reference errors. *)
+        let with_runner (f : I_Runner -> unit) =
+            if isNull (box runner_2.current) then ()
+            else f runner_2.current
 
-        do runner_2.current.run Initial_Run
+        do with_runner (fun runner -> runner.run Initial_Run)
 
-(* TODO2 Need to write test suite for parser. Which is what this should be. The code in here with the component etc should be in a file called Runner_Test.
-- Need to add an exe or test project for testing non-UI-component modules.
-*)
-        window.addEventListener ("click", fun _ ->
-            do runner_2.current.run Player_Run
-        )
+        let on_click (_ : Event) =
+            do with_runner (fun runner -> runner.run Player_Run)
 
 (* Prevent the player from dragging the viewport. *)
-        window.addEventListener ("dragstart", fun (event : Event) ->
+        let on_dragstart (event : Event) =
             event.preventDefault ()
-        )
 
-        window.addEventListener ("wheel", (fun (event_1 : Event) ->
+        let on_wheel (event_1 : Event) =
             let event_2 = event_1 :?> WheelEvent
 
 (* TODO2 Make mouse wheel scroll event more responsive. Unfortunately, this seems to be caused by the browser and we cannot find a way to configure it. *)
@@ -81,11 +83,24 @@ let Main () : ReactElement =
             let current_time = DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond |> LanguagePrimitives.Int64WithMeasure
             if (current_time - last_wheel_action_time.Value) >= wheel_action_elapsed_time_threshold then
                 do last_wheel_action_time.Value <- current_time
-                if event_2.deltaY < 0 then do runner_2.current.undo ()
-                elif event_2.deltaY > 0 then do runner_2.current.redo ()
-        ))
+                if event_2.deltaY < 0 then do with_runner (fun runner -> runner.undo ())
+                elif event_2.deltaY > 0 then do with_runner (fun runner -> runner.redo ())
 
-        window.addEventListener ("keydown", fun (event : Event) -> handle_key_down scenes runner_2 event)
+        let on_keydown (event : Event) =
+            do with_runner (fun runner -> handle_key_down scenes runner_2 event)
+
+(* Add event listeners using named functions rather than anonymous functions. This lets us remove the event listeners when the component is unmounted. *)
+        window.addEventListener ("click", on_click)
+        window.addEventListener ("dragstart", on_dragstart)
+        window.addEventListener ("wheel", on_wheel)
+        window.addEventListener ("keydown", on_keydown)
+
+        React.createDisposable(fun () ->
+            window.removeEventListener ("click", on_click)
+            window.removeEventListener ("dragstart", on_dragstart)
+            window.removeEventListener ("wheel", on_wheel)
+            window.removeEventListener ("keydown", on_keydown)
+        )
     )
 
     let runner_1 =
@@ -93,8 +108,20 @@ let Main () : ReactElement =
 
     runner_1
 
-let root = ReactDOM.createRoot <| document.getElementById "root"
-root.render <| Main ()
+(* Create the React root element once and then re-use it across fast refresh reloads. This prevents the warning:
+You are calling ReactDOMClient.createRoot() on a container that has already been passed to createRoot() before. Instead, call root.render() on the existing root instead if you want to update it.
+(end)
+*)
+let root =
+    if isNull window?__story_studio_root then
+        let new_root = ReactDOM.createRoot <| document.getElementById "root"
+        do window?__story_studio_root <- new_root
+        new_root
+    else
+        window?__story_studio_root
+
+root?render (Main ())
+(* End code added by AI. *)
 
 (* To run, run
 npm start

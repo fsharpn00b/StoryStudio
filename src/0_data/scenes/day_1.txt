@@ -1,7 +1,7 @@
 // Play music.
 //playmusic autumn
 
-/* TODO1 If we do not have a background, the characters and dialogue box appear at the top of the screen. */
+/* TODO1 #background If we do not have a background, the characters and dialogue box appear at the top of the screen. */
 // Fade in daytime background over 2 seconds.
 fadein day 2.0 // Comment after statement.
 

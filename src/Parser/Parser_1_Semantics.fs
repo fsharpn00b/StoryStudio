@@ -164,6 +164,7 @@ We do not currently use this. *)
     semantics?else_if <- fun _ _ conditional -> conditional?sourceString |> Command_Pre_Parse_Type.Else_If |> Some
     semantics?``else`` <- fun _ -> Command_Pre_Parse_Type.Else |> Some
     semantics?end_if <- fun _ -> Command_Pre_Parse_Type.End_If |> Some
+// TODO1 #parsing Where do we validate? Label should complain if it has the same name as a scene.
     semantics?label <- fun _ _ label -> label?sourceString |> Command_Pre_Parse_Type.Label |> Some
     semantics?jump <- fun _ _ destination ->
         match get_jump_scene_destination scripts destination?sourceString with
@@ -274,6 +275,7 @@ We do not currently use this. *)
             javascript_interpolations = extract_javascript_interpolations text?sourceString
         } |> Permanent_Notification |> Command_Pre_Parse_Type.Command |> Some
 
+// TODO1 #parsing eval should complain if nested eval.
     semantics?eval <- fun _ text _ ->
         {
             eval_content = text?sourceString |> convert_string_to_use_javascript_interpolation

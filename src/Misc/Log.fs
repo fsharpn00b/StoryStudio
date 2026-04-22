@@ -8,7 +8,7 @@ open Browser.Dom
 
 open Utilities
 
-// TODO1 #logging Why does every error display multiple times?
+// TODO1 #logging Why do errors display multiple times? 20260422 We have tried to fix this with the changes to Runner/Main.fs. We think it was caused by event handlers being added multiple times and not removed.
 
 (* We use these custom exception handling functions instead of .NET exceptions because:
 1 In Fable, .NET exceptions do not support the Data field.
