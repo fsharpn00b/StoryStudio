@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <Compile Include="ParserBehaviorTests.fs" />
+    <Compile Include="ParserMatrixTests.fs" />
     <Compile Include="HistoryTests.fs" />
     <Compile Include="QueueTransitionTests.fs" />
     <Compile Include="SaveLoadValidationTests.fs" />

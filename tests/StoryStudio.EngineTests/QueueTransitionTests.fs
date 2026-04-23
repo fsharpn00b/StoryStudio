@@ -27,6 +27,17 @@ let private mkQueueData : Runner_Queue_State_Running_Data =
         menu_variables = Map.empty
     }
 
+let private mkQueueDataWithFlags
+    (continueAfterFinished : bool)
+    (addToHistory : bool)
+    (autosave : bool)
+    : Runner_Queue_State_Running_Data =
+    { mkQueueData with
+        continue_after_finished = continueAfterFinished
+        add_to_history = addToHistory
+        autosave = autosave
+    }
+
 let private mkQueueItem : Runner_Queue_Item =
     {
         command_data = {
@@ -75,3 +86,38 @@ let ``completion with interrupting queue preserves interrupting state`` () =
     | Queue_Interrupting runningData ->
         Assert.Equal(1, runningData.commands.Count)
     | _ -> failwith "Expected Queue_Interrupting."
+
+[<Fact>]
+let ``empty command completion mirrors flag combinations`` () =
+    let scenarios =
+        [
+            true, true, true
+            true, false, true
+            false, true, false
+            false, false, false
+        ]
+
+    for continueAfterFinished, addToHistory, autosave in scenarios do
+        let data = mkQueueDataWithFlags continueAfterFinished addToHistory autosave
+        let result = compute_transition_completion (Queue_Running data) data Map.empty
+        Assert.Equal(addToHistory, result.should_add_to_history)
+        Assert.Equal(autosave, result.should_autosave)
+        Assert.Equal(continueAfterFinished, result.should_continue_after_finished)
+
+[<Fact>]
+let ``non-empty completion always suppresses follow-up side effects`` () =
+    let scenarios =
+        [
+            true, true, true
+            true, false, true
+            false, true, false
+            false, false, false
+        ]
+    let commands = Map.ofList [1<command_queue_item_id>, mkQueueItem]
+
+    for continueAfterFinished, addToHistory, autosave in scenarios do
+        let data = mkQueueDataWithFlags continueAfterFinished addToHistory autosave
+        let result = compute_transition_completion (Queue_Running data) data commands
+        Assert.False(result.should_add_to_history)
+        Assert.False(result.should_autosave)
+        Assert.False(result.should_continue_after_finished)

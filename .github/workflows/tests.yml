@@ -8,7 +8,7 @@ on:
   pull_request:
 
 jobs:
-  test:
+  engine-tests:
     runs-on: ubuntu-latest
 
     steps:
@@ -29,14 +29,43 @@ jobs:
       - name: Install npm dependencies
         run: npm ci
 
-      - name: Install Playwright
-        run: npm install --save-dev @playwright/test
+      - name: Run engine tests
+        run: npm run test:engine
+
+  e2e-tests:
+    runs-on: ubuntu-latest
+    needs: engine-tests
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+
+      - name: Install npm dependencies
+        run: npm ci
 
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
 
-      - name: Run engine tests
-        run: npm run test:engine
-
       - name: Run Playwright smoke tests
         run: npm run test:e2e
+
+      - name: Upload Playwright artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-failure-artifacts
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore

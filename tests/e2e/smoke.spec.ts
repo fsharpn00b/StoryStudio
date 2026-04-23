@@ -6,6 +6,19 @@ async function dispatchWindowKey(page: Page, key: string) {
   }, key);
 }
 
+async function waitForSaveLoadHeader(page: Page, expectedHeaderText: string) {
+  await expect(page.locator("#save_load_screen")).toBeVisible({ timeout: 15000 });
+  await expect
+    .poll(
+      async () => {
+        const headerText = await page.locator("#save_load_header").innerText();
+        return headerText.trim();
+      },
+      { timeout: 15000 }
+    )
+    .toContain(expectedHeaderText);
+}
+
 test.beforeEach(async ({ page }) => {
   await page.goto("/0_pages/index.html");
   await page.evaluate(() => {
@@ -36,4 +49,23 @@ test("save and close via keyboard", async ({ page }) => {
   await expect(page.locator("#save_load_screen")).toBeVisible({ timeout: 10000 });
   await dispatchWindowKey(page, "Escape");
   await expect(page.locator("#save_load_screen")).toBeHidden({ timeout: 10000 });
+});
+
+test("save-load switching works while menu is open", async ({ page }) => {
+  await expect(page.locator("#dialogue_text")).toContainText("Which way should we go?", {
+    timeout: 30000,
+  });
+
+  await page.click("body");
+  await expect(page.locator("#menu_container")).toBeVisible({ timeout: 15000 });
+
+  await dispatchWindowKey(page, "s");
+  await waitForSaveLoadHeader(page, "Save Game");
+
+  await dispatchWindowKey(page, "l");
+  await waitForSaveLoadHeader(page, "Load Game");
+
+  await dispatchWindowKey(page, "Escape");
+  await expect(page.locator("#save_load_screen")).toBeHidden({ timeout: 10000 });
+  await expect(page.locator("#menu_container")).toBeVisible({ timeout: 10000 });
 });
