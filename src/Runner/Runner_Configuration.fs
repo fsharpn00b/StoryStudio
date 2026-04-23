@@ -77,5 +77,4 @@ let set_configuration
 //        set_history_configuration history new_configuration.history_configuration
         history.current <- { history.current with configuration = new_configuration.history_configuration }
         old_configuration.current <- new_configuration
-(* TODO1 #configuration What about keyboard?
-*)
+(* We do not set the keyboard bindings here because the keyboard is not a component. We set them in Configuration_Helpers.validate_configuration (). *)

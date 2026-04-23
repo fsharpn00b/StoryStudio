@@ -78,3 +78,26 @@ let try_fold (eval : 'acc -> 'item -> Result<'acc, 'error>) (acc_1 : 'acc) (xs_1
             | Ok acc_3 -> loop acc_3 xs_2
             | Error e -> Error e
     loop acc_1 xs_1
+
+let collect_errors (results: Result<'a, string> list) : Result<unit, string list> =
+    let errors =
+        results
+            |> List.fold (fun errors result ->
+                match result with
+                | Ok _ -> errors
+                | Error e -> e :: errors
+            ) []
+    if errors.IsEmpty then Ok ()
+    else Error errors
+
+(* This is needed so we can combine Results with different success types.*)
+let collect_errors_boxed (results: obj list) : Result<unit, string list> =
+    let errors =
+        results
+            |> List.fold (fun errors result ->
+                match unbox<Result<_, string>> result with
+                | Ok _ -> errors
+                | Error e -> e :: errors
+            ) []
+    if errors.IsEmpty then Ok ()
+    else Error errors

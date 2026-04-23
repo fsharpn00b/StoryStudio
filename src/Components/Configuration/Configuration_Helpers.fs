@@ -18,6 +18,7 @@ open Key_Bindings
 open Log
 open Notification_Types
 open Units_Of_Measure
+open Utilities
 
 (* Debug *)
 
@@ -51,71 +52,106 @@ let private set_configuration_in_local_storage
     let json = Encode.Auto.toString (0, configuration.current)
     do localStorage.setItem (local_storage_name, json)
 
-// TODO1 #configuration Change this to a validation function. If any of these fail, show alert and bail.
-let private update_configuration
+let private validate_configuration
     (configuration : IRefValue<Runner_Configuration>)
-    (set_configuration : Runner_Configuration -> unit)
-    (new_typing_speed_value_1 : HTMLTextAreaElement)
+    (new_dialogue_typing_speed_value_1 : HTMLTextAreaElement)
     (new_mouse_wheel_action_elapsed_time_threshold_value_1 : HTMLTextAreaElement)
     (new_notification_display_time_value_1 : HTMLTextAreaElement)
     (new_notification_transition_time_value_1 : HTMLTextAreaElement)
     (new_max_history_length_value_1 : HTMLTextAreaElement)
-    (new_key_bindings_configuration : Key_Bindings_Configuration)
-    : unit =
+    : Result<unit, string list> =
 
-    match Int32.TryParse new_typing_speed_value_1.value with
-    | true, new_value_2 ->
-        let new_value_3 =
-            if new_value_2 > 0 then characters_per_second_to_delay_between_characters new_value_2
-            else 0<milliseconds>
-        do
-            configuration.current <- { configuration.current with dialogue_box_configuration = { typing_speed = new_value_3 }}
-    | _ -> ()
+    let key_bindings_result_1 = get_key_bindings_configuration ()
 
-    match Int32.TryParse new_notification_display_time_value_1.value with
-    | true, new_value_2 ->
-        let new_value_3 =
-            if new_value_2 < int min_temporary_notification_display_time then int min_temporary_notification_display_time
-            elif new_value_2 > int max_temporary_notification_display_time then int max_temporary_notification_display_time
-            else new_value_2
+    let dialogue_typing_speed_result_1 =
+        match Int32.TryParse new_dialogue_typing_speed_value_1.value with
+        | true, new_value when new_value > 0 ->
+            new_value |> characters_per_second_to_delay_between_characters |> Ok
+        | true, new_value when 0 = new_value -> Ok 0<milliseconds>                
+        | _ -> Error "Dialogue typing speed is not a number or is too low (minimum 0)."
 
-        do configuration.current <- { configuration.current with temporary_notifications_configuration = { configuration.current.temporary_notifications_configuration with display_time = new_value_3 |> float |> LanguagePrimitives.FloatWithMeasure } }
-    | _ -> ()
+    let notification_display_time_result_1 =
+        match Double.TryParse new_notification_display_time_value_1.value with
+        | true, new_value_1 ->
+            let new_value_2 = new_value_1 |> LanguagePrimitives.FloatWithMeasure
+            if new_value_2 < min_temporary_notification_display_time then
+                Error $"Notification display time is too low (minimum {min_temporary_notification_display_time})."
+            elif new_value_2 > max_temporary_notification_display_time then
+                Error $"Notification display time is too high (maximum {max_temporary_notification_display_time})."
+            else new_value_2 |> Ok
+        | _ -> Error "Notification display time is not a number."
 
-    match Int32.TryParse new_notification_transition_time_value_1.value with
-    | true, new_value_2 ->
-        let new_value_3 =
-            if new_value_2 < int min_notification_transition_time then int min_notification_transition_time
-            elif new_value_2 > int max_notification_transition_time then int max_notification_transition_time
-            else new_value_2
+    let notification_transition_time_result_1 =
+        match Double.TryParse new_notification_transition_time_value_1.value with
+        | true, new_value_1 ->
+            let new_value_2 = new_value_1 |> LanguagePrimitives.FloatWithMeasure
+            if new_value_2 < min_notification_transition_time then
+                Error $"Notification transition time is too low (minimum {min_notification_transition_time})."
+            elif new_value_2 > max_notification_transition_time then
+                Error $"Notification transition time is too high (maximum {max_notification_transition_time})."
+            else new_value_2 |> Ok
+        | _ -> Error "Notification transition time is not a number."
 
-        do configuration.current <- { configuration.current with temporary_notifications_configuration = { configuration.current.temporary_notifications_configuration with transition_time = new_value_3 |> float |> LanguagePrimitives.FloatWithMeasure } }
-    | _ -> ()
+    let max_history_length_result_1 =
+        match Int32.TryParse new_max_history_length_value_1.value with
+        | true, new_value_1 ->
+            let new_value_2 = new_value_1 |> LanguagePrimitives.Int32WithMeasure
+            if new_value_2 < min_max_history_length then
+                Error $"Maximum history length is too low (minimum {min_max_history_length})."
+            elif new_value_2 > max_max_history_length then
+                Error $"Maximum history length is too high (maximum {max_max_history_length})."
+            else new_value_2 |> Ok
+        | _ -> Error "Maximum history length is not a number."
 
-    match Int32.TryParse new_max_history_length_value_1.value with
-    | true, new_value_2 ->
-        let new_value_3 =
-            if new_value_2 < min_max_history_length then min_max_history_length
-            elif new_value_2 > max_max_history_length then max_max_history_length
-            else new_value_2
-        do configuration.current <- { configuration.current with history_configuration = { max_history_length = new_value_3 } }
-    | _ -> ()
+    let mouse_wheel_action_elapsed_time_threshold_result_1 =
+        match Int32.TryParse new_mouse_wheel_action_elapsed_time_threshold_value_1.value with
+        | true, new_value_1 ->
+            let new_value_2 = new_value_1 |> LanguagePrimitives.Int32WithMeasure
+            if new_value_2 < min_mouse_wheel_action_elapsed_time_threshold then
+                Error $"Mouse wheel action elapsed time threshold is too low (minimum {min_mouse_wheel_action_elapsed_time_threshold})."
+            elif new_value_2 > max_mouse_wheel_action_elapsed_time_threshold then
+                Error $"Mouse wheel action elapsed time threshold is too high (maximum {max_mouse_wheel_action_elapsed_time_threshold})."
+            else new_value_2 |> Ok
+        | _ -> Error "Mouse wheel action elapsed time threshold is not a number."
 
-    match Int32.TryParse new_mouse_wheel_action_elapsed_time_threshold_value_1.value with
-    | true, new_value_2 ->
-        let new_value_3 = new_value_2 |> LanguagePrimitives.Int32WithMeasure
-        let new_value_4 =
-            if new_value_3 < min_mouse_wheel_action_elapsed_time_threshold then min_mouse_wheel_action_elapsed_time_threshold
-            elif new_value_3 > max_mouse_wheel_action_elapsed_time_threshold then max_mouse_wheel_action_elapsed_time_threshold
-            else new_value_3
-        do configuration.current <- { configuration.current with mouse_configuration = { configuration.current.mouse_configuration with wheel_action_elapsed_time_threshold = new_value_4 } }
-    | _ -> ()
+    match dialogue_typing_speed_result_1, notification_display_time_result_1, notification_transition_time_result_1, max_history_length_result_1, mouse_wheel_action_elapsed_time_threshold_result_1, key_bindings_result_1 with
+    | Ok dialogue_typing_speed_result_2,
+        Ok notification_display_time_result_2,
+        Ok notification_transition_time_result_2,
+        Ok max_history_length_result_2,
+        Ok mouse_wheel_action_elapsed_time_threshold_result_2,
+        Ok key_bindings_result_2 ->
 
-// TODO1 #configuration Why are we doing this here and not in set_configuration ()?
-    do configuration.current <- { configuration.current with key_bindings_configuration = new_key_bindings_configuration }
+        do configuration.current <-
+            { configuration.current with
+                dialogue_box_configuration =
+                    { configuration.current.dialogue_box_configuration with
+                        typing_speed = dialogue_typing_speed_result_2
+                    }
+                temporary_notifications_configuration =
+                    { configuration.current.temporary_notifications_configuration with
+                        display_time = notification_display_time_result_2
+                        transition_time = notification_transition_time_result_2
+                    }
+                history_configuration =
+                    { configuration.current.history_configuration with
+                        max_history_length = max_history_length_result_2
+                    }
+                mouse_configuration =
+                    { configuration.current.mouse_configuration with
+                        wheel_action_elapsed_time_threshold = mouse_wheel_action_elapsed_time_threshold_result_2
+                    }
+                key_bindings_configuration = key_bindings_result_2
+            }
+        Ok ()
 
-    set_configuration configuration.current
-    set_configuration_in_local_storage configuration
+    | _ ->
+        let key_bindings_result_2 =
+            match key_bindings_result_1 with
+            | Ok _ -> []
+            | Error errors -> errors |> List.map box
+
+        collect_errors_boxed ([box dialogue_typing_speed_result_1; box notification_display_time_result_1; box notification_transition_time_result_1; box max_history_length_result_1; box mouse_wheel_action_elapsed_time_threshold_result_1] @ key_bindings_result_2)
 
 let handle_save_button_click
     (configuration : IRefValue<Runner_Configuration>)
@@ -123,9 +159,22 @@ let handle_save_button_click
     (dispatch : Configuration_Message -> unit)
     : unit =
 
-// TODO1 #configuration This is another layer of validation that should be in a validation function.
-    match get_key_bindings_configuration () with
-    | None -> ()
-    | Some key_bindings_configuration ->
-        update_configuration configuration set_configuration (document.getElementById "txt_typing_speed" :?> HTMLTextAreaElement) (document.getElementById "txt_mouse_wheel_action_elapsed_time_threshold" :?> HTMLTextAreaElement) (document.getElementById "txt_notification_display_time" :?> HTMLTextAreaElement) (document.getElementById "txt_notification_transition_time" :?> HTMLTextAreaElement) (document.getElementById "txt_max_history_length" :?> HTMLTextAreaElement) key_bindings_configuration
-        dispatch Hide
+(* If the validation succeeds, this function modifies the configuration. *)
+    let validation_result =
+        validate_configuration
+            configuration
+            (document.getElementById "txt_typing_speed" :?> HTMLTextAreaElement) 
+            (document.getElementById "txt_mouse_wheel_action_elapsed_time_threshold" :?> HTMLTextAreaElement)
+            (document.getElementById "txt_notification_display_time" :?> HTMLTextAreaElement)
+            (document.getElementById "txt_notification_transition_time" :?> HTMLTextAreaElement)
+            (document.getElementById "txt_max_history_length" :?> HTMLTextAreaElement)
+
+    match validation_result with
+    | Ok () ->
+        do
+            set_configuration_in_local_storage configuration
+(* This propagates the configuration changes to the individual components. *)
+            set_configuration configuration.current
+            dispatch Hide
+    | Error error_messages ->
+        warn "configuration" true $"Configuration validation failed.{Environment.NewLine}{String.Join (Environment.NewLine, error_messages)}" []

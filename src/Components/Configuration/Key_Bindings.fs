@@ -1,5 +1,8 @@
 module Key_Bindings
 
+// Environment.NewLine
+open System
+
 // console, document, window
 open Browser.Dom
 // HTMLTextAreaElement
@@ -215,46 +218,76 @@ let private get_user_configured_key_bindings (bindings : Key_Binding list) : Use
         { key = get_key_binding binding; name = binding.name; display_name = binding.display_name }
     )
 
-let private check_key_bindings (bindings : User_Configured_Key_Binding list) : bool =
-    let show_duplicate_key_bindings (duplicates) =
-        duplicates
-            |> List.map (fun (_, binding) -> {| name = binding.display_name; key = binding.key |})
+let private check_key_bindings (bindings : User_Configured_Key_Binding list) : Result<unit, string> list =
+
+    let show_key_bindings (bindings : User_Configured_Key_Binding list) : string =
+        bindings
             |> List.sortBy (fun binding -> binding.key)
+            |> List.map (fun binding -> $"  {binding.display_name}: {binding.key}")
+            |> String.concat $",{Environment.NewLine}"
 
-    let non_valid_keys = bindings |> List.choose (fun binding ->
-        if binding.key.Length <> 1 then Some binding else None 
-    )
-    if non_valid_keys.Length > 0 then
-        warn "check_key_bindings" true "Tried to bind non-valid key." ["non-valid keys", non_valid_keys |> List.map (fun binding -> {| name = binding.display_name; key = binding.key |}) :> obj]
-        false
-    else
-        let duplicates_1 = bindings |> duplicates_by (fun binding -> binding.key)
-        if duplicates_1.Length > 0 then
-            warn "check_key_bindings" true "Duplicate key bindings." ["duplicate key bindings", duplicates_1 |> show_duplicate_key_bindings :> obj]
-            false
-        else
+    let non_valid_keys_result =
+        let non_valid_keys =
+            bindings
+                |> List.choose (fun binding ->
+                    if binding.key.Length <> 1 then Some binding else None 
+                )
+        if non_valid_keys.IsEmpty then Ok ()
+        else Error $"Tried to bind one or more non-valid keys:{Environment.NewLine}{show_key_bindings non_valid_keys}"
+
+    let duplicate_keys_result =
+        let duplicates =
+            bindings
+                |> duplicates_by (fun binding -> binding.key)
+                |> List.map snd
+        if duplicates.IsEmpty then Ok ()
+        else Error $"Duplicate key bindings:{Environment.NewLine}{show_key_bindings duplicates}"
+
 (* Make sure the user did not create any key bindings that collide with permanent key bindings. This should not be an issue now, but it might later. *)
-            let duplicates_2 =
-                (bindings @ (permanent_key_bindings
-                    |> List.map (fun binding ->
-                        { key = binding.default_key; name = binding.name; display_name = binding.display_name }
-                    )))
-                    |> duplicates_by (fun binding -> binding.key)
-            if duplicates_2.Length > 0 then
-                warn "check_key_bindings" true "Key bindings collide with permanent key bindings." ["colliding key bindings", duplicates_2 |> show_duplicate_key_bindings :> obj]
-                false
-            else true
+    let collision_result =
 
-let get_key_bindings_configuration () : Key_Bindings_Configuration option =
+(* This is for testing. In this scenario, the user tried to bind the Escape key to the Undo command. *)
+(*
+        let bindings = bindings @ [
+            { key = "Escape"; name = "ignore"; display_name = "Undo" }
+        ]
+*)
+
+        let permanent_keys =
+            permanent_key_bindings
+                |> List.map (fun binding -> binding.default_key, binding.display_name)
+                |> Map.ofList
+        let collisions =
+            bindings
+                |> List.collect (fun binding ->
+                    match permanent_keys.TryFind binding.key with
+                    | Some permanent_key_display_name ->
+                        [{
+                            binding with
+(* This is formatted to fit show_key_bindings. Example output:
+Undo: Escape (permanently bound to Open/close Configuration screen)
+(end)
+*)
+                                key = $"{binding.key} (permanently bound to {permanent_key_display_name})"
+                        }]
+                    | None -> []
+                )
+        if collisions.IsEmpty then Ok ()
+        else Error $"Key bindings collide with permanent key bindings:{Environment.NewLine}{show_key_bindings collisions}"
+
+    [non_valid_keys_result; duplicate_keys_result; collision_result]
+
+let get_key_bindings_configuration () : Result<Key_Bindings_Configuration, Result<unit, string> list> =
     let key_to_name =
         (default_key_bindings |> get_user_configured_key_bindings) @
         (default_debug_key_bindings |> get_user_configured_key_bindings)
-    if not <| check_key_bindings key_to_name then None
+    let results = check_key_bindings key_to_name |> List.filter (function | Error _ -> true | Ok _ -> false)
+    if not <| results.IsEmpty then Error results
     else
         {
             key_to_name = key_to_name |> Seq.map (fun binding -> binding.key, binding.name) |> Map.ofSeq
             name_to_key = key_to_name |> Seq.map (fun binding -> binding.name, binding.key) |> Map.ofSeq
-        } |> Some
+        } |> Ok
 
 let get_default_key_bindings_configuration () : Key_Bindings_Configuration =
     let key_to_name =

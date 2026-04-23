@@ -74,6 +74,7 @@ let private view
                         ]
                     ]
                 ]
+// TODO1 #configuration Replace numeric settings with slider components.
                 Html.div [
                     prop.className "configuration_items"
                     prop.children [
@@ -91,7 +92,7 @@ let private view
                         ]
                         Html.h4 "Mouse"
                         Html.label [
-                            prop.text $"Mouse wheel action elapsed time threshold (milliseconds, minimum {min_mouse_wheel_action_elapsed_time_threshold}, maximum {max_mouse_wheel_action_elapsed_time_threshold}, default {default_mouse_wheel_action_elapsed_time_threshold}): "
+                            prop.text $"Mouse wheel action elapsed time threshold (milliseconds, lower = faster mouse wheel scrolling, minimum {min_mouse_wheel_action_elapsed_time_threshold}, maximum {max_mouse_wheel_action_elapsed_time_threshold}, default {default_mouse_wheel_action_elapsed_time_threshold}): "
                         ]
                         Html.input [
                             prop.id "txt_mouse_wheel_action_elapsed_time_threshold"

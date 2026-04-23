@@ -97,10 +97,10 @@ Runner_History.undo_redo ()
 
 (* Consts *)
 
-let max_temporary_notification_display_time = 30<seconds>
-let min_temporary_notification_display_time = 1<seconds>
-let max_notification_transition_time = 5<seconds>
-let min_notification_transition_time = 0<seconds>
+let max_temporary_notification_display_time = 30.0<seconds>
+let min_temporary_notification_display_time = 1.0<seconds>
+let max_notification_transition_time = 5.0<seconds>
+let min_notification_transition_time = 0.0<seconds>
 
 let notify_fade_in_complete = 0<command_queue_item_id>
 let notify_fade_out_complete = 1<command_queue_item_id>
