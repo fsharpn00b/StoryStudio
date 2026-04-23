@@ -25,6 +25,45 @@ let private error : error_function = error debug_module_name
 
 let mutable remove_transition_lock = 0
 
+type Transition_Completion_Result = {
+    next_queue : Runner_Queue
+    should_add_to_history : bool
+    should_autosave : bool
+    should_continue_after_finished : bool
+}
+
+let compute_transition_completion
+    (current_queue_state : Runner_Queue)
+    (queue_data : Runner_Queue_State_Running_Data)
+    (remaining_commands : Runner_Queue_Command_Map)
+    : Transition_Completion_Result =
+
+    if Map.isEmpty remaining_commands then
+        {
+            next_queue =
+                Queue_Idle {
+                    next_command_data = queue_data.next_command_data
+                    add_to_history = queue_data.add_to_history
+                    autosave = queue_data.autosave
+                    menu_variables = queue_data.menu_variables
+                }
+            should_add_to_history = queue_data.add_to_history
+            should_autosave = queue_data.autosave
+            should_continue_after_finished = queue_data.continue_after_finished
+        }
+    else
+        let next_queue =
+            match current_queue_state with
+            | Queue_Running _ -> Queue_Running { queue_data with commands = remaining_commands }
+            | Queue_Interrupting _ -> Queue_Interrupting { queue_data with commands = remaining_commands }
+            | _ -> error "compute_transition_completion" "Unexpected queue state." ["queue", current_queue_state] |> invalidOp
+        {
+            next_queue = next_queue
+            should_add_to_history = false
+            should_autosave = false
+            should_continue_after_finished = false
+        }
+
 (* Main functions *)
 
 let private remove_transition_2
@@ -41,15 +80,11 @@ let private remove_transition_2
 (* Otherwise, update the command queue item with the new set of transitions. *)
         else queue_data.commands.Add (command_queue_item_id, command)
 
+    let completion_result = compute_transition_completion runner_state.queue.current queue_data commands
+    runner_state.queue.current <- completion_result.next_queue
+
 (* If there are no remaining running commands, set the queue state to Queue_Idle. *)
     if Map.isEmpty commands then
-        runner_state.queue.current <-
-            Queue_Idle {
-                next_command_data = queue_data.next_command_data
-                add_to_history = queue_data.add_to_history
-                autosave = queue_data.autosave
-                menu_variables = queue_data.menu_variables
-            }
 (* While the queue state is Queue_Idle,
 - Add the current state to the undo/redo history.
 - Autosave.
@@ -60,22 +95,13 @@ let private remove_transition_2
 - When the queue is empty, we add to history and autosave. Again, entangling these two things might not be flexible enough in the future.
 - It's not intuitive to remember that this function (remove_transition) is where we add to history and autosave.
 *)
-        if queue_data.add_to_history then
+        if completion_result.should_add_to_history then
             add_to_history runner_state history
-        if queue_data.autosave then
+        if completion_result.should_autosave then
             autosave_or_quicksave runner_state Save_Load_Types.Autosave
 (* Run the next command(s) if specified. *)
-        if queue_data.continue_after_finished then
+        if completion_result.should_continue_after_finished then
             run runner_state Handle_Queue_Empty
-    else
-(* Update the queue with the new map of command queue items. *)
-        do runner_state.queue.current <-
-            match runner_state.queue.current with
-            | Queue_Running data ->
-                Queue_Running { data with commands = commands }
-            | Queue_Interrupting data ->
-                Queue_Interrupting { data with commands = commands }
-            | _ -> error "remove_transition" "Unexpected queue state." ["queue", runner_state.queue.current] |> invalidOp
 
 let remove_transition_1
     (runner_state : Runner_State)

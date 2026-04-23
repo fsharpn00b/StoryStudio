@@ -208,3 +208,5 @@ out
 .ionide
 *.fs.js
 *.fs.js.map
+playwright-report/
+test-results/

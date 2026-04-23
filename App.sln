@@ -1,4 +1,4 @@
-Microsoft Visual Studio Solution File, Format Version 12.00
+﻿Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.29418.71
 MinimumVisualStudioVersion = 10.0.40219.1
@@ -15,6 +15,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		vite.config.js = vite.config.js
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{6100967A-A3C5-48B7-9599-95CF93FBABE6}"
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "StoryStudio.EngineTests", "tests\StoryStudio.EngineTests\StoryStudio.EngineTests.fsproj", "{54544D7F-BE2A-4C36-82F3-52E1518D8F04}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -29,11 +33,18 @@ Global
 		{7821B727-268F-44AD-8136-B300B323F578}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7821B727-268F-44AD-8136-B300B323F578}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7821B727-268F-44AD-8136-B300B323F578}.Release|Any CPU.Build.0 = Release|Any CPU
+		{54544D7F-BE2A-4C36-82F3-52E1518D8F04}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{54544D7F-BE2A-4C36-82F3-52E1518D8F04}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{54544D7F-BE2A-4C36-82F3-52E1518D8F04}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{54544D7F-BE2A-4C36-82F3-52E1518D8F04}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {10E8CD24-3EC2-4B88-AF25-F5807B4B92B9}
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{54544D7F-BE2A-4C36-82F3-52E1518D8F04} = {6100967A-A3C5-48B7-9599-95CF93FBABE6}
 	EndGlobalSection
 EndGlobal

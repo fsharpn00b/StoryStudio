@@ -22,12 +22,12 @@ let private error : error_function = error debug_module_name
 
 (* Functions *)
 
-let private sanitize_max_history_length (value : int) : int =
+let sanitize_max_history_length (value : int) : int =
     if value < min_max_history_length then min_max_history_length
     elif value > max_max_history_length then max_max_history_length
     else value
 
-let private truncate_history
+let truncate_history
     (history : Runner_Saveable_State list)
     (max_history_length_1 : int)
     : Runner_Saveable_State list =
@@ -36,6 +36,23 @@ let private truncate_history
     if max_history_length_2 = 0 then history
     elif history.Length > max_history_length_2 then history |> List.skip (history.Length - max_history_length_2)
     else history
+
+let can_undo_for_index
+    (current_index : int option)
+    : bool =
+
+    match current_index with
+    | Some current_index_1 -> current_index_1 > 0
+    | None -> false
+
+let can_redo_for_index
+    (current_index : int option)
+    (history_length : int)
+    : bool =
+
+    match current_index with
+    | Some current_index_1 -> current_index_1 < history_length - 1
+    | None -> false
 
 let add_to_history
     (runner_state : Runner_State)
@@ -85,10 +102,7 @@ let can_undo
     elif runner_component_interfaces.current.configuration.current.is_visible () ||
         runner_component_interfaces.current.save_load.current.is_visible () then
         false
-    else
-        match history.current.current_index with
-        | Some current_index_1 -> current_index_1 > 0
-        | None -> false
+    else can_undo_for_index history.current.current_index
 
 let can_redo
     (history : IRefValue<Runner_History>)
@@ -102,10 +116,7 @@ let can_redo
     elif runner_component_interfaces.current.configuration.current.is_visible () ||
         runner_component_interfaces.current.save_load.current.is_visible () then
         false
-    else
-        match history.current.current_index with
-        | Some current_index_1 -> current_index_1 < history.current.history.Length - 1
-        | None -> false
+    else can_redo_for_index history.current.current_index history.current.history.Length
 
 (* TODO2 We have not tried to redo during a transition. That is possible, as we only truncate the history when we add to it. In other words, we could:
 1 Run a command (a) that uses a transition.
