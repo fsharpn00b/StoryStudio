@@ -36,6 +36,15 @@ let ``validate_saved_game_name rejects invalid characters`` () =
     | Error _ -> ()
 
 [<Fact>]
+let ``validate_saved_game_name rejects empty and whitespace names`` () =
+    match validate_saved_game_name "" with
+    | Ok () -> failwith "Expected failure for empty name."
+    | Error _ -> ()
+    match validate_saved_game_name "   " with
+    | Ok () -> failwith "Expected failure for whitespace name."
+    | Error _ -> ()
+
+[<Fact>]
 let ``validate_javascript_state rejects empty input`` () =
     match validate_javascript_state "" with
     | Ok () -> failwith "Expected failure for empty JavaScript state."
@@ -62,6 +71,13 @@ let ``validate_saved_game_name rejects oversized name`` () =
     | Error _ -> ()
 
 [<Fact>]
+let ``validate_saved_game_name accepts max length boundary`` () =
+    let name = String.replicate 40 "a"
+    match validate_saved_game_name name with
+    | Ok () -> ()
+    | Error (message, _) -> failwithf "Expected max boundary to pass, got: %s" message
+
+[<Fact>]
 let ``validate_saved_game rejects invalid screenshot format`` () =
     let game = mkSavedGame "slot1" "invalid-screenshot" DateTime.UtcNow "{}"
     match validate_saved_game game with
@@ -82,6 +98,13 @@ let ``validate_saved_game rejects oversized state payload`` () =
     let game = mkSavedGame "slot1" validScreenshot DateTime.UtcNow oversizedState
     match validate_saved_game game with
     | Ok _ -> failwith "Expected oversized state payload failure."
+    | Error _ -> ()
+
+[<Fact>]
+let ``validate_saved_game rejects empty state payload`` () =
+    let game = mkSavedGame "slot1" validScreenshot DateTime.UtcNow ""
+    match validate_saved_game game with
+    | Ok _ -> failwith "Expected empty state payload failure."
     | Error _ -> ()
 
 [<Fact>]
@@ -116,5 +139,11 @@ let ``validate_import_file_contents rejects oversized file`` () =
     let oversized = String.replicate 5_000_001 "x"
     match validate_import_file_contents oversized with
     | Ok _ -> failwith "Expected oversized file failure."
+    | Error _ -> ()
+
+[<Fact>]
+let ``validate_import_file_contents rejects malformed json payload`` () =
+    match validate_import_file_contents "{ not valid json ]" with
+    | Ok _ -> failwith "Expected malformed import payload failure."
     | Error _ -> ()
 

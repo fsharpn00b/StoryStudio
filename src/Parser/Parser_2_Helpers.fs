@@ -82,6 +82,23 @@ let is_valid_branch_transition
     | Command_Pre_Parse_Type.Else -> next_token_is_command_or_if
     | _ -> true
 
+let is_valid_terminal_token
+    (token : Command_Pre_Parse_Type)
+    : bool =
+
+    match token with
+    | Command_Pre_Parse_Type.If _
+    | Command_Pre_Parse_Type.Else_If _
+    | Command_Pre_Parse_Type.Else -> false
+    | _ -> true
+
+let resolve_jump_label_destination
+    (labels : Map<string, int<command_id>>)
+    (destination : string)
+    : int<command_id> option =
+
+    labels.TryFind destination
+
 (* The return parameter next_id_for_command is the next_command_id for the current command. next_available_id is the ID to be used for the next command. These are not always the same. See the Else_If/Else/End_If case.
 *)
 let get_next_command_id

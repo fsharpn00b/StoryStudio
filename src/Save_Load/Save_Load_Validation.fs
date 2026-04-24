@@ -35,6 +35,10 @@ let private max_menu_variable_name_length = 128
 let private is_valid_data_url_screenshot (screenshot : string) : bool =
     screenshot.StartsWith "data:image/" && screenshot.Contains ";base64,"
 
+let private is_json_array_payload (json : string) : bool =
+    let trimmed = json.Trim ()
+    trimmed.StartsWith "[" && trimmed.EndsWith "]"
+
 (* See also JavaScript_Interop_1.eval_js ()/eval_js_with_exception (). *)
 [<Emit("JSON.parse($0)")>]
 let private parse_json (json : string) : obj = jsNative
@@ -192,6 +196,8 @@ let validate_import_file_contents
         Error ("File is empty.", [])
     elif file_contents.Length > max_import_file_length then
         Error ("File is too large.", ["file_size", file_contents.Length; "max_file_size", max_import_file_length])
+    elif not (is_json_array_payload file_contents) then
+        Error ("Import file must contain a JSON array of saved games.", [])
     else
         match Decode.Auto.fromString<Existing_Saved_Game list> file_contents with
 

@@ -9,6 +9,7 @@
   <ItemGroup>
     <Compile Include="InvariantAssertions.fs" />
     <Compile Include="ParserBehaviorTests.fs" />
+    <Compile Include="ParserErrorPathTests.fs" />
     <Compile Include="ParserMatrixTests.fs" />
     <Compile Include="ParserPropertyTests.fs" />
     <Compile Include="HistoryTests.fs" />

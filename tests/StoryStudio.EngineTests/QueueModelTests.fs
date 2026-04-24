@@ -2,6 +2,7 @@ module QueueModelTests
 
 open Command_Types
 open InvariantAssertions
+open JavaScript_Interop_1
 open Runner_Queue_Transition
 open Runner_Types_1
 open Runner_Types_2
@@ -21,15 +22,17 @@ let private mkQueueData
     (continue_after_finished : bool)
     (add_to_history : bool)
     (autosave : bool)
+    (next_command_data : Runner_Queue_Next_Command_Data option)
+    (menu_variables : Menu_Variables)
     : Runner_Queue_State_Running_Data =
     {
         commands = Map.empty
-        next_command_data = mkNextCommandData
+        next_command_data = next_command_data
         components_used_by_commands = Set.empty
         continue_after_finished = continue_after_finished
         add_to_history = add_to_history
         autosave = autosave
-        menu_variables = Map.empty
+        menu_variables = menu_variables
     }
 
 let private mkQueueItem : Runner_Queue_Item =
@@ -92,22 +95,58 @@ let ``compute_transition_completion matches reference model across scenario matr
         ]
     let queueStates : Runner_Queue list =
         [
-            Queue_Running (mkQueueData true true true)
-            Queue_Interrupting (mkQueueData true true true)
+            Queue_Running (mkQueueData true true true mkNextCommandData Map.empty)
+            Queue_Interrupting (mkQueueData true true true mkNextCommandData Map.empty)
+        ]
+    let nextCommandDataCases =
+        [
+            mkNextCommandData
+            None
+        ]
+    let menuVariableCases : Menu_Variables list =
+        [
+            Map.empty
+            (Map.ofList [ "direction", 1 ] : Menu_Variables)
         ]
 
     for continueAfterFinished, addToHistory, autosave in scenarios do
-        let queueData = mkQueueData continueAfterFinished addToHistory autosave
-        for commandMap in commandMaps do
-            let expected = compute_model_transition_completion queueData commandMap
-            for queueState in queueStates do
-                let actual = compute_transition_completion queueState queueData commandMap
-                assert_transition_result_shape commandMap actual
-                Assert.Equal(expected.should_add_to_history, actual.should_add_to_history)
-                Assert.Equal(expected.should_autosave, actual.should_autosave)
-                Assert.Equal(expected.should_continue_after_finished, actual.should_continue_after_finished)
-                match actual.next_queue with
-                | Queue_Idle _ -> Assert.True(expected.next_queue_is_idle)
-                | Queue_Running _
-                | Queue_Interrupting _ -> Assert.False(expected.next_queue_is_idle)
-                | _ -> failwith "Unexpected queue state."
+        for nextCommandData in nextCommandDataCases do
+            for menuVariables in menuVariableCases do
+                let queueData = mkQueueData continueAfterFinished addToHistory autosave nextCommandData menuVariables
+                for commandMap in commandMaps do
+                    let expected = compute_model_transition_completion queueData commandMap
+                    for queueState in queueStates do
+                        let actual = compute_transition_completion queueState queueData commandMap
+                        assert_transition_result_shape commandMap actual
+                        Assert.Equal(expected.should_add_to_history, actual.should_add_to_history)
+                        Assert.Equal(expected.should_autosave, actual.should_autosave)
+                        Assert.Equal(expected.should_continue_after_finished, actual.should_continue_after_finished)
+                        match actual.next_queue with
+                        | Queue_Idle idleData ->
+                            Assert.True(expected.next_queue_is_idle)
+                            Assert.Equal(nextCommandData, idleData.next_command_data)
+                            Assert.Equal<Menu_Variables>(menuVariables, idleData.menu_variables)
+                        | Queue_Running runningData ->
+                            Assert.False(expected.next_queue_is_idle)
+                            Assert.Equal<Menu_Variables>(menuVariables, runningData.menu_variables)
+                        | Queue_Interrupting interruptingData ->
+                            Assert.False(expected.next_queue_is_idle)
+                            Assert.Equal<Menu_Variables>(menuVariables, interruptingData.menu_variables)
+                        | _ -> failwith "Unexpected queue state."
+
+[<Fact>]
+let ``queue state type is preserved for non-empty command completion`` () =
+    let queueData = mkQueueData true true true mkNextCommandData Map.empty
+    let commands =
+        Map.ofList [
+            1<command_queue_item_id>, mkQueueItem
+            2<command_queue_item_id>, { mkQueueItem with order_in_queue = 1<command_queue_order> }
+        ]
+    let runningResult = compute_transition_completion (Queue_Running queueData) queueData commands
+    let interruptingResult = compute_transition_completion (Queue_Interrupting queueData) queueData commands
+    match runningResult.next_queue with
+    | Queue_Running _ -> ()
+    | _ -> failwith "Expected Queue_Running."
+    match interruptingResult.next_queue with
+    | Queue_Interrupting _ -> ()
+    | _ -> failwith "Expected Queue_Interrupting."

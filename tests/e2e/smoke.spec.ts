@@ -19,6 +19,18 @@ async function waitForSaveLoadHeader(page: Page, expectedHeaderText: string) {
     .toContain(expectedHeaderText);
 }
 
+async function advanceUntilDialogueContains(page: Page, expectedText: string, maxSteps = 30) {
+  for (let step = 0; step < maxSteps; step += 1) {
+    const currentText = (await page.locator("#dialogue_text").textContent()) ?? "";
+    if (currentText.includes(expectedText)) {
+      return;
+    }
+    await page.click("body");
+    await page.waitForTimeout(120);
+  }
+  await expect(page.locator("#dialogue_text")).toContainText(expectedText, { timeout: 15000 });
+}
+
 test.beforeEach(async ({ page }) => {
   await page.goto("/0_pages/index.html");
   await page.evaluate(() => {
@@ -68,4 +80,16 @@ test("save-load switching works while menu is open", async ({ page }) => {
   await dispatchWindowKey(page, "Escape");
   await expect(page.locator("#save_load_screen")).toBeHidden({ timeout: 10000 });
   await expect(page.locator("#menu_container")).toBeVisible({ timeout: 10000 });
+});
+
+test("alternate branch reaches day 2 scene", async ({ page }) => {
+  await expect(page.locator("#dialogue_text")).toContainText("Which way should we go?", {
+    timeout: 30000,
+  });
+
+  await page.click("body");
+  await expect(page.locator("#menu_container")).toBeVisible({ timeout: 15000 });
+  await page.locator("#menu .menu_item").first().click();
+
+  await advanceUntilDialogueContains(page, "Great, we're lost in the woods.");
 });

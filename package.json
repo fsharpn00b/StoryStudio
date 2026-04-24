@@ -8,6 +8,7 @@
     "test:engine": "dotnet test tests/StoryStudio.EngineTests/StoryStudio.EngineTests.fsproj",
     "test:e2e": "npm exec playwright test",
     "test:e2e:ui": "npm exec playwright test --ui",
+    "test:rc": "npm run test:engine && npm run test:e2e -- --reporter=list",
     "test": "npm run test:engine && npm run test:e2e"
   },
   "dependencies": {

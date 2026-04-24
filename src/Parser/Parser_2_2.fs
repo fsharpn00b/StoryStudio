@@ -43,7 +43,7 @@ let private parse_jump_label_commands
                     next_command_data = Some {
                         next_command_scene_id = scene_id
                         next_command_id =
-                            match accumulator.labels.TryFind kv.Value with
+                            match resolve_jump_label_destination accumulator.labels kv.Value with
                             | Some command_id -> command_id
                             | None ->
                                 let line_number = get_script_line_number script_content command_1.error_data.script_text_index
@@ -71,12 +71,8 @@ let private parse_commands_2
         do debug "parse_commands" String.Empty ["current_command_id", accumulator.next_command_id_to_assign; "parent_command_ids", accumulator.parent_command_ids; "token", json_stringify token; "next_token", json_stringify next_token]
         #endif
 
-        match token.command, next_token with
-        | Command_Pre_Parse_Type.If _, None
-        | Command_Pre_Parse_Type.Else_If _, None
-        | Command_Pre_Parse_Type.Else, None ->
+        if next_token.IsNone && not (is_valid_terminal_token token.command) then
             error "parse_commands" "If/ElseIf/Else cannot be the last token in a script." ["token", token] |> invalidOp
-        | _ -> ()
 
         match next_token with
         | Some next_token -> check_current_token_and_next_token token next_token

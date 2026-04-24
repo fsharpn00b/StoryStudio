@@ -6,6 +6,11 @@ on:
       - main
       - master
   pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   engine-tests:
@@ -69,7 +74,7 @@ jobs:
         run: npm run test:e2e
 
       - name: Upload Playwright artifacts on failure
-        if: failure()
+        if: failure() || github.event_name == 'workflow_dispatch'
         uses: actions/upload-artifact@v4
         with:
           name: playwright-failure-artifacts
