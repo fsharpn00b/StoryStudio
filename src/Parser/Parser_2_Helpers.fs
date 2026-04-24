@@ -38,28 +38,49 @@ let check_current_token_and_next_token
     : unit =
 
     let tokens = ["token", token :> obj; "next_token", next_token :> obj]
-
-    match token.command with
-
-    | Command_Pre_Parse_Type.If _ ->
+    let next_token_is_command_or_if =
         match next_token.command with
         | Command_Pre_Parse_Type.Command _
-        | Command_Pre_Parse_Type.If _ -> ()
-        | _ -> error "check_current_token_and_next_token" "If must be followed by command or another If." tokens |> invalidOp
+        | Command_Pre_Parse_Type.If _ -> true
+        | _ -> false
 
-    | Command_Pre_Parse_Type.Else_If _ ->
-        match next_token.command with
+    let is_valid_branch_token_sequence =
+        match token.command with
+        | Command_Pre_Parse_Type.If _
+        | Command_Pre_Parse_Type.Else_If _
+        | Command_Pre_Parse_Type.Else -> next_token_is_command_or_if
+        | _ -> true
+
+    if not is_valid_branch_token_sequence then
+        match token.command with
+
+        | Command_Pre_Parse_Type.If _ ->
+            error "check_current_token_and_next_token" "If must be followed by command or another If." tokens |> invalidOp
+
+        | Command_Pre_Parse_Type.Else_If _ ->
+            error "check_current_token_and_next_token" "ElseIf must be followed by command or If." tokens |> invalidOp
+
+        | Command_Pre_Parse_Type.Else ->
+            error "check_current_token_and_next_token" "Else must be followed by command or another If." tokens |> invalidOp
+
+        | _ -> ()
+
+let is_valid_branch_transition
+    (current_token : Command_Pre_Parse_Type)
+    (next_token : Command_Pre_Parse_Type)
+    : bool =
+
+    let next_token_is_command_or_if =
+        match next_token with
         | Command_Pre_Parse_Type.Command _
-        | Command_Pre_Parse_Type.If _ -> ()
-        | _ -> error "check_current_token_and_next_token" "ElseIf must be followed by command or If." tokens |> invalidOp
+        | Command_Pre_Parse_Type.If _ -> true
+        | _ -> false
 
-    | Command_Pre_Parse_Type.Else ->
-        match next_token.command with
-        | Command_Pre_Parse_Type.Command _
-        | Command_Pre_Parse_Type.If _ -> ()
-        | _ -> error "check_current_token_and_next_token" "Else must be followed by command or another If." tokens |> invalidOp
-
-    | _ -> ()
+    match current_token with
+    | Command_Pre_Parse_Type.If _
+    | Command_Pre_Parse_Type.Else_If _
+    | Command_Pre_Parse_Type.Else -> next_token_is_command_or_if
+    | _ -> true
 
 (* The return parameter next_id_for_command is the next_command_id for the current command. next_available_id is the ID to be used for the next command. These are not always the same. See the Else_If/Else/End_If case.
 *)

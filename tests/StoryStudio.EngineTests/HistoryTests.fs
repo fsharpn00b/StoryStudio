@@ -1,6 +1,7 @@
 module HistoryTests
 
 open Command_Types
+open InvariantAssertions
 open Runner_History
 open Runner_Types_1
 open Xunit
@@ -44,6 +45,7 @@ let ``undo and redo index helpers enforce bounds`` () =
     Assert.True(can_undo_for_index (Some 1))
     Assert.False(can_redo_for_index (Some 2) 3)
     Assert.True(can_redo_for_index (Some 1) 3)
+    assert_history_index_in_bounds (Some 1) 3
 
 [<Fact>]
 let ``redo helper handles empty history gracefully`` () =

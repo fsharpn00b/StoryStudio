@@ -29,8 +29,16 @@ jobs:
       - name: Install npm dependencies
         run: npm ci
 
-      - name: Run engine tests
-        run: npm run test:engine
+      - name: Run deterministic engine verification suite
+        run: dotnet test tests/StoryStudio.EngineTests/StoryStudio.EngineTests.fsproj --logger "trx;LogFileName=engine-tests.trx" --results-directory TestResults
+
+      - name: Upload engine test artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: engine-test-artifacts
+          path: TestResults/
+          if-no-files-found: ignore
 
   e2e-tests:
     runs-on: ubuntu-latest

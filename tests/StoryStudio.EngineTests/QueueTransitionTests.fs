@@ -1,6 +1,7 @@
 module QueueTransitionTests
 
 open Command_Types
+open InvariantAssertions
 open Runner_Queue_Transition
 open Runner_Types_1
 open Runner_Types_2
@@ -58,6 +59,7 @@ let private mkQueueItem : Runner_Queue_Item =
 [<Fact>]
 let ``completion with empty commands returns idle and follow-up flags`` () =
     let result = compute_transition_completion (Queue_Running mkQueueData) mkQueueData Map.empty
+    assert_transition_result_shape Map.empty result
     match result.next_queue with
     | Queue_Idle idleData ->
         Assert.Equal(mkQueueData.next_command_data, idleData.next_command_data)
@@ -70,6 +72,7 @@ let ``completion with empty commands returns idle and follow-up flags`` () =
 let ``completion with running queue preserves running state`` () =
     let commands = Map.ofList [LanguagePrimitives.Int32WithMeasure<command_queue_item_id> 1, mkQueueItem]
     let result = compute_transition_completion (Queue_Running mkQueueData) mkQueueData commands
+    assert_transition_result_shape commands result
     match result.next_queue with
     | Queue_Running runningData ->
         Assert.Equal(1, runningData.commands.Count)
@@ -82,6 +85,7 @@ let ``completion with running queue preserves running state`` () =
 let ``completion with interrupting queue preserves interrupting state`` () =
     let commands = Map.ofList [LanguagePrimitives.Int32WithMeasure<command_queue_item_id> 1, mkQueueItem]
     let result = compute_transition_completion (Queue_Interrupting mkQueueData) mkQueueData commands
+    assert_transition_result_shape commands result
     match result.next_queue with
     | Queue_Interrupting runningData ->
         Assert.Equal(1, runningData.commands.Count)
